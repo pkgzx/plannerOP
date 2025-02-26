@@ -24,6 +24,15 @@ dependencies:
   cupertino_icons: ^1.0.8
   flutter_neumorphic_plus: ^3.3.0
   flutter_svg: ^1.0.3
+  intl: ^0.17.0
+  fl_chart: ^0.35.0
+  pdf: ^3.8.4
+  printing: ^5.9.3
+  excel: ^2.0.1
+  share_plus: 10.1.4 
+  path_provider: ^2.0.15
+  shared_preferences: ^2.0.8
+  provider: ^6.0.1
   
 
 dev_dependencies:

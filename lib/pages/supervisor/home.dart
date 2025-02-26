@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_neumorphic_plus/flutter_neumorphic.dart';
 import 'package:plannerop/pages/supervisor/tabs/dashboard.dart';
+import 'package:plannerop/pages/supervisor/tabs/asignaciones.dart';
+import 'package:plannerop/pages/supervisor/tabs/reports.dart';
+import 'package:plannerop/pages/supervisor/tabs/profile.dart';
 
 class SupervisorHome extends StatefulWidget {
   const SupervisorHome({super.key});
@@ -28,103 +31,79 @@ class _SupervisorHomeState extends State<SupervisorHome> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Bienvenido, Supervisor'),
-      ),
       body: _widgetOptions.elementAt(_selectedIndex),
-      bottomNavigationBar: Neumorphic(
-        style: NeumorphicStyle(
-          depth: -4,
-          intensity: 0.8,
-          boxShape: NeumorphicBoxShape.roundRect(BorderRadius.circular(12)),
+      bottomNavigationBar: Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.1),
+              blurRadius: 10,
+              offset: const Offset(0, -5),
+            ),
+          ],
+          borderRadius: const BorderRadius.only(
+            topLeft: Radius.circular(20),
+            topRight: Radius.circular(20),
+          ),
         ),
-        child: BottomNavigationBar(
-          type: BottomNavigationBarType.fixed,
-          currentIndex: _selectedIndex,
-          onTap: _onItemTapped,
-          items: const <BottomNavigationBarItem>[
-            BottomNavigationBarItem(
-              icon: Icon(Icons.dashboard),
-              label: 'Dashboard 📊',
-            ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.assignment),
-              label: 'Asignaciones 📋',
-            ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.report),
-              label: 'Reportes 📑',
-            ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.settings),
-              label: 'Perfil ⚙️',
+        child: Neumorphic(
+          style: NeumorphicStyle(
+            depth: -3,
+            intensity: 0.8,
+            color: const Color(0xFF3182CE), // Color azul moderno como base
+          ),
+          child: BottomNavigationBar(
+            elevation: 0,
+            backgroundColor: Colors
+                .transparent, // Fondo transparente para mostrar el color del Neumorphic
+            type: BottomNavigationBarType.fixed,
+            currentIndex: _selectedIndex,
+            onTap: _onItemTapped,
+            selectedItemColor: Colors.white,
+            unselectedItemColor: Colors.white.withOpacity(0.6),
+            selectedFontSize: 12,
+            unselectedFontSize: 10,
+            items: [
+              _buildNavigationItem(
+                  Icons.dashboard_outlined, Icons.dashboard, 'Dashboard'),
+              _buildNavigationItem(
+                  Icons.assignment_outlined, Icons.assignment, 'Asignaciones'),
+              _buildNavigationItem(
+                  Icons.insert_chart_outlined, Icons.insert_chart, 'Reportes'),
+              _buildNavigationItem(
+                  Icons.person_outline, Icons.person, 'Perfil'),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  BottomNavigationBarItem _buildNavigationItem(
+      IconData iconOutlined, IconData iconFilled, String label) {
+    return BottomNavigationBarItem(
+      icon: Padding(
+        padding: const EdgeInsets.only(bottom: 4),
+        child: Icon(iconOutlined, size: 24),
+      ),
+      activeIcon: Padding(
+        padding: const EdgeInsets.only(bottom: 4),
+        child: Column(
+          children: [
+            Icon(iconFilled, size: 24),
+            Container(
+              width: 5,
+              height: 5,
+              decoration: const BoxDecoration(
+                color: Colors.white,
+                shape: BoxShape.circle,
+              ),
             ),
           ],
         ),
       ),
-    );
-  }
-}
-
-class AsignacionesTab extends StatelessWidget {
-  const AsignacionesTab({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(16.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: const [
-          Text('Lista de trabajadores con búsqueda'),
-          SizedBox(height: 10),
-          Text('Asignar trabajador a zona y horario'),
-          SizedBox(height: 10),
-          Text('Editar / eliminar asignaciones'),
-        ],
-      ),
-    );
-  }
-}
-
-class ReportesTab extends StatelessWidget {
-  const ReportesTab({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(16.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: const [
-          Text('Historial de asignaciones'),
-          SizedBox(height: 10),
-          Text('Filtros por fecha, zona o trabajador'),
-          SizedBox(height: 10),
-          Text('Exportar PDF / Excel'),
-        ],
-      ),
-    );
-  }
-}
-
-class PerfilTab extends StatelessWidget {
-  const PerfilTab({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(16.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: const [
-          Text('Configuración de cuenta'),
-          SizedBox(height: 10),
-          Text('Cambio de contraseña'),
-          SizedBox(height: 10),
-          Text('Cerrar sesión'),
-        ],
-      ),
+      label: label,
     );
   }
 }
