@@ -26,87 +26,117 @@ class _ReportDataTableState extends State<ReportDataTable> {
   bool _sortAscending = true;
   int _sortColumnIndex = 0;
 
-  // Datos de ejemplo para la tabla
+  // Datos de ejemplo para la tabla con horas de ingreso y finalización
   final List<Map<String, dynamic>> _allData = [
     {
       'id': '001',
       'worker': 'Carlos Méndez',
-      'area': 'Zona Norte',
+      'area': 'CARGA GENERAL',
       'task': 'Mantenimiento preventivo',
       'date': DateTime.now().subtract(const Duration(days: 5)),
       'status': 'Completada',
-      'hours': 8.5,
-      'efficiency': 95,
+      'startTime': '08:00',
+      'endTime': '16:30',
+      'supervisor': 'Juan Pérez',
     },
     {
       'id': '002',
       'worker': 'Ana Gutiérrez',
-      'area': 'Zona Centro',
+      'area': 'CARGA REFRIGERADA',
       'task': 'Inspección de equipos',
       'date': DateTime.now().subtract(const Duration(days: 3)),
       'status': 'Completada',
-      'hours': 6.0,
-      'efficiency': 88,
+      'startTime': '09:00',
+      'endTime': '15:00',
+      'supervisor': 'María López',
     },
     {
       'id': '003',
       'worker': 'Roberto Sánchez',
-      'area': 'Zona Sur',
+      'area': 'CARGA GENERAL',
       'task': 'Reparación de instalación',
       'date': DateTime.now().subtract(const Duration(days: 4)),
       'status': 'Completada',
-      'hours': 9.0,
-      'efficiency': 92,
+      'startTime': '07:30',
+      'endTime': '16:30',
+      'supervisor': 'Juan Pérez',
     },
     {
       'id': '004',
       'worker': 'Laura Torres',
-      'area': 'Zona Este',
+      'area': 'CARGA REFRIGERADA',
       'task': 'Optimización de procesos',
       'date': DateTime.now().subtract(const Duration(days: 7)),
       'status': 'Completada',
-      'hours': 5.5,
-      'efficiency': 97,
+      'startTime': '10:00',
+      'endTime': '15:30',
+      'supervisor': 'Carlos Rodríguez',
     },
     {
       'id': '005',
       'worker': 'Miguel Díaz',
-      'area': 'Zona Oeste',
+      'area': 'CARGA GENERAL',
       'task': 'Actualización de sistemas',
       'date': DateTime.now().subtract(const Duration(days: 2)),
       'status': 'En progreso',
-      'hours': 3.0,
-      'efficiency': 0,
+      'startTime': '08:30',
+      'endTime': null,
+      'supervisor': 'Ana Martínez',
     },
     {
       'id': '006',
       'worker': 'Sofía Vega',
-      'area': 'Zona Norte',
+      'area': 'CARGA REFRIGERADA',
       'task': 'Auditoría de procesos',
       'date': DateTime.now().subtract(const Duration(days: 6)),
       'status': 'Completada',
-      'hours': 7.0,
-      'efficiency': 90,
+      'startTime': '09:15',
+      'endTime': '16:15',
+      'supervisor': 'Carlos Rodríguez',
     },
     {
       'id': '007',
       'worker': 'Juan Morales',
-      'area': 'Zona Centro',
+      'area': 'CARGA GENERAL',
       'task': 'Revisión de protocolos',
       'date': DateTime.now().subtract(const Duration(days: 8)),
       'status': 'Completada',
-      'hours': 6.5,
-      'efficiency': 85,
+      'startTime': '07:45',
+      'endTime': '14:15',
+      'supervisor': 'Juan Pérez',
     },
     {
       'id': '008',
       'worker': 'Patricia Herrera',
-      'area': 'Zona Sur',
+      'area': 'CARGA REFRIGERADA',
       'task': 'Implementación de red',
       'date': DateTime.now().subtract(const Duration(days: 9)),
       'status': 'Completada',
-      'hours': 10.0,
-      'efficiency': 91,
+      'startTime': '08:00',
+      'endTime': '18:00',
+      'supervisor': 'María López',
+    },
+    {
+      'id': '009',
+      'worker': 'Eduardo Flores',
+      'area': 'CAFÉ',
+      'task': 'Clasificación de granos',
+      'date': DateTime.now().subtract(const Duration(days: 1)),
+      'status': 'En progreso',
+      'startTime': '07:00',
+      'endTime': null,
+      'supervisor': 'Ana Martínez',
+    },
+    {
+      'id': '010',
+      'worker': 'Diana Rojas',
+      'area': 'ADMINISTRATIVA',
+      'task': 'Preparación de informes',
+      'date': DateTime.now().subtract(const Duration(days: 10)),
+      'status': 'Completada',
+      'startTime': '09:00',
+      'endTime': '17:00',
+      'supervisor': 'Carlos Rodríguez',
     },
   ];
 
@@ -128,7 +158,8 @@ class _ReportDataTableState extends State<ReportDataTable> {
         final searchLower = _searchQuery.toLowerCase();
         return data['worker'].toLowerCase().contains(searchLower) ||
             data['task'].toLowerCase().contains(searchLower) ||
-            data['id'].toLowerCase().contains(searchLower);
+            data['id'].toLowerCase().contains(searchLower) ||
+            data['supervisor'].toLowerCase().contains(searchLower);
       }
 
       return true;
@@ -156,11 +187,24 @@ class _ReportDataTableState extends State<ReportDataTable> {
         case 5: // Estado
           comparison = a['status'].compareTo(b['status']);
           break;
-        case 6: // Horas
-          comparison = a['hours'].compareTo(b['hours']);
+        case 6: // Hora de ingreso
+          comparison = a['startTime'].compareTo(b['startTime']);
           break;
-        case 7: // Eficiencia
-          comparison = a['efficiency'].compareTo(b['efficiency']);
+        case 7: // Hora de finalización (cuidado con null values)
+          final aEndTime = a['endTime'];
+          final bEndTime = b['endTime'];
+          if (aEndTime == null && bEndTime == null) {
+            comparison = 0;
+          } else if (aEndTime == null) {
+            comparison = 1; // Null va después
+          } else if (bEndTime == null) {
+            comparison = -1; // Null va después
+          } else {
+            comparison = aEndTime.compareTo(bEndTime);
+          }
+          break;
+        case 8: // Supervisor
+          comparison = a['supervisor'].compareTo(b['supervisor']);
           break;
       }
       return _sortAscending ? comparison : -comparison;
@@ -194,7 +238,7 @@ class _ReportDataTableState extends State<ReportDataTable> {
               child: TextField(
                 controller: _searchController,
                 decoration: const InputDecoration(
-                  hintText: 'Buscar por ID, trabajador o tarea...',
+                  hintText: 'Buscar por ID, trabajador, supervisor o tarea...',
                   border: InputBorder.none,
                   prefixIcon: Icon(Icons.search),
                 ),
@@ -215,20 +259,10 @@ class _ReportDataTableState extends State<ReportDataTable> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                'Mostrando ${_filteredData.length} ${_filteredData.length == 1 ? 'resultado' : 'resultados'}',
+                'Mostrando ${_filteredData.length} ${_filteredData.length == 1 ? 'asignación' : 'asignaciones'}',
                 style: const TextStyle(
                   color: Color(0xFF718096),
                   fontWeight: FontWeight.w500,
-                ),
-              ),
-              TextButton.icon(
-                onPressed: () {
-                  // Lógica para exportar resultados
-                },
-                icon: const Icon(Icons.file_download_outlined, size: 18),
-                label: const Text('Exportar'),
-                style: TextButton.styleFrom(
-                  foregroundColor: const Color(0xFF3182CE),
                 ),
               ),
             ],
@@ -260,8 +294,9 @@ class _ReportDataTableState extends State<ReportDataTable> {
                         _buildDataColumn('Tarea', 3),
                         _buildDataColumn('Fecha', 4),
                         _buildDataColumn('Estado', 5),
-                        _buildDataColumn('Horas', 6),
-                        _buildDataColumn('Eficiencia', 7),
+                        _buildDataColumn('Hora Ingreso', 6),
+                        _buildDataColumn('Hora Finalización', 7),
+                        _buildDataColumn('Supervisor', 8),
                       ],
                       rows: _filteredData.map((data) {
                         return DataRow(
@@ -273,9 +308,11 @@ class _ReportDataTableState extends State<ReportDataTable> {
                             DataCell(Text(
                                 DateFormat('dd/MM/yy').format(data['date']))),
                             DataCell(_buildStatusWidget(data['status'])),
-                            DataCell(Text('${data['hours']}h')),
-                            DataCell(
-                                _buildEfficiencyWidget(data['efficiency'])),
+                            DataCell(Text(data['startTime'])),
+                            DataCell(data['endTime'] != null
+                                ? Text(data['endTime'])
+                                : const Text('-')),
+                            DataCell(Text(data['supervisor'])),
                           ],
                         );
                       }).toList(),
@@ -336,65 +373,19 @@ class _ReportDataTableState extends State<ReportDataTable> {
     );
   }
 
-  Widget _buildEfficiencyWidget(int efficiency) {
-    Color color;
-
-    if (efficiency == 0) {
-      return const Text('-');
-    } else if (efficiency >= 90) {
-      color = const Color(0xFF38A169);
-    } else if (efficiency >= 80) {
-      color = const Color(0xFF3182CE);
-    } else {
-      color = const Color(0xFFDD6B20);
-    }
-
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Container(
-          width: 40,
-          height: 6,
-          decoration: BoxDecoration(
-            color: const Color(0xFFE2E8F0),
-            borderRadius: BorderRadius.circular(3),
-          ),
-          child: FractionallySizedBox(
-            alignment: Alignment.centerLeft,
-            widthFactor: efficiency / 100,
-            child: Container(
-              decoration: BoxDecoration(
-                color: color,
-                borderRadius: BorderRadius.circular(3),
-              ),
-            ),
-          ),
-        ),
-        const SizedBox(width: 8),
-        Text(
-          '$efficiency%',
-          style: TextStyle(
-            color: color,
-            fontWeight: FontWeight.w500,
-          ),
-        ),
-      ],
-    );
-  }
-
   Widget _buildEmptyState() {
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           const Icon(
-            Icons.search_off_rounded,
+            Icons.assignment_outlined,
             size: 64,
             color: Color(0xFFCBD5E0),
           ),
           const SizedBox(height: 16),
           const Text(
-            'No se encontraron resultados',
+            'No hay asignaciones disponibles',
             style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.w500,
@@ -403,7 +394,7 @@ class _ReportDataTableState extends State<ReportDataTable> {
           ),
           const SizedBox(height: 8),
           Text(
-            'Intenta cambiar los filtros o términos de búsqueda',
+            'Intenta cambiar los filtros o el período de fechas',
             style: TextStyle(
               color: const Color(0xFF718096).withOpacity(0.8),
             ),
@@ -424,7 +415,7 @@ class _ReportDataTableState extends State<ReportDataTable> {
               });
             },
             child: const Text(
-              'Limpiar filtros',
+              'Limpiar búsqueda',
               style: TextStyle(
                 color: Color(0xFF3182CE),
                 fontWeight: FontWeight.w600,

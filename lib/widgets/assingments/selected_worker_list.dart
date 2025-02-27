@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_neumorphic_plus/flutter_neumorphic.dart';
+import 'package:plannerop/core/model/worker.dart';
 import 'worker_selection_dialog.dart';
 
 class SelectedWorkersList extends StatefulWidget {
-  // Lista de trabajadores seleccionados
+  // Lista de trabajadores seleccionados (ahora como Map)
   final List<Map<String, dynamic>> selectedWorkers;
 
-  // Función de callback cuando cambia la selección
+  // Función de callback cuando cambia la selección (ahora con Map)
   final Function(List<Map<String, dynamic>>) onWorkersChanged;
 
   // Todos los trabajadores disponibles (para el diálogo de selección)

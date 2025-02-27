@@ -498,131 +498,248 @@ class _HistoryAssignmentsViewState extends State<HistoryAssignmentsView> {
       padding: const EdgeInsets.only(bottom: 12),
       child: Neumorphic(
         style: NeumorphicStyle(
-          depth: 2,
-          intensity: 0.7,
-          boxShape: NeumorphicBoxShape.roundRect(BorderRadius.circular(12)),
+          depth: 4,
+          intensity: 0.5,
+          color: Colors.white,
+          boxShape: NeumorphicBoxShape.roundRect(BorderRadius.circular(16)),
+          lightSource: LightSource.topLeft,
+          shadowDarkColorEmboss: Colors.grey.withOpacity(0.2),
+          shadowLightColorEmboss: Colors.white,
         ),
         child: InkWell(
           onTap: () => _showAssignmentDetails(context, assignment),
-          child: Padding(
-            padding: const EdgeInsets.all(12),
+          borderRadius: BorderRadius.circular(16),
+          child: Container(
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
+            decoration: BoxDecoration(
+              border: Border(
+                left: BorderSide(
+                  color: const Color(0xFF38A169),
+                  width: 4,
+                ),
+              ),
+            ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     // Task name
                     Expanded(
-                      child: Text(
-                        assignment.task,
-                        style: const TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          color: Color(0xFF2D3748),
-                        ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            assignment.task,
+                            style: const TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                              color: Color(0xFF2D3748),
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Row(
+                            children: [
+                              const Icon(
+                                Icons.room_outlined,
+                                size: 14,
+                                color: Color(0xFF718096),
+                              ),
+                              const SizedBox(width: 4),
+                              Flexible(
+                                child: Text(
+                                  assignment.area,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: const TextStyle(
+                                    fontSize: 13,
+                                    color: Color(0xFF718096),
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
                       ),
                     ),
-                    // Completed status
+
+                    // Completed status - Elegante insignia de estado
                     Container(
                       padding: const EdgeInsets.symmetric(
-                          horizontal: 8, vertical: 4),
+                          horizontal: 10, vertical: 4),
                       decoration: BoxDecoration(
-                        color: const Color(0xFF38A169).withOpacity(0.2),
-                        borderRadius: BorderRadius.circular(12),
+                        color: const Color(0xFF38A169).withOpacity(0.15),
+                        borderRadius: BorderRadius.circular(20),
                       ),
-                      child: const Text(
-                        'COMPLETADA',
-                        style: TextStyle(
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Container(
+                            width: 6,
+                            height: 6,
+                            decoration: const BoxDecoration(
+                              color: Color(0xFF38A169),
+                              shape: BoxShape.circle,
+                            ),
+                          ),
+                          const SizedBox(width: 6),
+                          const Text(
+                            'COMPLETADA',
+                            style: TextStyle(
+                              color: Color(0xFF38A169),
+                              fontWeight: FontWeight.w600,
+                              fontSize: 10,
+                              letterSpacing: 0.5,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+
+                // Completed date with elegant icon
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  child: Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(6),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF38A169).withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: const Icon(
+                          Icons.check_circle_outline,
+                          size: 14,
+                          color: Color(0xFF38A169),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        DateFormat('dd/MM/yyyy')
+                            .format(assignment.completedDate ?? DateTime.now()),
+                        style: const TextStyle(
+                          fontSize: 13,
                           color: Color(0xFF38A169),
                           fontWeight: FontWeight.w500,
-                          fontSize: 10,
                         ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
-                const SizedBox(height: 8),
 
-                // Area
+                // Elegant separator
+                Container(
+                  height: 1,
+                  color: const Color(0xFFEDF2F7),
+                  margin: const EdgeInsets.only(bottom: 12),
+                ),
+
+                // Footer with workers and time
                 Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    const Icon(
-                      Icons.room_outlined,
-                      size: 16,
-                      color: Color(0xFF718096),
-                    ),
-                    const SizedBox(width: 4),
-                    Text(
-                      assignment.area,
-                      style: const TextStyle(
-                        fontSize: 14,
-                        color: Color(0xFF718096),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 4),
-
-                // Completed date
-                Row(
-                  children: [
-                    const Icon(
-                      Icons.check_circle_outline,
-                      size: 16,
-                      color: Color(0xFF38A169),
-                    ),
-                    const SizedBox(width: 4),
-                    Text(
-                      'Completada el ${DateFormat('dd/MM/yyyy').format(assignment.completedDate ?? DateTime.now())}',
-                      style: const TextStyle(
-                        fontSize: 12,
-                        color: Color(0xFF38A169),
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ],
-                ),
-
-                const Divider(height: 16),
-
-                // Workers
-                Row(
-                  children: [
-                    const Icon(
-                      Icons.people_outline,
-                      size: 14,
-                      color: Color(0xFF718096),
-                    ),
-                    const SizedBox(width: 4),
-                    Text(
-                      "${assignment.workers.length} trabajador${assignment.workers.length > 1 ? 'es' : ''}",
-                      style: const TextStyle(
-                        fontSize: 12,
-                        color: Color(0xFF718096),
-                      ),
-                    ),
-                  ],
-                ),
-                if (assignment.workers.isNotEmpty &&
-                    assignment.workers.length <= 3) ...[
-                  const SizedBox(height: 8),
-                  Wrap(
-                    spacing: 6,
-                    children: assignment.workers.map((worker) {
-                      return Chip(
-                        materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                        label: Text(
-                          worker['name'],
-                          style: const TextStyle(
-                            fontSize: 11,
-                            color: Color(0xFF4A5568),
+                    // Workers count
+                    Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(4),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF718096).withOpacity(0.1),
+                            shape: BoxShape.circle,
+                          ),
+                          child: Icon(
+                            Icons.people_outline,
+                            size: 12,
+                            color: const Color(0xFF718096),
                           ),
                         ),
-                        backgroundColor: const Color(0xFFE2E8F0),
-                        padding: EdgeInsets.zero,
-                        labelPadding: const EdgeInsets.symmetric(horizontal: 8),
-                        visualDensity: VisualDensity.compact,
+                        const SizedBox(width: 6),
+                        Text(
+                          "${assignment.workers.length} trabajador${assignment.workers.length > 1 ? 'es' : ''}",
+                          style: const TextStyle(
+                            fontSize: 12,
+                            color: Color(0xFF718096),
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
+                    ),
+
+                    // Tiempo de la tarea (si está disponible)
+                    Row(
+                      children: [
+                        const Icon(
+                          Icons.schedule,
+                          size: 12,
+                          color: Color(0xFF718096),
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          assignment.time,
+                          style: const TextStyle(
+                            fontSize: 11,
+                            color: Color(0xFF718096),
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+
+                // Workers chips - mostrar si hay pocos trabajadores
+                if (assignment.workers.isNotEmpty &&
+                    assignment.workers.length <= 3) ...[
+                  const SizedBox(height: 10),
+                  Wrap(
+                    spacing: 6,
+                    runSpacing: 6,
+                    children: assignment.workers.map((worker) {
+                      return Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 8, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFE6FFFA),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: const Color(0xFF38A169).withOpacity(0.2),
+                          ),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            CircleAvatar(
+                              radius: 8,
+                              backgroundColor: Colors.primaries[
+                                  worker['name'].hashCode %
+                                      Colors.primaries.length],
+                              child: Text(
+                                worker['name']
+                                    .toString()
+                                    .substring(0, 1)
+                                    .toUpperCase(),
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 8,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              worker['name'],
+                              style: const TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w500,
+                                color: Color(0xFF2C7A7B),
+                              ),
+                            ),
+                          ],
+                        ),
                       );
                     }).toList(),
                   ),
@@ -716,6 +833,11 @@ class _HistoryAssignmentsViewState extends State<HistoryAssignmentsView> {
                             icon: Icons.schedule_outlined,
                             label: 'Hora programada:',
                             value: assignment.time,
+                          ),
+                          DetailItem(
+                            label: 'Hora de finalización:',
+                            value: assignment.endTime,
+                            icon: Icons.timer_outlined,
                           ),
                           DetailItem(
                             icon: Icons.check_circle_outline,

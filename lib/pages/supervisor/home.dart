@@ -3,7 +3,7 @@ import 'package:flutter_neumorphic_plus/flutter_neumorphic.dart';
 import 'package:plannerop/pages/supervisor/tabs/dashboard.dart';
 import 'package:plannerop/pages/supervisor/tabs/asignaciones.dart';
 import 'package:plannerop/pages/supervisor/tabs/reports.dart';
-import 'package:plannerop/pages/supervisor/tabs/profile.dart';
+import 'package:plannerop/pages/supervisor/tabs/workers.dart'; // Nueva importación
 
 class SupervisorHome extends StatefulWidget {
   const SupervisorHome({super.key});
@@ -19,7 +19,7 @@ class _SupervisorHomeState extends State<SupervisorHome> {
     DashboardTab(),
     AsignacionesTab(),
     ReportesTab(),
-    PerfilTab(),
+    WorkersTab(), // Nueva pestaña para trabajadores
   ];
 
   void _onItemTapped(int index) {
@@ -42,10 +42,6 @@ class _SupervisorHomeState extends State<SupervisorHome> {
               offset: const Offset(0, -5),
             ),
           ],
-          borderRadius: const BorderRadius.only(
-            topLeft: Radius.circular(20),
-            topRight: Radius.circular(20),
-          ),
         ),
         child: Neumorphic(
           style: NeumorphicStyle(
@@ -72,7 +68,7 @@ class _SupervisorHomeState extends State<SupervisorHome> {
               _buildNavigationItem(
                   Icons.insert_chart_outlined, Icons.insert_chart, 'Reportes'),
               _buildNavigationItem(
-                  Icons.person_outline, Icons.person, 'Perfil'),
+                  Icons.groups_outlined, Icons.groups, 'Trabajadores'),
             ],
           ),
         ),

@@ -71,6 +71,7 @@ class AssignmentsProvider extends ChangeNotifier {
       task: task,
       date: date,
       time: time,
+      endTime: 'No ha finalizado',
     );
 
     _assignments.add(newAssignment);
@@ -87,6 +88,15 @@ class AssignmentsProvider extends ChangeNotifier {
         _assignments[index].completedDate = DateTime.now();
       }
 
+      await _saveAssignments();
+      notifyListeners();
+    }
+  }
+
+  Future<void> updateAssignmentEndTime(String id, String endTime) async {
+    final index = _assignments.indexWhere((a) => a.id == id);
+    if (index >= 0) {
+      _assignments[index].endTime = endTime;
       await _saveAssignments();
       notifyListeners();
     }

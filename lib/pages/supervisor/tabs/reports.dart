@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_neumorphic_plus/flutter_neumorphic.dart';
 import 'package:intl/intl.dart';
-import 'package:fl_chart/fl_chart.dart';
 import 'package:plannerop/widgets/reports/report_filter.dart';
-import 'package:plannerop/widgets/reports/report_summary.dart';
 import 'package:plannerop/widgets/reports/report_data_table.dart';
 import 'package:plannerop/widgets/reports/export_options.dart';
 
@@ -14,9 +12,7 @@ class ReportesTab extends StatefulWidget {
   State<ReportesTab> createState() => _ReportesTabState();
 }
 
-class _ReportesTabState extends State<ReportesTab>
-    with SingleTickerProviderStateMixin {
-  late TabController _tabController;
+class _ReportesTabState extends State<ReportesTab> {
   String _selectedPeriod = "Semana";
   String _selectedArea = "Todas";
   DateTime _startDate = DateTime.now().subtract(const Duration(days: 7));
@@ -31,26 +27,16 @@ class _ReportesTabState extends State<ReportesTab>
     "Trimestre",
     "Personalizado"
   ];
+
   final List<String> _areas = [
     "Todas",
-    "Zona Norte",
-    "Zona Sur",
-    "Zona Este",
-    "Zona Oeste",
-    "Zona Centro"
+    "CARGA GENERAL",
+    "CARGA REFRIGERADA",
+    "CAFÉ",
+    "ADMINISTRATIVA",
+    "MANTENIMIENTO",
+    "SEGURIDAD",
   ];
-
-  @override
-  void initState() {
-    super.initState();
-    _tabController = TabController(length: 2, vsync: this);
-  }
-
-  @override
-  void dispose() {
-    _tabController.dispose();
-    super.dispose();
-  }
 
   void _applyFilter({
     String? period,
@@ -83,19 +69,16 @@ class _ReportesTabState extends State<ReportesTab>
 
   @override
   Widget build(BuildContext context) {
-    if (_tabController.length != 2) {
-      _tabController.dispose();
-      _tabController = TabController(length: 2, vsync: this);
-    }
     return Scaffold(
+      backgroundColor: Colors.white,
       appBar: AppBar(
         elevation: 0,
-        backgroundColor: const Color(0xFFE0E5EC),
-        centerTitle: true,
+        backgroundColor: const Color(0xFF4299E1),
+        centerTitle: false,
         title: const Text(
-          'Reportes',
+          'Reportes de Asignaciones',
           style: TextStyle(
-            color: Color(0xFF2D3748),
+            color: Colors.white,
             fontWeight: FontWeight.bold,
           ),
         ),
@@ -103,28 +86,11 @@ class _ReportesTabState extends State<ReportesTab>
           IconButton(
             icon: Icon(
               _isFiltering ? Icons.filter_list_off : Icons.filter_list,
-              color: const Color(0xFF3182CE),
+              color: Colors.white,
             ),
             onPressed: _toggleFilterPanel,
           ),
-          IconButton(
-            icon: Icon(
-              _isExporting ? Icons.close : Icons.download,
-              color: const Color(0xFF3182CE),
-            ),
-            onPressed: _toggleExportPanel,
-          ),
         ],
-        bottom: TabBar(
-          controller: _tabController,
-          labelColor: const Color(0xFF3182CE),
-          unselectedLabelColor: const Color(0xFF718096),
-          indicatorColor: const Color(0xFF3182CE),
-          tabs: const [
-            Tab(text: 'Resumen'),
-            Tab(text: 'Detalles'),
-          ],
-        ),
       ),
       body: SafeArea(
         child: Column(
@@ -150,7 +116,7 @@ class _ReportesTabState extends State<ReportesTab>
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
                       content: Text('Exportando en formato $format'),
-                      backgroundColor: const Color(0xFF3182CE),
+                      backgroundColor: const Color(0xFF4299E1),
                     ),
                   );
                   setState(() {
@@ -162,31 +128,24 @@ class _ReportesTabState extends State<ReportesTab>
             // Filtro seleccionado
             if (!_isFiltering && !_isExporting) _buildActiveFilters(),
 
-            // Contenido principal
+            // Contenido principal - Tabla de datos simplificada
             Expanded(
-              child: TabBarView(
-                controller: _tabController,
-                children: [
-                  // Pestaña de Resumen
-                  ReportSummary(
-                    periodName: _selectedPeriod,
-                    startDate: _startDate,
-                    endDate: _endDate,
-                    area: _selectedArea,
-                  ),
-
-                  // Pestaña de Detalles
-                  ReportDataTable(
-                    periodName: _selectedPeriod,
-                    startDate: _startDate,
-                    endDate: _endDate,
-                    area: _selectedArea,
-                  ),
-                ],
+              child: ReportDataTable(
+                periodName: _selectedPeriod,
+                startDate: _startDate,
+                endDate: _endDate,
+                area: _selectedArea,
               ),
             ),
           ],
         ),
+      ),
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: _toggleExportPanel,
+        backgroundColor: const Color(0xFF4299E1),
+        icon: const Icon(Icons.file_download),
+        label: const Text('Exportar'),
+        foregroundColor: Colors.white,
       ),
     );
   }
@@ -201,25 +160,26 @@ class _ReportesTabState extends State<ReportesTab>
     }
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
       color: const Color(0xFFF7FAFC),
       child: Row(
         children: [
           const Icon(Icons.filter_alt_outlined,
               size: 16, color: Color(0xFF718096)),
           const SizedBox(width: 8),
-          Text(
-            "Filtros: $dateRange ${_selectedArea != 'Todas' ? '• $_selectedArea' : ''}",
-            style: const TextStyle(
-              color: Color(0xFF4A5568),
-              fontWeight: FontWeight.w500,
+          Expanded(
+            child: Text(
+              "Periodo: $dateRange ${_selectedArea != 'Todas' ? '• Área: $_selectedArea' : ''}",
+              style: const TextStyle(
+                color: Color(0xFF4A5568),
+                fontWeight: FontWeight.w500,
+              ),
             ),
           ),
-          const Spacer(),
           TextButton(
             onPressed: _toggleFilterPanel,
             child: const Text(
-              "Cambiar",
+              "Cambiar filtros",
               style: TextStyle(
                 color: Color(0xFF3182CE),
                 fontWeight: FontWeight.w600,

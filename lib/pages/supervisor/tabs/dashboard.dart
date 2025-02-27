@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_neumorphic_plus/flutter_neumorphic.dart';
 import 'package:plannerop/widgets/cifras.dart';
-import 'package:plannerop/widgets/keyactions.dart';
+import 'package:plannerop/widgets/quickActions.dart';
 import 'package:plannerop/widgets/recentOps.dart';
 
 class DashboardTab extends StatelessWidget {
@@ -31,7 +31,7 @@ class DashboardTab extends StatelessWidget {
               children: [
                 Cifras(),
                 const SizedBox(height: 24),
-                KeyActions(),
+                QuickActions(),
                 const SizedBox(height: 24),
                 RecentOps()
               ],

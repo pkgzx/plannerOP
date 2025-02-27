@@ -56,10 +56,11 @@ class _AsignacionesTabState extends State<AsignacionesTab>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFE0E5EC),
+      backgroundColor: Colors.white, // Cambio a fondo blanco para consistencia
       appBar: AppBar(
         elevation: 0,
-        backgroundColor: const Color(0xFFE0E5EC),
+        backgroundColor:
+            const Color(0xFF4299E1), // Cambio a azul como en otros componentes
         title: _isSearching
             ? TextField(
                 controller: _searchController,
@@ -67,13 +68,15 @@ class _AsignacionesTabState extends State<AsignacionesTab>
                 decoration: InputDecoration(
                   hintText: 'Buscar asignaciones...',
                   border: InputBorder.none,
-                  hintStyle: TextStyle(color: Colors.grey[400]),
+                  hintStyle: TextStyle(
+                      color: Colors.white.withOpacity(0.7)), // Texto más claro
                   suffixIcon: IconButton(
-                    icon: const Icon(Icons.clear, color: Color(0xFF718096)),
+                    icon: const Icon(Icons.clear,
+                        color: Colors.white), // Icono blanco
                     onPressed: _clearSearch,
                   ),
                 ),
-                style: const TextStyle(color: Color(0xFF2D3748)),
+                style: const TextStyle(color: Colors.white), // Texto blanco
                 onChanged: (value) {
                   setState(() {
                     _searchQuery = value;
@@ -83,15 +86,16 @@ class _AsignacionesTabState extends State<AsignacionesTab>
             : const Text(
                 'Asignaciones',
                 style: TextStyle(
-                  color: Color(0xFF2D3748),
+                  color: Colors.white, // Texto blanco
                   fontWeight: FontWeight.bold,
+                  fontSize: 20,
                 ),
               ),
         actions: [
           IconButton(
             icon: Icon(
               _isSearching ? Icons.cancel : Icons.search,
-              color: const Color(0xFF718096),
+              color: Colors.white, // Icono blanco
             ),
             onPressed: () {
               setState(() {
@@ -103,34 +107,38 @@ class _AsignacionesTabState extends State<AsignacionesTab>
               });
             },
           ),
-          // Botón para mostrar estadísticas o información adicional
-          IconButton(
-            icon: const Icon(
-              Icons.pie_chart_outline,
-              color: Color(0xFF718096),
-            ),
-            onPressed: () {
-              // Mostrar estadísticas o información de resumen
-              _showStatisticsModal(context);
-            },
-          ),
         ],
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(48),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 8.0),
-            child: TabBar(
-              controller: _tabController,
-              indicatorColor: const Color(0xFF3182CE),
-              indicatorWeight: 3,
-              labelColor: const Color(0xFF2D3748),
-              unselectedLabelColor: const Color(0xFF718096),
-              labelStyle: const TextStyle(fontWeight: FontWeight.bold),
-              tabs: const [
-                Tab(text: 'Pendientes'),
-                Tab(text: 'En Proceso'),
-                Tab(text: 'Finalizadas'),
-              ],
+          child: Container(
+            // Contenedor para dar un fondo completo a la TabBar
+            decoration: const BoxDecoration(
+              color: Color(0xFF4299E1), // Fondo azul
+              borderRadius: BorderRadius.only(
+                bottomLeft: Radius.circular(15),
+                bottomRight: Radius.circular(15),
+              ),
+            ),
+            child: Padding(
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 8.0, vertical: 5.0),
+              child: TabBar(
+                controller: _tabController,
+                indicatorColor:
+                    Colors.white, // Indicador en blanco para contraste
+                indicatorWeight: 3,
+                labelColor: Colors.white, // Etiqueta seleccionada en blanco
+                unselectedLabelColor: Colors.white
+                    .withOpacity(0.7), // No seleccionado semi-transparente
+                labelStyle: const TextStyle(fontWeight: FontWeight.bold),
+                unselectedLabelStyle:
+                    const TextStyle(fontWeight: FontWeight.normal),
+                tabs: const [
+                  Tab(text: 'Pendientes'),
+                  Tab(text: 'En Proceso'),
+                  Tab(text: 'Finalizadas'),
+                ],
+              ),
             ),
           ),
         ),
@@ -150,10 +158,12 @@ class _AsignacionesTabState extends State<AsignacionesTab>
       ),
       floatingActionButton: NeumorphicFloatingActionButton(
         child: const Icon(Icons.add, color: Colors.white),
-        style: const NeumorphicStyle(
-          color: Color(0xFF3182CE),
+        style: NeumorphicStyle(
+          color: const Color(0xFF4299E1), // Cambio a azul consistente
           depth: 4,
           intensity: 0.6,
+          boxShape: NeumorphicBoxShape.roundRect(
+              BorderRadius.circular(30)), // Más redondeado
         ),
         onPressed: () {
           showDialog(
@@ -161,243 +171,6 @@ class _AsignacionesTabState extends State<AsignacionesTab>
             builder: (context) => const AddAssignmentDialog(),
           );
         },
-      ),
-    );
-  }
-
-  void _showStatisticsModal(BuildContext context) {
-    final assignmentsProvider =
-        Provider.of<AssignmentsProvider>(context, listen: false);
-
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.transparent,
-      isScrollControlled: true,
-      builder: (context) {
-        return Container(
-          height: MediaQuery.of(context).size.height * 0.6,
-          decoration: const BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Header
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(20),
-                decoration: BoxDecoration(
-                  color: const Color(0xFF3182CE).withOpacity(0.1),
-                  borderRadius:
-                      const BorderRadius.vertical(top: Radius.circular(20)),
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    const Text(
-                      'Estadísticas de Asignaciones',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                        color: Color(0xFF2D3748),
-                      ),
-                    ),
-                    IconButton(
-                      icon: const Icon(Icons.close),
-                      onPressed: () => Navigator.pop(context),
-                    ),
-                  ],
-                ),
-              ),
-
-              // Content
-              Expanded(
-                child: SingleChildScrollView(
-                  padding: const EdgeInsets.all(20),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // Tarjetas con estadísticas
-                      Row(
-                        children: [
-                          _buildStatCard(
-                            'Pendientes',
-                            '${assignmentsProvider.pendingAssignments.length}',
-                            const Color(0xFFF6AD55),
-                            Icons.pending_actions_outlined,
-                          ),
-                          const SizedBox(width: 12),
-                          _buildStatCard(
-                            'En Proceso',
-                            '${assignmentsProvider.inProgressAssignments.length}',
-                            const Color(0xFF3182CE),
-                            Icons.directions_run_outlined,
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 12),
-                      Row(
-                        children: [
-                          _buildStatCard(
-                            'Completadas',
-                            '${assignmentsProvider.completedAssignments.length}',
-                            const Color(0xFF38A169),
-                            Icons.check_circle_outline,
-                          ),
-                          const SizedBox(width: 12),
-                          _buildStatCard(
-                            'Total',
-                            '${assignmentsProvider.assignments.length}',
-                            const Color(0xFF718096),
-                            Icons.summarize_outlined,
-                          ),
-                        ],
-                      ),
-
-                      const SizedBox(height: 24),
-                      const Text(
-                        'Asignaciones completadas por día',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          color: Color(0xFF2D3748),
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      // Aquí iría un gráfico si tuvieras una biblioteca de gráficos
-                      Container(
-                        height: 200,
-                        decoration: BoxDecoration(
-                          color: Colors.grey[200],
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        alignment: Alignment.center,
-                        child: const Text(
-                          "Gráfico de estadísticas",
-                          style: TextStyle(color: Color(0xFF718096)),
-                        ),
-                      ),
-
-                      const SizedBox(height: 24),
-                      const Text(
-                        'Trabajadores más activos',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          color: Color(0xFF2D3748),
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      // Lista de trabajadores más activos (simulada)
-                      _buildTopWorkerItem('Carlos Méndez', '8 asignaciones'),
-                      _buildTopWorkerItem('Ana Gutiérrez', '6 asignaciones'),
-                      _buildTopWorkerItem('Roberto Sánchez', '5 asignaciones'),
-                    ],
-                  ),
-                ),
-              ),
-            ],
-          ),
-        );
-      },
-    );
-  }
-
-  Widget _buildStatCard(
-      String title, String value, Color color, IconData icon) {
-    return Expanded(
-      child: Neumorphic(
-        style: NeumorphicStyle(
-          depth: 3,
-          intensity: 0.7,
-          boxShape: NeumorphicBoxShape.roundRect(BorderRadius.circular(12)),
-        ),
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    title,
-                    style: TextStyle(
-                      color: color,
-                      fontWeight: FontWeight.w500,
-                      fontSize: 14,
-                    ),
-                  ),
-                  Icon(
-                    icon,
-                    color: color,
-                    size: 20,
-                  ),
-                ],
-              ),
-              const SizedBox(height: 8),
-              Text(
-                value,
-                style: TextStyle(
-                  color: color,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 24,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildTopWorkerItem(String name, String stats) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
-      child: Row(
-        children: [
-          CircleAvatar(
-            backgroundColor:
-                Colors.primaries[name.hashCode % Colors.primaries.length],
-            radius: 18,
-            child: Text(
-              name.substring(0, 1).toUpperCase(),
-              style: const TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  name,
-                  style: const TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                    color: Color(0xFF2D3748),
-                  ),
-                ),
-                Text(
-                  stats,
-                  style: const TextStyle(
-                    fontSize: 12,
-                    color: Color(0xFF718096),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const Icon(
-            Icons.trending_up,
-            color: Color(0xFF38A169),
-            size: 16,
-          ),
-        ],
       ),
     );
   }

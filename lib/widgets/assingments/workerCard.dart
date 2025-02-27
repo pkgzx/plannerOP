@@ -75,7 +75,7 @@ class WorkerCard extends StatelessWidget {
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          worker.position,
+                          worker.area,
                           style: const TextStyle(
                             fontSize: 14,
                             color: Color(0xFF718096),
@@ -113,7 +113,7 @@ class WorkerCard extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         _buildInfoRow(
-                            Icons.location_on_outlined, 'Zona', worker.zone),
+                            Icons.location_on_outlined, 'Zona', worker.area),
                         const SizedBox(height: 12),
                         _buildInfoRow(
                             Icons.calendar_today_outlined,
@@ -124,18 +124,6 @@ class WorkerCard extends StatelessWidget {
                           _buildInfoRow(Icons.event_outlined, 'Fecha Fin',
                               DateFormat('dd/MM/yyyy').format(worker.endDate!)),
                         ],
-                      ],
-                    ),
-                  ),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        _buildInfoRow(Icons.access_time_outlined, 'Horario',
-                            worker.schedule),
-                        const SizedBox(height: 12),
-                        _buildInfoRow(
-                            Icons.assignment_outlined, 'Tarea', worker.task),
                       ],
                     ),
                   ),

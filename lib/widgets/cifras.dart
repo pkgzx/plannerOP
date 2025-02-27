@@ -1,214 +1,180 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_neumorphic_plus/flutter_neumorphic.dart';
+import 'package:provider/provider.dart';
+import 'package:plannerop/store/assignments.dart';
 
 class Cifras extends StatelessWidget {
   const Cifras({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return Neumorphic(
-      style: NeumorphicStyle(
-        depth: 3,
-        intensity: 0.5,
-        boxShape: NeumorphicBoxShape.roundRect(BorderRadius.circular(16)),
-        color: const Color.fromARGB(255, 234, 241, 245),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(8.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: const [
-                Icon(Icons.insights, color: Color(0xFF4299E1), size: 24),
-                SizedBox(width: 8),
-                Text(
-                  'Cifras Clave',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: Color(0xFF2D3748),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-            // Fila con 3 tarjetas neumórficas para cifras
-            Row(
+    return Consumer<AssignmentsProvider>(
+      builder: (context, provider, child) {
+        // Calculamos las cifras necesarias
+        final int totalAssignments = provider.assignments.length;
+        final int pendingAssignments = provider.pendingAssignments.length;
+        final int activeAssignments = provider.inProgressAssignments.length;
+        final int completedAssignments = provider.completedAssignments.length;
+
+        // Extraemos trabajadores únicos de todas las asignaciones
+        final Set<String> uniqueWorkers = {};
+        for (var assignment in provider.assignments) {
+          for (var worker in assignment.workers) {
+            uniqueWorkers.add(worker['name'] as String);
+          }
+        }
+        final int totalWorkers = uniqueWorkers.length;
+
+        return Neumorphic(
+          style: NeumorphicStyle(
+            depth: 3,
+            intensity: 0.5,
+            boxShape: NeumorphicBoxShape.roundRect(BorderRadius.circular(16)),
+            color: const Color.fromARGB(255, 234, 241, 245),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(12.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Expanded(
-                  child: SizedBox(
-                    height: 100, // Altura fija para todas las tarjetas
-                    child: Neumorphic(
-                      style: NeumorphicStyle(
-                        depth: 4,
-                        intensity: 0.8,
-                        lightSource: LightSource.topLeft,
-                        boxShape: NeumorphicBoxShape.roundRect(
-                            BorderRadius.circular(12)),
+                Row(
+                  children: const [
+                    Icon(Icons.insights, color: Color(0xFF4299E1), size: 22),
+                    SizedBox(width: 8),
+                    Text(
+                      'Cifras Clave',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: Color(0xFF2D3748),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+
+                // Primera fila del grid
+                Row(
+                  children: [
+                    // Trabajadores
+                    Expanded(
+                      child: _buildStatCard(
+                        context,
+                        icon: Icons.person,
+                        label: 'Trabajadores',
+                        value: '$totalWorkers',
                         color: const Color(0xFFE6F0FF),
-                      ),
-                      child: Padding(
-                        padding: const EdgeInsets.all(8.0),
-                        child: Column(
-                          mainAxisAlignment:
-                              MainAxisAlignment.center, // Centrar verticalmente
-                          crossAxisAlignment: CrossAxisAlignment
-                              .center, // Centrar horizontalmente
-                          children: [
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: const [
-                                Icon(Icons.person,
-                                    color: Color(0xFF3182CE), size: 13),
-                                SizedBox(width: 4),
-                                Flexible(
-                                  child: Text(
-                                    'Trabajadores',
-                                    style: TextStyle(
-                                      color: Color(0xFF3182CE),
-                                      fontSize: 11,
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                    textAlign: TextAlign.center,
-                                    overflow: TextOverflow.ellipsis,
-                                    maxLines: 1,
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 8),
-                            const Text(
-                              '32',
-                              style: TextStyle(
-                                fontSize: 28,
-                                fontWeight: FontWeight.bold,
-                                color: Color(0xFF2D3748),
-                              ),
-                            ),
-                          ],
-                        ),
+                        iconColor: const Color(0xFF3182CE),
                       ),
                     ),
-                  ),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: SizedBox(
-                    height: 100, // Altura fija para todas las tarjetas
-                    child: Neumorphic(
-                      style: NeumorphicStyle(
-                        depth: 4,
-                        intensity: 0.8,
-                        lightSource: LightSource.topLeft,
-                        boxShape: NeumorphicBoxShape.roundRect(
-                            BorderRadius.circular(12)),
+                    const SizedBox(width: 12),
+                    // Total de asignaciones
+                    Expanded(
+                      child: _buildStatCard(
+                        context,
+                        icon: Icons.assignment_turned_in,
+                        label: 'Activas',
+                        value: '$activeAssignments',
                         color: const Color(0xFFE6FFED),
-                      ),
-                      child: Padding(
-                        padding: const EdgeInsets.all(8.0),
-                        child: Column(
-                          mainAxisAlignment:
-                              MainAxisAlignment.center, // Centrar verticalmente
-                          crossAxisAlignment: CrossAxisAlignment
-                              .center, // Centrar horizontalmente
-                          children: [
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: const [
-                                Icon(Icons.assignment,
-                                    color: Color(0xFF2F855A), size: 13),
-                                SizedBox(width: 4),
-                                Flexible(
-                                  child: Text(
-                                    'Operaciones',
-                                    style: TextStyle(
-                                      color: Color(0xFF2F855A),
-                                      fontSize: 11,
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                    textAlign: TextAlign.center,
-                                    overflow: TextOverflow.ellipsis,
-                                    maxLines: 1,
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 8),
-                            const Text(
-                              '18',
-                              style: TextStyle(
-                                fontSize: 28,
-                                fontWeight: FontWeight.bold,
-                                color: Color(0xFF2D3748),
-                              ),
-                            ),
-                          ],
-                        ),
+                        iconColor: const Color(0xFF2F855A),
                       ),
                     ),
-                  ),
+                  ],
                 ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: SizedBox(
-                    height: 100, // Altura fija para todas las tarjetas
-                    child: Neumorphic(
-                      style: NeumorphicStyle(
-                        depth: 4,
-                        intensity: 0.8,
-                        lightSource: LightSource.topLeft,
-                        boxShape: NeumorphicBoxShape.roundRect(
-                            BorderRadius.circular(12)),
+
+                const SizedBox(height: 12),
+
+                // Segunda fila del grid
+                Row(
+                  children: [
+                    // Operaciones activas
+                    Expanded(
+                      child: _buildStatCard(
+                        context,
+                        icon: Icons.pending_actions,
+                        label: 'Pendientes',
+                        value: '$pendingAssignments',
                         color: const Color(0xFFFFFAE6),
-                      ),
-                      child: Padding(
-                        padding: const EdgeInsets.all(8.0),
-                        child: Column(
-                          mainAxisAlignment:
-                              MainAxisAlignment.center, // Centrar verticalmente
-                          crossAxisAlignment: CrossAxisAlignment
-                              .center, // Centrar horizontalmente
-                          children: [
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: const [
-                                Icon(Icons.pending_actions,
-                                    color: Color(0xFFDD6B20), size: 13),
-                                SizedBox(width: 4),
-                                Flexible(
-                                  child: Text(
-                                    'Pendientes',
-                                    style: TextStyle(
-                                      color: Color(0xFFDD6B20),
-                                      fontSize: 11,
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                    textAlign: TextAlign.center,
-                                    overflow: TextOverflow.ellipsis,
-                                    maxLines: 1,
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 8),
-                            const Text(
-                              '7',
-                              style: TextStyle(
-                                fontSize: 28,
-                                fontWeight: FontWeight.bold,
-                                color: Color(0xFF2D3748),
-                              ),
-                            ),
-                          ],
-                        ),
+                        iconColor: const Color(0xFFDD6B20),
                       ),
                     ),
-                  ),
+                    const SizedBox(width: 12),
+                    // Operaciones pendientes
+                    Expanded(
+                      child: _buildStatCard(
+                        context,
+                        icon: Icons.check_circle,
+                        label: 'Completadas',
+                        value: '$completedAssignments',
+                        color: const Color(0xFFEDFDFD),
+                        iconColor: const Color(0xFF38B2AC),
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),
-          ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildStatCard(
+    BuildContext context, {
+    required IconData icon,
+    required String label,
+    required String value,
+    required Color color,
+    required Color iconColor,
+  }) {
+    return SizedBox(
+      height: 80, // Altura reducida para que quepa mejor en el grid
+      child: Neumorphic(
+        style: NeumorphicStyle(
+          depth: 3,
+          intensity: 0.6,
+          lightSource: LightSource.topLeft,
+          boxShape: NeumorphicBoxShape.roundRect(BorderRadius.circular(12)),
+          color: color,
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(8.0),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(icon, color: iconColor, size: 12),
+                  const SizedBox(width: 4),
+                  Flexible(
+                    child: Text(
+                      label,
+                      style: TextStyle(
+                        color: iconColor,
+                        fontSize: 10,
+                        fontWeight: FontWeight.w600,
+                      ),
+                      textAlign: TextAlign.center,
+                      overflow: TextOverflow.ellipsis,
+                      maxLines: 1,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 6),
+              Text(
+                value,
+                style: const TextStyle(
+                  fontSize: 22, // Ligeramente más pequeño para ajustar mejor
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFF2D3748),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

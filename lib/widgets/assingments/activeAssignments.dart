@@ -97,115 +97,184 @@ class ActiveAssignmentsView extends StatelessWidget {
       AssignmentsProvider provider) {
     return Neumorphic(
       style: NeumorphicStyle(
-        depth: 3,
-        intensity: 0.7,
-        boxShape: NeumorphicBoxShape.roundRect(BorderRadius.circular(12)),
+        depth: 4,
+        intensity: 0.5,
+        color: Colors.white,
+        boxShape: NeumorphicBoxShape.roundRect(BorderRadius.circular(16)),
+        lightSource: LightSource.topLeft,
+        shadowDarkColorEmboss: Colors.grey.withOpacity(0.2),
+        shadowLightColorEmboss: Colors.white,
       ),
       child: InkWell(
         onTap: () => _showAssignmentDetails(context, assignment),
+        borderRadius: BorderRadius.circular(16),
         child: Container(
-          padding: const EdgeInsets.all(12),
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+          decoration: BoxDecoration(
+            border: Border(
+              left: BorderSide(
+                color: const Color(0xFF3182CE),
+                width: 4,
+              ),
+            ),
+          ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               // Status indicator
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF3182CE).withOpacity(0.2),
-                  borderRadius: BorderRadius.circular(12),
+                  color: const Color(0xFF3182CE).withOpacity(0.15),
+                  borderRadius: BorderRadius.circular(20),
                 ),
-                child: const Text(
-                  'EN PROCESO',
-                  style: TextStyle(
-                    color: Color(0xFF3182CE),
-                    fontWeight: FontWeight.w500,
-                    fontSize: 10,
-                  ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      width: 6,
+                      height: 6,
+                      decoration: const BoxDecoration(
+                        color: Color(0xFF3182CE),
+                        shape: BoxShape.circle,
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                    const Text(
+                      'EN PROCESO',
+                      style: TextStyle(
+                        color: Color(0xFF3182CE),
+                        fontWeight: FontWeight.w600,
+                        fontSize: 10,
+                        letterSpacing: 0.5,
+                      ),
+                    ),
+                  ],
                 ),
               ),
               const SizedBox(height: 8),
 
-              // Task name
-              Text(
-                assignment.task,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                  color: Color(0xFF2D3748),
-                ),
-              ),
-              const SizedBox(height: 6),
-
-              // Area
-              Text(
-                assignment.area,
-                style: const TextStyle(
-                  fontSize: 14,
-                  color: Color(0xFF718096),
-                ),
-              ),
-
-              const Spacer(),
-              const Divider(),
-
-              // Date and workers
-              Row(
-                children: [
-                  Icon(
-                    Icons.calendar_today_outlined,
-                    size: 12,
-                    color: Colors.grey[600],
-                  ),
-                  const SizedBox(width: 4),
-                  Text(
-                    DateFormat('dd/MM/yyyy').format(assignment.date),
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: Colors.grey[600],
+              // Task name - Usando Expanded para mejor adaptación
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      assignment.task,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: Color(0xFF2D3748),
+                      ),
                     ),
-                  ),
-                ],
+                    const SizedBox(height: 4),
+
+                    // Area with icon
+                    Row(
+                      children: [
+                        const Icon(
+                          Icons.place_outlined,
+                          size: 14,
+                          color: Color(0xFF718096),
+                        ),
+                        const SizedBox(width: 4),
+                        Flexible(
+                          child: Text(
+                            assignment.area,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              fontSize: 13,
+                              color: Color(0xFF718096),
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
               ),
-              const SizedBox(height: 4),
+
+              // Elegant separator
+              Container(
+                height: 1,
+                color: const Color(0xFFEDF2F7),
+                margin: const EdgeInsets.only(bottom: 6),
+              ),
+
+              // Info footer
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  // Worker count
+                  // Fecha - más compacta
                   Row(
                     children: [
                       Icon(
-                        Icons.people_outline,
-                        size: 12,
-                        color: Colors.grey[600],
+                        Icons.calendar_today_outlined,
+                        size: 10,
+                        color: const Color(0xFF718096).withOpacity(0.8),
                       ),
-                      const SizedBox(width: 4),
+                      const SizedBox(width: 3),
                       Text(
-                        "${assignment.workers.length} trabajador${assignment.workers.length > 1 ? 'es' : ''}",
+                        DateFormat('dd/MM/yy').format(assignment.date),
                         style: TextStyle(
-                          fontSize: 12,
-                          color: Colors.grey[600],
+                          fontSize: 10,
+                          color: const Color(0xFF718096).withOpacity(0.8),
+                          fontWeight: FontWeight.w500,
                         ),
                       ),
                     ],
                   ),
 
-                  // Complete button
-                  InkWell(
-                    onTap: () =>
-                        _showCompletionDialog(context, assignment, provider),
-                    child: Container(
-                      padding: const EdgeInsets.all(6),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF38A169).withOpacity(0.2),
-                        shape: BoxShape.circle,
+                  // Worker count - más compacto
+                  Row(
+                    children: [
+                      Icon(
+                        Icons.people_outline,
+                        size: 10,
+                        color: const Color(0xFF718096).withOpacity(0.8),
                       ),
-                      child: const Icon(
-                        Icons.check,
-                        size: 12,
-                        color: Color(0xFF38A169),
+                      const SizedBox(width: 3),
+                      Text(
+                        "${assignment.workers.length}",
+                        style: TextStyle(
+                          fontSize: 10,
+                          color: const Color(0xFF718096).withOpacity(0.8),
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                  ),
+
+                  // Complete button - elegante pero compacto
+                  Container(
+                    height: 24,
+                    width: 24,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF38A169),
+                      shape: BoxShape.circle,
+                      boxShadow: [
+                        BoxShadow(
+                          color: const Color(0xFF38A169).withOpacity(0.2),
+                          blurRadius: 4,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    child: Material(
+                      color: Colors.transparent,
+                      child: InkWell(
+                        onTap: () => _showCompletionDialog(
+                            context, assignment, provider),
+                        customBorder: const CircleBorder(),
+                        child: const Icon(
+                          Icons.check,
+                          size: 14,
+                          color: Colors.white,
+                        ),
                       ),
                     ),
                   ),
@@ -413,6 +482,8 @@ class ActiveAssignmentsView extends StatelessWidget {
               ),
               onPressed: () {
                 provider.updateAssignmentStatus(assignment.id, 'completed');
+                provider.updateAssignmentEndTime(
+                    assignment.id, DateFormat('HH:mm').format(DateTime.now()));
                 Navigator.pop(context);
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(

@@ -5,6 +5,7 @@ class Assignment {
   final String task;
   final DateTime date;
   final String time;
+  String endTime;
   String status; // 'pending', 'in_progress', 'completed'
   DateTime? completedDate;
 
@@ -15,6 +16,7 @@ class Assignment {
     required this.task,
     required this.date,
     required this.time,
+    required this.endTime,
     this.status = 'pending',
     this.completedDate,
   });
@@ -28,6 +30,7 @@ class Assignment {
       'date': date.toIso8601String(),
       'time': time,
       'status': status,
+      'endTime': endTime,
       'completedDate': completedDate?.toIso8601String(),
     };
   }
@@ -41,6 +44,7 @@ class Assignment {
       date: DateTime.parse(json['date']),
       time: json['time'],
       status: json['status'],
+      endTime: json['endTime'],
       completedDate: json['completedDate'] != null
           ? DateTime.parse(json['completedDate'])
           : null,
