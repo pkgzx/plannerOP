@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_neumorphic_plus/flutter_neumorphic.dart';
 import 'package:intl/intl.dart';
+import 'package:plannerop/core/model/worker.dart';
 import 'package:plannerop/store/assignments.dart';
 import 'package:provider/provider.dart';
 import './selected_worker_list.dart';
@@ -20,60 +21,46 @@ class _AddAssignmentDialogState extends State<AddAssignmentDialog> {
   final _taskController = TextEditingController();
 
   // Lista de trabajadores seleccionados
-  List<Map<String, dynamic>> _selectedWorkers = [];
+  List<Worker> _selectedWorkers = [];
 
   // Lista completa de trabajadores (datos de ejemplo)
-  final List<Map<String, dynamic>> _allWorkers = [
-    {"id": "T001", "name": "Carlos Méndez", "area": "CAFE", "rating": 4.5},
-    {
-      "id": "T002",
-      "name": "Ana Gutiérrez",
-      "area": "OPERADORES MC",
-      "rating": 4.8
-    },
-    {
-      "id": "T003",
-      "name": "Roberto Sánchez",
-      "area": "CARGA GENERAL",
-      "rating": 4.1
-    },
-    {
-      "id": "T004",
-      "name": "Laura Torres",
-      "area": "CARGA PELIGROSA",
-      "rating": 4.9
-    },
-    {
-      "id": "T005",
-      "name": "Miguel Díaz",
-      "area": "CARGA REFRIGERADA",
-      "rating": 3.9
-    },
-    {"id": "T006", "name": "Sofía Vega", "area": "CARGA SECA", "rating": 4.7},
-    {
-      "id": "T007",
-      "name": "Juan Morales",
-      "area": "CARGA GENERAL",
-      "rating": 4.2
-    },
-    {
-      "id": "T008",
-      "name": "Elena Campos",
-      "area": "CARGA PELIGROSA",
-      "rating": 4.6
-    },
-    {
-      "id": "T009",
-      "name": "David Martínez",
-      "area": "CARGA REFRIGERADA",
-      "rating": 4.0
-    },
-    {
-      "id": "T010",
-      "name": "Patricia Ruiz",
-      "area": "CARGA SECA",
-      "rating": 4.3
-    },
+  final List<Worker> _allWorkers = [
+    Worker(
+      name: 'Juan Pérez',
+      phone: '1234567890',
+      document: '12345678',
+      area: 'CARGA GENERAL',
+      status: WorkerStatus.available,
+      startDate: DateTime(2021, 10, 1),
+      endDate: DateTime(2021, 10, 31),
+    ),
+    Worker(
+      name: 'María González',
+      phone: '1234567890',
+      document: '12345678',
+      area: 'CARGA GENERAL',
+      status: WorkerStatus.available,
+      startDate: DateTime(2021, 10, 1),
+      endDate: DateTime(2021, 10, 31),
+    ),
+    Worker(
+      name: 'Pedro Rodríguez',
+      phone: '1234567890',
+      document: '12345678',
+      area: 'CARGA GENERAL',
+      status: WorkerStatus.available,
+      startDate: DateTime(2021, 10, 1),
+      endDate: DateTime(2021, 10, 31),
+    ),
+    Worker(
+      name: 'Ana López',
+      phone: '1234567890',
+      document: '12345678',
+      area: 'CARGA GENERAL',
+      status: WorkerStatus.available,
+      startDate: DateTime(2021, 10, 1),
+      endDate: DateTime(2021, 10, 31),
+    ),
   ];
 
   final _area = [
@@ -159,7 +146,7 @@ class _AddAssignmentDialogState extends State<AddAssignmentDialog> {
   }
 
   // Método para actualizar la lista de trabajadores seleccionados
-  void _updateSelectedWorkers(List<Map<String, dynamic>> workers) {
+  void _updateSelectedWorkers(List<Worker> workers) {
     setState(() {
       _selectedWorkers = workers;
     });
@@ -723,7 +710,7 @@ class _AddAssignmentDialogState extends State<AddAssignmentDialog> {
                 if (_selectedWorkers.length <= 3) ...[
                   const SizedBox(height: 8),
                   Text(
-                    'Trabajadores: ${_selectedWorkers.map((w) => w['name']).join(', ')}',
+                    'Trabajadores: ${_selectedWorkers.map((w) => w.name).join(', ')}',
                     textAlign: TextAlign.center,
                     style: const TextStyle(
                       color: Color(0xFF718096),

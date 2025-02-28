@@ -20,7 +20,7 @@ class Cifras extends StatelessWidget {
         final Set<String> uniqueWorkers = {};
         for (var assignment in provider.assignments) {
           for (var worker in assignment.workers) {
-            uniqueWorkers.add(worker['name'] as String);
+            uniqueWorkers.add(worker.name);
           }
         }
         final int totalWorkers = uniqueWorkers.length;

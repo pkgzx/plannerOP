@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_neumorphic_plus/flutter_neumorphic.dart';
 import 'package:intl/intl.dart';
+import 'package:plannerop/core/model/assignment.dart';
+import 'package:plannerop/core/model/user.dart';
+import 'package:plannerop/core/model/worker.dart';
 
 class ReportDataTable extends StatefulWidget {
   final String periodName;
@@ -27,128 +30,44 @@ class _ReportDataTableState extends State<ReportDataTable> {
   int _sortColumnIndex = 0;
 
   // Datos de ejemplo para la tabla con horas de ingreso y finalización
-  final List<Map<String, dynamic>> _allData = [
-    {
-      'id': '001',
-      'worker': 'Carlos Méndez',
-      'area': 'CARGA GENERAL',
-      'task': 'Mantenimiento preventivo',
-      'date': DateTime.now().subtract(const Duration(days: 5)),
-      'status': 'Completada',
-      'startTime': '08:00',
-      'endTime': '16:30',
-      'supervisor': 'Juan Pérez',
-    },
-    {
-      'id': '002',
-      'worker': 'Ana Gutiérrez',
-      'area': 'CARGA REFRIGERADA',
-      'task': 'Inspección de equipos',
-      'date': DateTime.now().subtract(const Duration(days: 3)),
-      'status': 'Completada',
-      'startTime': '09:00',
-      'endTime': '15:00',
-      'supervisor': 'María López',
-    },
-    {
-      'id': '003',
-      'worker': 'Roberto Sánchez',
-      'area': 'CARGA GENERAL',
-      'task': 'Reparación de instalación',
-      'date': DateTime.now().subtract(const Duration(days: 4)),
-      'status': 'Completada',
-      'startTime': '07:30',
-      'endTime': '16:30',
-      'supervisor': 'Juan Pérez',
-    },
-    {
-      'id': '004',
-      'worker': 'Laura Torres',
-      'area': 'CARGA REFRIGERADA',
-      'task': 'Optimización de procesos',
-      'date': DateTime.now().subtract(const Duration(days: 7)),
-      'status': 'Completada',
-      'startTime': '10:00',
-      'endTime': '15:30',
-      'supervisor': 'Carlos Rodríguez',
-    },
-    {
-      'id': '005',
-      'worker': 'Miguel Díaz',
-      'area': 'CARGA GENERAL',
-      'task': 'Actualización de sistemas',
-      'date': DateTime.now().subtract(const Duration(days: 2)),
-      'status': 'En progreso',
-      'startTime': '08:30',
-      'endTime': null,
-      'supervisor': 'Ana Martínez',
-    },
-    {
-      'id': '006',
-      'worker': 'Sofía Vega',
-      'area': 'CARGA REFRIGERADA',
-      'task': 'Auditoría de procesos',
-      'date': DateTime.now().subtract(const Duration(days: 6)),
-      'status': 'Completada',
-      'startTime': '09:15',
-      'endTime': '16:15',
-      'supervisor': 'Carlos Rodríguez',
-    },
-    {
-      'id': '007',
-      'worker': 'Juan Morales',
-      'area': 'CARGA GENERAL',
-      'task': 'Revisión de protocolos',
-      'date': DateTime.now().subtract(const Duration(days: 8)),
-      'status': 'Completada',
-      'startTime': '07:45',
-      'endTime': '14:15',
-      'supervisor': 'Juan Pérez',
-    },
-    {
-      'id': '008',
-      'worker': 'Patricia Herrera',
-      'area': 'CARGA REFRIGERADA',
-      'task': 'Implementación de red',
-      'date': DateTime.now().subtract(const Duration(days: 9)),
-      'status': 'Completada',
-      'startTime': '08:00',
-      'endTime': '18:00',
-      'supervisor': 'María López',
-    },
-    {
-      'id': '009',
-      'worker': 'Eduardo Flores',
-      'area': 'CAFÉ',
-      'task': 'Clasificación de granos',
-      'date': DateTime.now().subtract(const Duration(days: 1)),
-      'status': 'En progreso',
-      'startTime': '07:00',
-      'endTime': null,
-      'supervisor': 'Ana Martínez',
-    },
-    {
-      'id': '010',
-      'worker': 'Diana Rojas',
-      'area': 'ADMINISTRATIVA',
-      'task': 'Preparación de informes',
-      'date': DateTime.now().subtract(const Duration(days: 10)),
-      'status': 'Completada',
-      'startTime': '09:00',
-      'endTime': '17:00',
-      'supervisor': 'Carlos Rodríguez',
-    },
+  final List<Assignment> _allData = [
+    Assignment(
+      id: "1",
+      workers: [
+        Worker(
+            name: "Juan Pérez",
+            document: "12345678",
+            phone: "123456789",
+            area: "CARGA GENERAL",
+            status: WorkerStatus.assigned,
+            startDate: DateTime(2021, 10, 1),
+            endDate: DateTime(2021, 10, 31))
+      ],
+      area: "CARGA GENERAL",
+      task: "Carga de mercancía",
+      status: "Pendiente",
+      date: DateTime(2021, 10, 1),
+      time: "8:00 AM",
+      endTime: "",
+      completedDate: null,
+      supervisor: User(
+        id: "1",
+        name: "María González",
+        dni: "87654321",
+        phone: "987654321",
+      ),
+    )
   ];
 
-  List<Map<String, dynamic>> get _filteredData {
+  List<Assignment> get _filteredData {
     final filtered = _allData.where((data) {
       // Filtrar por área si es necesario
-      if (widget.area != 'Todas' && data['area'] != widget.area) {
+      if (widget.area != 'Todas' && data.area != widget.area) {
         return false;
       }
 
       // Filtrar por fecha
-      final date = data['date'] as DateTime;
+      final date = data.date as DateTime;
       if (date.isBefore(widget.startDate) || date.isAfter(widget.endDate)) {
         return false;
       }
@@ -156,10 +75,10 @@ class _ReportDataTableState extends State<ReportDataTable> {
       // Filtrar por búsqueda
       if (_searchQuery.isNotEmpty) {
         final searchLower = _searchQuery.toLowerCase();
-        return data['worker'].toLowerCase().contains(searchLower) ||
-            data['task'].toLowerCase().contains(searchLower) ||
-            data['id'].toLowerCase().contains(searchLower) ||
-            data['supervisor'].toLowerCase().contains(searchLower);
+        return data.workers[0].name.toLowerCase().contains(searchLower) ||
+            data.task.toLowerCase().contains(searchLower) ||
+            data.id.toLowerCase().contains(searchLower);
+        // data['supervisor'].toLowerCase().contains(searchLower);
       }
 
       return true;
@@ -170,41 +89,42 @@ class _ReportDataTableState extends State<ReportDataTable> {
       var comparison = 0;
       switch (_sortColumnIndex) {
         case 0: // ID
-          comparison = a['id'].compareTo(b['id']);
+          comparison = a.id.compareTo(b.id);
           break;
         case 1: // Trabajador
-          comparison = a['worker'].compareTo(b['worker']);
+          comparison = a.workers[0].name.compareTo(b.workers[0].name);
           break;
         case 2: // Área
-          comparison = a['area'].compareTo(b['area']);
+          comparison = a.area.compareTo(b.area);
           break;
         case 3: // Tarea
-          comparison = a['task'].compareTo(b['task']);
+          comparison = a.task.compareTo(b.task);
           break;
         case 4: // Fecha
-          comparison = (a['date'] as DateTime).compareTo(b['date'] as DateTime);
+          comparison = a.date.compareTo(b.date);
           break;
         case 5: // Estado
-          comparison = a['status'].compareTo(b['status']);
+          comparison = a.status.compareTo(b.status);
           break;
         case 6: // Hora de ingreso
-          comparison = a['startTime'].compareTo(b['startTime']);
+          comparison = a.time.compareTo(b.time);
           break;
         case 7: // Hora de finalización (cuidado con null values)
-          final aEndTime = a['endTime'];
-          final bEndTime = b['endTime'];
-          if (aEndTime == null && bEndTime == null) {
+          final aEndTime = a.endTime;
+          final bEndTime = b.endTime;
+          if (aEndTime.isEmpty && bEndTime.isEmpty) {
             comparison = 0;
-          } else if (aEndTime == null) {
-            comparison = 1; // Null va después
-          } else if (bEndTime == null) {
-            comparison = -1; // Null va después
+          } else if (aEndTime.isEmpty) {
+            comparison = 1; // Empty va después
+          } else if (bEndTime.isEmpty) {
+            comparison = -1; // Empty va después
           } else {
             comparison = aEndTime.compareTo(bEndTime);
           }
           break;
         case 8: // Supervisor
-          comparison = a['supervisor'].compareTo(b['supervisor']);
+          // Add supervisor field to Assignment or handle differently
+          comparison = 0; // placeholder until supervisor field is added
           break;
       }
       return _sortAscending ? comparison : -comparison;
@@ -301,18 +221,21 @@ class _ReportDataTableState extends State<ReportDataTable> {
                       rows: _filteredData.map((data) {
                         return DataRow(
                           cells: [
-                            DataCell(Text(data['id'])),
-                            DataCell(Text(data['worker'])),
-                            DataCell(Text(data['area'])),
-                            DataCell(Text(data['task'])),
-                            DataCell(Text(
-                                DateFormat('dd/MM/yy').format(data['date']))),
-                            DataCell(_buildStatusWidget(data['status'])),
-                            DataCell(Text(data['startTime'])),
-                            DataCell(data['endTime'] != null
-                                ? Text(data['endTime'])
+                            DataCell(Text(data.id)),
+                            DataCell(Text(data.workers.isEmpty
+                                ? ''
+                                : data.workers[0].name)),
+                            DataCell(Text(data.area)),
+                            DataCell(Text(data.task)),
+                            DataCell(
+                                Text(DateFormat('dd/MM/yy').format(data.date))),
+                            DataCell(_buildStatusWidget(data.status)),
+                            DataCell(Text(data.time)),
+                            DataCell(data.endTime.isNotEmpty
+                                ? Text(data.endTime)
                                 : const Text('-')),
-                            DataCell(Text(data['supervisor'])),
+                            DataCell(Text(data.supervisor
+                                .name)), // Placeholder for supervisor
                           ],
                         );
                       }).toList(),

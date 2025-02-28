@@ -1,6 +1,8 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:plannerop/core/model/assignment.dart';
+import 'package:plannerop/core/model/user.dart';
+import 'package:plannerop/core/model/worker.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:uuid/uuid.dart';
 
@@ -57,7 +59,7 @@ class AssignmentsProvider extends ChangeNotifier {
   }
 
   Future<void> addAssignment({
-    required List<Map<String, dynamic>> workers,
+    required List<Worker> workers,
     required String area,
     required String task,
     required DateTime date,
@@ -65,14 +67,19 @@ class AssignmentsProvider extends ChangeNotifier {
   }) async {
     final uuid = const Uuid();
     final newAssignment = Assignment(
-      id: uuid.v4(),
-      workers: workers,
-      area: area,
-      task: task,
-      date: date,
-      time: time,
-      endTime: 'No ha finalizado',
-    );
+        id: uuid.v4(),
+        workers: workers,
+        area: area,
+        task: task,
+        date: date,
+        time: time,
+        endTime: 'No ha finalizado',
+        supervisor: User(
+          id: '1',
+          name: 'Supervisor',
+          dni: '12345678',
+          phone: '555-1234',
+        ));
 
     _assignments.add(newAssignment);
     await _saveAssignments();

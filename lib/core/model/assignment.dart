@@ -1,10 +1,14 @@
+import 'package:plannerop/core/model/user.dart';
+import 'package:plannerop/core/model/worker.dart';
+
 class Assignment {
   final String id;
-  final List<Map<String, dynamic>> workers;
+  final List<Worker> workers;
   final String area;
   final String task;
   final DateTime date;
   final String time;
+  final User supervisor;
   String endTime;
   String status; // 'pending', 'in_progress', 'completed'
   DateTime? completedDate;
@@ -17,6 +21,7 @@ class Assignment {
     required this.date,
     required this.time,
     required this.endTime,
+    required this.supervisor,
     this.status = 'pending',
     this.completedDate,
   });
@@ -38,12 +43,13 @@ class Assignment {
   factory Assignment.fromJson(Map<String, dynamic> json) {
     return Assignment(
       id: json['id'],
-      workers: List<Map<String, dynamic>>.from(json['workers']),
+      workers: List<Worker>.from(json['workers']),
       area: json['area'],
       task: json['task'],
       date: DateTime.parse(json['date']),
       time: json['time'],
       status: json['status'],
+      supervisor: User.fromJson(json['supervisor']),
       endTime: json['endTime'],
       completedDate: json['completedDate'] != null
           ? DateTime.parse(json['completedDate'])

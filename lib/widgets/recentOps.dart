@@ -346,7 +346,7 @@ class RecentOps extends StatelessWidget {
                               ),
                               const SizedBox(width: 8),
                               Text(
-                                worker['name'] as String,
+                                worker.name,
                                 style: const TextStyle(
                                   color: Color(0xFF4A5568),
                                 ),

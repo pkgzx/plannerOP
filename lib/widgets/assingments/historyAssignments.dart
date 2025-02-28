@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_neumorphic_plus/flutter_neumorphic.dart';
 import 'package:plannerop/core/model/assignment.dart';
+import 'package:plannerop/core/model/worker.dart';
 import 'package:plannerop/widgets/assingments/emptyState.dart';
 import 'package:plannerop/store/assignments.dart';
 import 'package:provider/provider.dart';
@@ -49,7 +50,7 @@ class _HistoryAssignmentsViewState extends State<HistoryAssignmentsView> {
           assignment.area
               .toLowerCase()
               .contains(widget.searchQuery.toLowerCase()) ||
-          assignment.workers.any((worker) => worker['name']
+          assignment.workers.any((worker) => worker.name
               .toString()
               .toLowerCase()
               .contains(widget.searchQuery.toLowerCase()));
@@ -715,10 +716,10 @@ class _HistoryAssignmentsViewState extends State<HistoryAssignmentsView> {
                             CircleAvatar(
                               radius: 8,
                               backgroundColor: Colors.primaries[
-                                  worker['name'].hashCode %
+                                  worker.name.hashCode %
                                       Colors.primaries.length],
                               child: Text(
-                                worker['name']
+                                worker.name
                                     .toString()
                                     .substring(0, 1)
                                     .toUpperCase(),
@@ -731,7 +732,7 @@ class _HistoryAssignmentsViewState extends State<HistoryAssignmentsView> {
                             ),
                             const SizedBox(width: 4),
                             Text(
-                              worker['name'],
+                              worker.name,
                               style: const TextStyle(
                                 fontSize: 11,
                                 fontWeight: FontWeight.w500,
@@ -932,7 +933,7 @@ class _HistoryAssignmentsViewState extends State<HistoryAssignmentsView> {
     );
   }
 
-  Widget _buildWorkerItem(Map<String, dynamic> worker) {
+  Widget _buildWorkerItem(Worker worker) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 16),
       child: Container(
@@ -947,10 +948,10 @@ class _HistoryAssignmentsViewState extends State<HistoryAssignmentsView> {
             // Avatar
             CircleAvatar(
               backgroundColor: Colors
-                  .primaries[worker['name'].hashCode % Colors.primaries.length],
+                  .primaries[worker.name.hashCode % Colors.primaries.length],
               radius: 20,
               child: Text(
-                worker['name'].toString().substring(0, 1).toUpperCase(),
+                worker.name.toString().substring(0, 1).toUpperCase(),
                 style: const TextStyle(
                   color: Colors.white,
                   fontWeight: FontWeight.bold,
@@ -963,53 +964,24 @@ class _HistoryAssignmentsViewState extends State<HistoryAssignmentsView> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    worker['name'].toString(),
+                    worker.name.toString(),
                     style: const TextStyle(
                       fontSize: 14,
-                      fontWeight: FontWeight.bold,
+                      fontWeight: FontWeight.w600,
                       color: Color(0xFF2D3748),
                     ),
                   ),
-                  if (worker.containsKey('specialty') &&
-                      worker['specialty'] != null) ...[
-                    const SizedBox(height: 4),
+                  if (worker.area.isNotEmpty)
                     Text(
-                      worker['specialty'].toString(),
+                      worker.area.toString(),
                       style: const TextStyle(
                         fontSize: 12,
                         color: Color(0xFF718096),
                       ),
                     ),
-                  ],
                 ],
               ),
             ),
-            if (worker.containsKey('rating') && worker['rating'] != null)
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFF6E05E).withOpacity(0.2),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Row(
-                  children: [
-                    const Icon(
-                      Icons.star,
-                      size: 14,
-                      color: Color(0xFFF6E05E),
-                    ),
-                    const SizedBox(width: 4),
-                    Text(
-                      worker['rating'].toString(),
-                      style: const TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.bold,
-                        color: Color(0xFFD69E2E),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
           ],
         ),
       ),

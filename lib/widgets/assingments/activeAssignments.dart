@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_neumorphic_plus/flutter_neumorphic.dart';
 import 'package:intl/intl.dart';
+import 'package:plannerop/core/model/worker.dart';
 import 'package:provider/provider.dart';
 import 'package:plannerop/store/assignments.dart';
 import 'package:plannerop/widgets/assingments/emptyState.dart';
@@ -33,11 +34,11 @@ class ActiveAssignmentsView extends StatelessWidget {
               assignment.area.toLowerCase().contains(searchQuery.toLowerCase());
           final bool matchesTask =
               assignment.task.toLowerCase().contains(searchQuery.toLowerCase());
-          final bool matchesWorker = assignment.workers.any((worker) =>
-              worker['name']
-                  .toString()
-                  .toLowerCase()
-                  .contains(searchQuery.toLowerCase()));
+          final bool matchesWorker = assignment.workers.any((worker) => worker
+              .name
+              .toString()
+              .toLowerCase()
+              .contains(searchQuery.toLowerCase()));
 
           return matchesArea || matchesTask || matchesWorker;
         }).toList();
@@ -553,17 +554,17 @@ class ActiveAssignmentsView extends StatelessWidget {
     );
   }
 
-  Widget _buildWorkerItem(Map<String, dynamic> worker) {
+  Widget _buildWorkerItem(Worker worker) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
       child: Row(
         children: [
           CircleAvatar(
             backgroundColor: Colors
-                .primaries[worker['name'].hashCode % Colors.primaries.length],
+                .primaries[worker.name.hashCode % Colors.primaries.length],
             radius: 18,
             child: Text(
-              worker['name'].toString().substring(0, 1).toUpperCase(),
+              worker.name.toString().substring(0, 1).toUpperCase(),
               style: const TextStyle(
                 color: Colors.white,
                 fontWeight: FontWeight.bold,
@@ -576,17 +577,16 @@ class ActiveAssignmentsView extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  worker['name'].toString(),
+                  worker.name.toString(),
                   style: const TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w600,
                     color: Color(0xFF2D3748),
                   ),
                 ),
-                if (worker.containsKey('specialty') &&
-                    worker['specialty'] != null)
+                if (worker.area.isNotEmpty)
                   Text(
-                    worker['specialty'].toString(),
+                    worker.area.toString(),
                     style: const TextStyle(
                       fontSize: 12,
                       color: Color(0xFF718096),
@@ -595,25 +595,6 @@ class ActiveAssignmentsView extends StatelessWidget {
               ],
             ),
           ),
-          if (worker.containsKey('rating') && worker['rating'] != null)
-            Row(
-              children: [
-                const Icon(
-                  Icons.star,
-                  size: 14,
-                  color: Color(0xFFF6E05E),
-                ),
-                const SizedBox(width: 2),
-                Text(
-                  worker['rating'].toString(),
-                  style: const TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w500,
-                    color: Color(0xFF718096),
-                  ),
-                ),
-              ],
-            ),
         ],
       ),
     );

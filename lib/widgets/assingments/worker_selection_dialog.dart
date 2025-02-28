@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_neumorphic_plus/flutter_neumorphic.dart';
+import 'package:plannerop/core/model/worker.dart';
 
 class WorkerSelectionDialog extends StatefulWidget {
   // Lista de todos los trabajadores disponibles
-  final List<Map<String, dynamic>> availableWorkers;
+  final List<Worker> availableWorkers;
   // Lista de trabajadores ya seleccionados (para mostrarlos como seleccionados)
-  final List<Map<String, dynamic>> selectedWorkers;
+  final List<Worker> selectedWorkers;
 
   const WorkerSelectionDialog({
     Key? key,
@@ -22,10 +23,10 @@ class _WorkerSelectionDialogState extends State<WorkerSelectionDialog> {
   final TextEditingController _searchController = TextEditingController();
 
   // Lista de trabajadores filtrados
-  List<Map<String, dynamic>> _filteredWorkers = [];
+  List<Worker> _filteredWorkers = [];
 
   // Lista temporal de trabajadores seleccionados
-  late List<Map<String, dynamic>> _tempSelectedWorkers;
+  late List<Worker> _tempSelectedWorkers;
 
   // Filtros activos
   String _areaFilter = "Todas";
@@ -65,16 +66,15 @@ class _WorkerSelectionDialogState extends State<WorkerSelectionDialog> {
       _filteredWorkers = widget.availableWorkers.where((worker) {
         // Filtrar por texto de búsqueda (nombre o ID)
         final searchMatch = _searchController.text.isEmpty ||
-            worker["name"]
+            worker.name
                 .toLowerCase()
                 .contains(_searchController.text.toLowerCase()) ||
-            worker["id"]
+            worker.document
                 .toLowerCase()
                 .contains(_searchController.text.toLowerCase());
 
         // Filtrar por área
-        final areaMatch =
-            _areaFilter == "Todas" || worker["area"] == _areaFilter;
+        final areaMatch = _areaFilter == "Todas" || worker.area == _areaFilter;
 
         // Solo incluir si cumple todos los criterios
         return searchMatch && areaMatch;
@@ -83,13 +83,13 @@ class _WorkerSelectionDialogState extends State<WorkerSelectionDialog> {
   }
 
   // Cambiar el estado de selección de un trabajador
-  void _toggleWorkerSelection(Map<String, dynamic> worker) {
+  void _toggleWorkerSelection(Worker worker) {
     setState(() {
       final isSelected = _isWorkerSelected(worker);
 
       if (isSelected) {
         // Eliminar de la selección
-        _tempSelectedWorkers.removeWhere((w) => w["id"] == worker["id"]);
+        _tempSelectedWorkers.removeWhere((w) => w.document == worker.document);
       } else {
         // Añadir a la selección
         _tempSelectedWorkers.add(worker);
@@ -98,8 +98,8 @@ class _WorkerSelectionDialogState extends State<WorkerSelectionDialog> {
   }
 
   // Verificar si un trabajador está seleccionado
-  bool _isWorkerSelected(Map<String, dynamic> worker) {
-    return _tempSelectedWorkers.any((w) => w["id"] == worker["id"]);
+  bool _isWorkerSelected(Worker worker) {
+    return _tempSelectedWorkers.any((w) => w.document == worker.document);
   }
 
   @override
@@ -214,7 +214,7 @@ class _WorkerSelectionDialogState extends State<WorkerSelectionDialog> {
                             leading: CircleAvatar(
                               backgroundColor: _getColorForWorker(worker),
                               child: Text(
-                                worker["name"].substring(0, 1).toUpperCase(),
+                                worker.name.substring(0, 1).toUpperCase(),
                                 style: const TextStyle(
                                   color: Colors.white,
                                   fontWeight: FontWeight.bold,
@@ -222,12 +222,12 @@ class _WorkerSelectionDialogState extends State<WorkerSelectionDialog> {
                               ),
                             ),
                             title: Text(
-                              worker["name"],
+                              worker.name,
                               style:
                                   const TextStyle(fontWeight: FontWeight.w600),
                             ),
                             subtitle: Text(
-                              '${worker["area"]}',
+                              '${worker.area}',
                               style: TextStyle(
                                 color: Colors.grey[600],
                                 fontSize: 12,
@@ -354,7 +354,7 @@ class _WorkerSelectionDialogState extends State<WorkerSelectionDialog> {
   }
 
   // Obtener un color consistente para cada trabajador basado en su ID
-  Color _getColorForWorker(Map<String, dynamic> worker) {
+  Color _getColorForWorker(Worker worker) {
     final List<Color> colors = [
       Colors.blue,
       Colors.red,
@@ -366,7 +366,7 @@ class _WorkerSelectionDialogState extends State<WorkerSelectionDialog> {
     ];
 
     // Convertir el ID a un número para seleccionar un color
-    int colorIndex = worker["id"].hashCode % colors.length;
+    int colorIndex = worker.document.hashCode % colors.length;
     return colors[colorIndex.abs()];
   }
 }

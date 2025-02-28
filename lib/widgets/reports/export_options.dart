@@ -2,6 +2,9 @@ import 'dart:io';
 import 'package:flutter/material.dart' hide Border;
 import 'package:flutter_neumorphic_plus/flutter_neumorphic.dart' hide Border;
 import 'package:intl/intl.dart';
+import 'package:plannerop/core/model/assignment.dart';
+import 'package:plannerop/core/model/user.dart';
+import 'package:plannerop/core/model/worker.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:pdf/pdf.dart';
@@ -17,37 +20,32 @@ class ExportOptions extends StatelessWidget {
   final Function(String) onExport;
 
 // Datos de ejemplo para los informes
-  final List<Map<String, dynamic>> _sampleData = [
-    {
-      'id': '001',
-      'worker': 'Carlos Méndez',
-      'area': 'Zona Norte',
-      'task': 'Mantenimiento preventivo',
-      'date': DateTime.parse("2022-03-01"),
-      'status': 'Completada',
-      'hours': 8.5,
-      'efficiency': 95,
-    },
-    {
-      'id': '002',
-      'worker': 'Ana Gutiérrez',
-      'area': 'Zona Centro',
-      'task': 'Inspección de equipos',
-      'date': DateTime.parse("2022-03-02"),
-      'status': 'Completada',
-      'hours': 6.0,
-      'efficiency': 88,
-    },
-    {
-      'id': '003',
-      'worker': 'Roberto Sánchez',
-      'area': 'Zona Sur',
-      'task': 'Reparación de instalación',
-      'date': DateTime.parse("2022-03-03"),
-      'status': 'En progreso',
-      'hours': 4.0,
-      'efficiency': 0,
-    },
+  final List<Assignment> _sampleData = [
+    Assignment(
+      id: "1",
+      workers: [
+        Worker(
+            name: "Juan Pérez",
+            document: "12345678",
+            phone: "123456789",
+            area: "CARGA GENERAL",
+            status: WorkerStatus.assigned,
+            startDate: DateTime(2021, 10, 1),
+            endDate: DateTime(2021, 10, 31))
+      ],
+      area: "CARGA GENERAL",
+      task: "Carga de mercancía",
+      status: "Pendiente",
+      date: DateTime(2021, 10, 1),
+      time: "8:00 AM",
+      endTime: "",
+      completedDate: null,
+      supervisor: User(
+          id: "1",
+          name: "María Rodríguez",
+          dni: "87654321",
+          phone: "987654321"),
+    )
   ];
 
   ExportOptions({
@@ -212,26 +210,23 @@ class ExportOptions extends StatelessWidget {
                           children: [
                             pw.Padding(
                                 padding: const pw.EdgeInsets.all(5),
-                                child: pw.Text(data['id'].toString())),
+                                child: pw.Text(data.id.toString())),
                             pw.Padding(
                                 padding: const pw.EdgeInsets.all(5),
-                                child: pw.Text(data['worker'])),
+                                child: pw.Text(data.workers[0].name)),
                             pw.Padding(
                                 padding: const pw.EdgeInsets.all(5),
-                                child: pw.Text(data['area'])),
+                                child: pw.Text(data.area)),
                             pw.Padding(
                                 padding: const pw.EdgeInsets.all(5),
-                                child: pw.Text(data['task'])),
+                                child: pw.Text(data.task)),
                             pw.Padding(
                                 padding: const pw.EdgeInsets.all(5),
-                                child: pw.Text(DateFormat('dd/MM/yy')
-                                    .format(data['date']))),
+                                child: pw.Text(
+                                    DateFormat('dd/MM/yy').format(data.date))),
                             pw.Padding(
                                 padding: const pw.EdgeInsets.all(5),
-                                child: pw.Text(data['status'])),
-                            pw.Padding(
-                                padding: const pw.EdgeInsets.all(5),
-                                child: pw.Text('${data['hours']}h')),
+                                child: pw.Text(data.status.toString())),
                           ],
                         )),
                   ],
@@ -310,15 +305,13 @@ class ExportOptions extends StatelessWidget {
       int rowIndex = 6;
       for (var data in _sampleData) {
         sheet.appendRow([
-          data['id'],
-          data['worker'],
-          data['area'],
-          data['task'],
+          data.id,
+          data.workers[0].name,
+          data.area,
+          data.task,
           DateFormat('dd/MM/yy')
-              .format(data['date']), // Corregido: data['date'] ya es DateTime
-          data['status'],
-          '${data['hours']}h',
-          data['efficiency'] == 0 ? '-' : '${data['efficiency']}%',
+              .format(data.date), // Corregido: data['date'] ya es DateTime
+          data.status,
         ]);
         rowIndex++;
       }

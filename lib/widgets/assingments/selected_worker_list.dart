@@ -5,13 +5,13 @@ import 'worker_selection_dialog.dart';
 
 class SelectedWorkersList extends StatefulWidget {
   // Lista de trabajadores seleccionados (ahora como Map)
-  final List<Map<String, dynamic>> selectedWorkers;
+  final List<Worker> selectedWorkers;
 
   // Función de callback cuando cambia la selección (ahora con Map)
-  final Function(List<Map<String, dynamic>>) onWorkersChanged;
+  final Function(List<Worker>) onWorkersChanged;
 
   // Todos los trabajadores disponibles (para el diálogo de selección)
-  final List<Map<String, dynamic>> availableWorkers;
+  final List<Worker> availableWorkers;
 
   const SelectedWorkersList({
     Key? key,
@@ -27,7 +27,7 @@ class SelectedWorkersList extends StatefulWidget {
 class _SelectedWorkersListState extends State<SelectedWorkersList> {
   // Abrir diálogo para seleccionar trabajadores
   Future<void> _openWorkerSelectionDialog() async {
-    final result = await showDialog<List<Map<String, dynamic>>>(
+    final result = await showDialog<List<Worker>>(
       context: context,
       builder: (context) => WorkerSelectionDialog(
         availableWorkers: widget.availableWorkers,
@@ -142,7 +142,7 @@ class _SelectedWorkersListState extends State<SelectedWorkersList> {
                           backgroundColor: _getColorForWorker(worker),
                           radius: 16,
                           child: Text(
-                            worker["name"].substring(0, 1).toUpperCase(),
+                            worker.name.substring(0, 1).toUpperCase(),
                             style: const TextStyle(
                               color: Colors.white,
                               fontWeight: FontWeight.bold,
@@ -151,14 +151,14 @@ class _SelectedWorkersListState extends State<SelectedWorkersList> {
                           ),
                         ),
                         title: Text(
-                          worker["name"],
+                          worker.name,
                           style: const TextStyle(
                             fontWeight: FontWeight.w500,
                             fontSize: 14,
                           ),
                         ),
                         subtitle: Text(
-                          '${worker["area"]}',
+                          '${worker.area}',
                           style: const TextStyle(
                             fontSize: 12,
                             color: Color(0xFF718096),
@@ -168,8 +168,8 @@ class _SelectedWorkersListState extends State<SelectedWorkersList> {
                           icon: const Icon(Icons.delete_outline,
                               color: Colors.red, size: 20),
                           onPressed: () {
-                            final updatedList = List<Map<String, dynamic>>.from(
-                                widget.selectedWorkers);
+                            final updatedList =
+                                List<Worker>.from(widget.selectedWorkers);
                             updatedList.removeAt(index);
                             widget.onWorkersChanged(updatedList);
                           },
@@ -185,7 +185,7 @@ class _SelectedWorkersListState extends State<SelectedWorkersList> {
   }
 
   // Obtener un color consistente para cada trabajador basado en su ID
-  Color _getColorForWorker(Map<String, dynamic> worker) {
+  Color _getColorForWorker(Worker worker) {
     final List<Color> colors = [
       Colors.blue,
       Colors.red,
@@ -197,7 +197,7 @@ class _SelectedWorkersListState extends State<SelectedWorkersList> {
     ];
 
     // Convertir el ID a un número para seleccionar un color
-    int colorIndex = worker["id"].hashCode % colors.length;
+    int colorIndex = worker.document.hashCode % colors.length;
     return colors[colorIndex.abs()];
   }
 }
