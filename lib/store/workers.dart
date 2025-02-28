@@ -3,43 +3,7 @@ import 'package:plannerop/core/model/worker.dart';
 
 class WorkersProvider with ChangeNotifier {
   // Lista de trabajadores
-  final List<Worker> _workers = [
-    Worker(
-      name: 'Juan Pérez',
-      area: 'CARGA GENERAL',
-      phone: '555-1234',
-      document: '12345678',
-      status: WorkerStatus.assigned,
-      startDate: DateTime.now(),
-      endDate: DateTime.now().add(const Duration(days: 7)),
-    ),
-    Worker(
-      name: 'María López',
-      area: 'CARGA REFRIGERADA',
-      phone: '555-5678',
-      document: '87654321',
-      status: WorkerStatus.assigned,
-      startDate: DateTime.now(),
-      endDate: DateTime.now().add(const Duration(days: 5)),
-    ),
-    Worker(
-      name: 'Pedro Rodríguez',
-      area: 'CARGA GENERAL',
-      phone: '555-9012',
-      document: '13579246',
-      status: WorkerStatus.assigned,
-      startDate: DateTime.now(),
-      endDate: DateTime.now().add(const Duration(days: 3)),
-    ),
-    Worker(
-      name: 'Ricardo Martínez',
-      area: 'CARGA GENERAL',
-      phone: '555-3456',
-      document: '24681357',
-      status: WorkerStatus.available,
-      startDate: DateTime.now(),
-    ),
-  ];
+  final List<Worker> _workers = [];
 
   // Mapeo de especialidades a colores
   final Map<String, Color> _specialtyColors = {
@@ -161,5 +125,19 @@ class WorkersProvider with ChangeNotifier {
       _workers[index] = updatedWorker;
       notifyListeners();
     }
+  }
+
+  Map<String, dynamic> workerToMap(Worker worker) {
+    return {
+      'id': worker.document,
+      'name': worker.name,
+      'area': worker.area,
+      'document': worker.document,
+    };
+  }
+
+  // Método alternativo para liberar usando el Worker completo
+  void releaseWorkerObject(Worker worker) {
+    releaseWorker(worker);
   }
 }

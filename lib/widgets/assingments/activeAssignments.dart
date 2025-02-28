@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_neumorphic_plus/flutter_neumorphic.dart';
 import 'package:intl/intl.dart';
 import 'package:plannerop/core/model/worker.dart';
+import 'package:plannerop/store/workers.dart';
 import 'package:provider/provider.dart';
 import 'package:plannerop/store/assignments.dart';
 import 'package:plannerop/widgets/assingments/emptyState.dart';
@@ -485,6 +486,22 @@ class ActiveAssignmentsView extends StatelessWidget {
                 provider.updateAssignmentStatus(assignment.id, 'completed');
                 provider.updateAssignmentEndTime(
                     assignment.id, DateFormat('HH:mm').format(DateTime.now()));
+
+// 2. Liberar a todos los trabajadores de esta asignación
+                final workersProvider =
+                    Provider.of<WorkersProvider>(context, listen: false);
+
+                // Liberar cada trabajador asignado
+                for (var worker in assignment.workers) {
+                  // Verificar si worker es un Map (formato nuevo) o un Worker (formato antiguo)
+                  if (worker is Map<String, dynamic>) {
+                    workersProvider.releaseWorker(worker);
+                  } else {
+                    // Para compatibilidad con el modelo Worker
+                    workersProvider.releaseWorkerObject(worker);
+                  }
+                }
+
                 Navigator.pop(context);
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(

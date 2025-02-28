@@ -2,28 +2,27 @@ import 'package:flutter/material.dart';
 import 'package:flutter_neumorphic_plus/flutter_neumorphic.dart';
 import 'package:provider/provider.dart';
 import 'package:plannerop/store/assignments.dart';
+import 'package:plannerop/store/workers.dart';
+import 'package:plannerop/core/model/worker.dart';
 
 class Cifras extends StatelessWidget {
   const Cifras({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return Consumer<AssignmentsProvider>(
-      builder: (context, provider, child) {
+    return Consumer2<AssignmentsProvider, WorkersProvider>(
+      builder: (context, assignmentsProvider, workersProvider, child) {
         // Calculamos las cifras necesarias
-        final int totalAssignments = provider.assignments.length;
-        final int pendingAssignments = provider.pendingAssignments.length;
-        final int activeAssignments = provider.inProgressAssignments.length;
-        final int completedAssignments = provider.completedAssignments.length;
+        final int totalAssignments = assignmentsProvider.assignments.length;
+        final int pendingAssignments =
+            assignmentsProvider.pendingAssignments.length;
+        final int activeAssignments =
+            assignmentsProvider.inProgressAssignments.length;
+        final int completedAssignments =
+            assignmentsProvider.completedAssignments.length;
 
-        // Extraemos trabajadores únicos de todas las asignaciones
-        final Set<String> uniqueWorkers = {};
-        for (var assignment in provider.assignments) {
-          for (var worker in assignment.workers) {
-            uniqueWorkers.add(worker.name);
-          }
-        }
-        final int totalWorkers = uniqueWorkers.length;
+        // Obtenemos el número de trabajadores disponibles directamente del provider
+        final int availableWorkers = workersProvider.availableWorkers;
 
         return Neumorphic(
           style: NeumorphicStyle(
@@ -56,19 +55,19 @@ class Cifras extends StatelessWidget {
                 // Primera fila del grid
                 Row(
                   children: [
-                    // Trabajadores
+                    // Trabajadores Disponibles
                     Expanded(
                       child: _buildStatCard(
                         context,
-                        icon: Icons.person,
-                        label: 'Trabajadores',
-                        value: '$totalWorkers',
+                        icon: Icons.person_outline,
+                        label: 'Disponibles',
+                        value: '$availableWorkers',
                         color: const Color(0xFFE6F0FF),
                         iconColor: const Color(0xFF3182CE),
                       ),
                     ),
                     const SizedBox(width: 12),
-                    // Total de asignaciones
+                    // Asignaciones activas
                     Expanded(
                       child: _buildStatCard(
                         context,
@@ -87,7 +86,7 @@ class Cifras extends StatelessWidget {
                 // Segunda fila del grid
                 Row(
                   children: [
-                    // Operaciones activas
+                    // Operaciones pendientes
                     Expanded(
                       child: _buildStatCard(
                         context,
@@ -99,7 +98,7 @@ class Cifras extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(width: 12),
-                    // Operaciones pendientes
+                    // Operaciones completadas
                     Expanded(
                       child: _buildStatCard(
                         context,

@@ -30,7 +30,6 @@ class _SelectedWorkersListState extends State<SelectedWorkersList> {
     final result = await showDialog<List<Worker>>(
       context: context,
       builder: (context) => WorkerSelectionDialog(
-        availableWorkers: widget.availableWorkers,
         selectedWorkers: widget.selectedWorkers,
       ),
     );

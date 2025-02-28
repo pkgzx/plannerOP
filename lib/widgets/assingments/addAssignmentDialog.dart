@@ -3,6 +3,7 @@ import 'package:flutter_neumorphic_plus/flutter_neumorphic.dart';
 import 'package:intl/intl.dart';
 import 'package:plannerop/core/model/worker.dart';
 import 'package:plannerop/store/assignments.dart';
+import 'package:plannerop/store/workers.dart';
 import 'package:provider/provider.dart';
 import './selected_worker_list.dart';
 
@@ -24,44 +25,7 @@ class _AddAssignmentDialogState extends State<AddAssignmentDialog> {
   List<Worker> _selectedWorkers = [];
 
   // Lista completa de trabajadores (datos de ejemplo)
-  final List<Worker> _allWorkers = [
-    Worker(
-      name: 'Juan Pérez',
-      phone: '1234567890',
-      document: '12345678',
-      area: 'CARGA GENERAL',
-      status: WorkerStatus.available,
-      startDate: DateTime(2021, 10, 1),
-      endDate: DateTime(2021, 10, 31),
-    ),
-    Worker(
-      name: 'María González',
-      phone: '1234567890',
-      document: '12345678',
-      area: 'CARGA GENERAL',
-      status: WorkerStatus.available,
-      startDate: DateTime(2021, 10, 1),
-      endDate: DateTime(2021, 10, 31),
-    ),
-    Worker(
-      name: 'Pedro Rodríguez',
-      phone: '1234567890',
-      document: '12345678',
-      area: 'CARGA GENERAL',
-      status: WorkerStatus.available,
-      startDate: DateTime(2021, 10, 1),
-      endDate: DateTime(2021, 10, 31),
-    ),
-    Worker(
-      name: 'Ana López',
-      phone: '1234567890',
-      document: '12345678',
-      area: 'CARGA GENERAL',
-      status: WorkerStatus.available,
-      startDate: DateTime(2021, 10, 1),
-      endDate: DateTime(2021, 10, 31),
-    ),
-  ];
+  final List<Worker> _allWorkers = [];
 
   final _area = [
     'CAFE',
@@ -638,6 +602,11 @@ class _AddAssignmentDialogState extends State<AddAssignmentDialog> {
       _showValidationError('Por favor, selecciona una tarea');
       return false;
     }
+    // Si la validación es exitosa, actualizar el estado de los trabajadores y guardar la asignación
+    final workersProvider =
+        Provider.of<WorkersProvider>(context, listen: false);
+    final assignmentsProvider =
+        Provider.of<AssignmentsProvider>(context, listen: false);
 
     // Si la validación es exitosa, guardar la asignación
     Provider.of<AssignmentsProvider>(context, listen: false).addAssignment(
@@ -647,6 +616,13 @@ class _AddAssignmentDialogState extends State<AddAssignmentDialog> {
       date: DateFormat('dd/MM/yyyy').parse(_startDateController.text),
       time: _startTimeController.text,
     );
+
+    for (var worker in _selectedWorkers) {
+      // Parse the date string properly to create a DateTime object
+      DateTime assignmentDate =
+          DateFormat('dd/MM/yyyy').parse(_startDateController.text);
+      workersProvider.assignWorker(worker, assignmentDate);
+    }
 
     return true;
   }

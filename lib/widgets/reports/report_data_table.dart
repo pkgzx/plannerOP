@@ -4,6 +4,9 @@ import 'package:intl/intl.dart';
 import 'package:plannerop/core/model/assignment.dart';
 import 'package:plannerop/core/model/user.dart';
 import 'package:plannerop/core/model/worker.dart';
+import 'package:plannerop/store/assignments.dart';
+import 'package:plannerop/store/workers.dart';
+import 'package:provider/provider.dart';
 
 class ReportDataTable extends StatefulWidget {
   final String periodName;
@@ -29,45 +32,29 @@ class _ReportDataTableState extends State<ReportDataTable> {
   bool _sortAscending = true;
   int _sortColumnIndex = 0;
 
-  // Datos de ejemplo para la tabla con horas de ingreso y finalización
-  final List<Assignment> _allData = [
-    Assignment(
-      id: "1",
-      workers: [
-        Worker(
-            name: "Juan Pérez",
-            document: "12345678",
-            phone: "123456789",
-            area: "CARGA GENERAL",
-            status: WorkerStatus.assigned,
-            startDate: DateTime(2021, 10, 1),
-            endDate: DateTime(2021, 10, 31))
-      ],
-      area: "CARGA GENERAL",
-      task: "Carga de mercancía",
-      status: "Pendiente",
-      date: DateTime(2021, 10, 1),
-      time: "8:00 AM",
-      endTime: "",
-      completedDate: null,
-      supervisor: User(
-        id: "1",
-        name: "María González",
-        dni: "87654321",
-        phone: "987654321",
-      ),
-    )
-  ];
+  // Supervisor ficticio para cuando no hay uno asignado
+  final User _defaultSupervisor = User(
+    id: "default",
+    name: "Supervisor Genérico",
+    dni: "00000000",
+    phone: "000000000",
+  );
 
-  List<Assignment> get _filteredData {
-    final filtered = _allData.where((data) {
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  List<Assignment> _getFilteredData(List<Assignment> allAssignments) {
+    final filtered = allAssignments.where((data) {
       // Filtrar por área si es necesario
       if (widget.area != 'Todas' && data.area != widget.area) {
         return false;
       }
 
       // Filtrar por fecha
-      final date = data.date as DateTime;
+      final date = data.date;
       if (date.isBefore(widget.startDate) || date.isAfter(widget.endDate)) {
         return false;
       }
@@ -75,10 +62,12 @@ class _ReportDataTableState extends State<ReportDataTable> {
       // Filtrar por búsqueda
       if (_searchQuery.isNotEmpty) {
         final searchLower = _searchQuery.toLowerCase();
-        return data.workers[0].name.toLowerCase().contains(searchLower) ||
+        return data.workers.any((worker) =>
+                worker.name.toString().toLowerCase().contains(searchLower)) ||
             data.task.toLowerCase().contains(searchLower) ||
-            data.id.toLowerCase().contains(searchLower);
-        // data['supervisor'].toLowerCase().contains(searchLower);
+            data.id.toLowerCase().contains(searchLower) ||
+            (data.supervisor?.name.toLowerCase().contains(searchLower) ??
+                false);
       }
 
       return true;
@@ -91,8 +80,12 @@ class _ReportDataTableState extends State<ReportDataTable> {
         case 0: // ID
           comparison = a.id.compareTo(b.id);
           break;
-        case 1: // Trabajador
-          comparison = a.workers[0].name.compareTo(b.workers[0].name);
+        case 1: // Trabajador (primer trabajador si hay varios)
+          final aWorkerName =
+              a.workers.isNotEmpty ? a.workers[0].name.toString() : '';
+          final bWorkerName =
+              b.workers.isNotEmpty ? b.workers[0].name.toString() : '';
+          comparison = aWorkerName.compareTo(bWorkerName);
           break;
         case 2: // Área
           comparison = a.area.compareTo(b.area);
@@ -109,22 +102,23 @@ class _ReportDataTableState extends State<ReportDataTable> {
         case 6: // Hora de ingreso
           comparison = a.time.compareTo(b.time);
           break;
-        case 7: // Hora de finalización (cuidado con null values)
-          final aEndTime = a.endTime;
-          final bEndTime = b.endTime;
+        case 7: // Hora de finalización
+          final aEndTime = a.endTime ?? '';
+          final bEndTime = b.endTime ?? '';
           if (aEndTime.isEmpty && bEndTime.isEmpty) {
             comparison = 0;
           } else if (aEndTime.isEmpty) {
-            comparison = 1; // Empty va después
+            comparison = 1; // Vacío va después
           } else if (bEndTime.isEmpty) {
-            comparison = -1; // Empty va después
+            comparison = -1; // Vacío va después
           } else {
             comparison = aEndTime.compareTo(bEndTime);
           }
           break;
         case 8: // Supervisor
-          // Add supervisor field to Assignment or handle differently
-          comparison = 0; // placeholder until supervisor field is added
+          final aSupervisor = a.supervisor?.name ?? _defaultSupervisor.name;
+          final bSupervisor = b.supervisor?.name ?? _defaultSupervisor.name;
+          comparison = aSupervisor.compareTo(bSupervisor);
           break;
       }
       return _sortAscending ? comparison : -comparison;
@@ -134,117 +128,206 @@ class _ReportDataTableState extends State<ReportDataTable> {
   }
 
   @override
-  void dispose() {
-    _searchController.dispose();
-    super.dispose();
-  }
-
-  @override
   Widget build(BuildContext context) {
+    final assignmentsProvider = Provider.of<AssignmentsProvider>(context);
+    final usersProvider = Provider.of<WorkersProvider>(context, listen: false);
+
+    // Obtenemos las asignaciones del provider
+    final allAssignments = assignmentsProvider.assignments;
+
+    // Aplicamos los filtros a las asignaciones
+    final filteredData = _getFilteredData(allAssignments);
+
     return Column(
       children: [
         // Barra de búsqueda
-        Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Neumorphic(
-            style: NeumorphicStyle(
-              depth: -3,
-              intensity: 0.7,
-              boxShape: NeumorphicBoxShape.roundRect(BorderRadius.circular(12)),
-              color: const Color(0xFFF7FAFC),
-            ),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 12),
-              child: TextField(
-                controller: _searchController,
-                decoration: const InputDecoration(
-                  hintText: 'Buscar por ID, trabajador, supervisor o tarea...',
-                  border: InputBorder.none,
-                  prefixIcon: Icon(Icons.search),
-                ),
-                onChanged: (value) {
-                  setState(() {
-                    _searchQuery = value;
-                  });
-                },
-              ),
-            ),
-          ),
-        ),
+        _buildSearchBar(),
 
         // Resumen de resultados
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16.0),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                'Mostrando ${_filteredData.length} ${_filteredData.length == 1 ? 'asignación' : 'asignaciones'}',
-                style: const TextStyle(
-                  color: Color(0xFF718096),
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-            ],
-          ),
-        ),
+        _buildResultsSummary(filteredData.length),
 
         const SizedBox(height: 10),
 
         // Tabla de datos
         Expanded(
-          child: _filteredData.isEmpty
+          child: filteredData.isEmpty
               ? _buildEmptyState()
-              : SingleChildScrollView(
-                  scrollDirection: Axis.vertical,
-                  child: SingleChildScrollView(
-                    scrollDirection: Axis.horizontal,
-                    child: DataTable(
-                      headingRowColor: MaterialStateProperty.all(
-                        const Color(0xFFF7FAFC),
-                      ),
-                      columnSpacing: 24,
-                      horizontalMargin: 16,
-                      sortColumnIndex: _sortColumnIndex,
-                      sortAscending: _sortAscending,
-                      columns: [
-                        _buildDataColumn('ID', 0),
-                        _buildDataColumn('Trabajador', 1),
-                        _buildDataColumn('Área', 2),
-                        _buildDataColumn('Tarea', 3),
-                        _buildDataColumn('Fecha', 4),
-                        _buildDataColumn('Estado', 5),
-                        _buildDataColumn('Hora Ingreso', 6),
-                        _buildDataColumn('Hora Finalización', 7),
-                        _buildDataColumn('Supervisor', 8),
-                      ],
-                      rows: _filteredData.map((data) {
-                        return DataRow(
-                          cells: [
-                            DataCell(Text(data.id)),
-                            DataCell(Text(data.workers.isEmpty
-                                ? ''
-                                : data.workers[0].name)),
-                            DataCell(Text(data.area)),
-                            DataCell(Text(data.task)),
-                            DataCell(
-                                Text(DateFormat('dd/MM/yy').format(data.date))),
-                            DataCell(_buildStatusWidget(data.status)),
-                            DataCell(Text(data.time)),
-                            DataCell(data.endTime.isNotEmpty
-                                ? Text(data.endTime)
-                                : const Text('-')),
-                            DataCell(Text(data.supervisor
-                                .name)), // Placeholder for supervisor
-                          ],
-                        );
-                      }).toList(),
-                    ),
-                  ),
-                ),
+              : _buildDataTable(filteredData, usersProvider),
         ),
       ],
     );
+  }
+
+  Widget _buildSearchBar() {
+    return Padding(
+      padding: const EdgeInsets.all(16.0),
+      child: Neumorphic(
+        style: NeumorphicStyle(
+          depth: -3,
+          intensity: 0.7,
+          boxShape: NeumorphicBoxShape.roundRect(BorderRadius.circular(12)),
+          color: const Color(0xFFF7FAFC),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 12),
+          child: TextField(
+            controller: _searchController,
+            decoration: const InputDecoration(
+              hintText: 'Buscar por ID, trabajador, supervisor o tarea...',
+              border: InputBorder.none,
+              prefixIcon: Icon(Icons.search),
+            ),
+            onChanged: (value) {
+              setState(() {
+                _searchQuery = value;
+              });
+            },
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildResultsSummary(int count) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16.0),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(
+            'Mostrando $count ${count == 1 ? 'asignación' : 'asignaciones'}',
+            style: const TextStyle(
+              color: Color(0xFF718096),
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+          Text(
+            'Período: ${widget.periodName}',
+            style: const TextStyle(
+              color: Color(0xFF4A5568),
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDataTable(List<Assignment> data, WorkersProvider usersProvider) {
+    return SingleChildScrollView(
+      scrollDirection: Axis.vertical,
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: DataTable(
+          headingRowColor: MaterialStateProperty.all(
+            const Color(0xFFF7FAFC),
+          ),
+          columnSpacing: 24,
+          horizontalMargin: 16,
+          sortColumnIndex: _sortColumnIndex > 0
+              ? _sortColumnIndex - 1
+              : 0, // Ajustamos el índice debido a la eliminación de ID
+          sortAscending: _sortAscending,
+          columns: [
+            _buildDataColumn('Trabajador', 0),
+            _buildDataColumn('Área', 1),
+            _buildDataColumn('Tarea', 2),
+            _buildDataColumn('Fecha', 3),
+            _buildDataColumn('Estado', 4),
+            _buildDataColumn('Hora Ingreso', 5),
+            _buildDataColumn('Hora Finalización', 6),
+            _buildDataColumn('Supervisor', 7),
+          ],
+          rows: data.map((assignment) {
+            // Obtenemos el supervisor de la asignación o usamos el default
+            final supervisor = assignment.supervisor ?? _defaultSupervisor;
+
+            return DataRow(
+              cells: [
+                DataCell(_buildDetailedWorkersCell(assignment.workers)),
+                DataCell(Text(assignment.area)),
+                DataCell(Text(assignment.task)),
+                DataCell(Text(DateFormat('dd/MM/yy').format(assignment.date))),
+                DataCell(_buildStatusWidget(assignment.status)),
+                DataCell(Text(assignment.time)),
+                DataCell(
+                    assignment.endTime != null && assignment.endTime!.isNotEmpty
+                        ? Text(assignment.endTime!)
+                        : const Text('-')),
+                DataCell(Text(supervisor.name)),
+              ],
+            );
+          }).toList(),
+        ),
+      ),
+    );
+  }
+
+  // Nuevo método para mostrar todos los trabajadores
+  Widget _buildDetailedWorkersCell(List<Worker> workers) {
+    if (workers.isEmpty) {
+      return const Text('-');
+    }
+
+    // Creamos un widget que muestre todos los trabajadores, uno debajo del otro
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: workers.map((worker) {
+        return Padding(
+          padding: const EdgeInsets.symmetric(vertical: 2.0),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 8,
+                height: 8,
+                decoration: BoxDecoration(
+                  color: _getWorkerColor(worker.area),
+                  shape: BoxShape.circle,
+                ),
+              ),
+              const SizedBox(width: 4),
+              Text(
+                worker.name.toString(),
+                style: const TextStyle(fontSize: 12),
+              ),
+            ],
+          ),
+        );
+      }).toList(),
+    );
+  }
+
+  // Método para obtener un color según el área del trabajador
+  Color _getWorkerColor(String area) {
+    switch (area.toUpperCase()) {
+      case 'CAFE':
+        return const Color(0xFF805AD5);
+      case 'CARGA GENERAL':
+        return const Color(0xFF4299E1);
+      case 'CARGA REFRIGERADA':
+        return const Color(0xFF48BB78);
+      case 'CARGA PELIGROSA':
+        return const Color(0xFFED8936);
+      case 'OPERADORES MC':
+        return const Color(0xFF38B2AC);
+      default:
+        return const Color(0xFF718096);
+    }
+  }
+
+  Widget _buildWorkersCell(List<Worker> workers) {
+    if (workers.isEmpty) {
+      return const Text('-');
+    } else if (workers.length == 1) {
+      return Text(workers[0].name.toString());
+    } else {
+      return Tooltip(
+        message: workers.map((w) => w.name.toString()).join(', '),
+        child: Text('${workers[0].name} y ${workers.length - 1} más'),
+      );
+    }
   }
 
   DataColumn _buildDataColumn(String label, int columnIndex) {
@@ -264,14 +347,14 @@ class _ReportDataTableState extends State<ReportDataTable> {
 
   Widget _buildStatusWidget(String status) {
     Color color;
-    switch (status) {
-      case 'Completada':
+    switch (status.toLowerCase()) {
+      case 'completada':
         color = const Color(0xFF38A169);
         break;
-      case 'En progreso':
+      case 'en progreso':
         color = const Color(0xFF3182CE);
         break;
-      case 'Pendiente':
+      case 'pendiente':
         color = const Color(0xFFDD6B20);
         break;
       default:
