@@ -48,7 +48,8 @@ class WorkerService {
               name: w['name'],
               phone: w['phone'],
               status: status,
-              area: '${w['id_area']}',
+              area: '${w['jobArea']['name']}',
+              code: '${w['code']}',
               startDate: startDate ?? DateTime.now(),
               endDate: endDate ?? DateTime.now(),
             ));
@@ -110,10 +111,13 @@ class WorkerService {
             'name': worker.name,
             'dni': worker.document,
             'phone': worker.phone,
-            'id_area': '5',
+            'id_area': 1, // TODO: Cambiar por el ID real
             'status': 'AVALIABLE',
-            'id_user': user.id
+            'id_user': user.id,
+            'code': worker.code,
           }));
+
+      debugPrint('Lo que envio: ${response.request}');
 
       if (response.statusCode == 201) {
         debugPrint('Trabajador registrado correctamente');
