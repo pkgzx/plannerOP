@@ -29,10 +29,6 @@ class WorkerDetailDialog extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Generar un código de trabajador aleatorio (simulación)
-    final workerCode =
-        'PO-${worker.document.substring(0, 4)}-${DateTime.now().year}';
-
     return Dialog(
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(20),
@@ -42,7 +38,7 @@ class WorkerDetailDialog extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             // Cabecera colorida
-            _buildHeader(context, workerCode),
+            _buildHeader(context, worker.code),
 
             // Contenido
             Padding(
@@ -53,7 +49,7 @@ class WorkerDetailDialog extends StatelessWidget {
                   WorkerDetailsSection(
                     worker: worker,
                     specialtyColor: specialtyColor,
-                    workerCode: workerCode,
+                    workerCode: worker.code,
                   ),
 
                   // Mostrar asignaciones actuales si está asignado
@@ -159,7 +155,7 @@ class WorkerDetailDialog extends StatelessWidget {
           const SizedBox(height: 8),
 
           // Código del trabajador
-          WorkerCodeBadge(code: workerCode),
+          WorkerCodeBadge(code: worker.code),
 
           const SizedBox(height: 8),
 

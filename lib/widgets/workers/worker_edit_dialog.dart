@@ -46,12 +46,7 @@ class _WorkerEditDialogState extends State<WorkerEditDialog> {
     _documentController = TextEditingController(text: widget.worker.document);
     _phoneController = TextEditingController(text: widget.worker.phone);
     _areaController = TextEditingController(text: widget.worker.area);
-
-    // Generar código si no existe en el modelo actual
-    final code = widget.worker.document.isNotEmpty
-        ? 'OP-${widget.worker.document.substring(0, Math.min(4, widget.worker.document.length))}'
-        : 'OP-0000';
-    _codeController = TextEditingController(text: code);
+    _codeController = TextEditingController(text: widget.worker.code);
   }
 
   @override
@@ -80,6 +75,7 @@ class _WorkerEditDialogState extends State<WorkerEditDialog> {
           status: widget.worker.status,
           startDate: widget.worker.startDate,
           endDate: widget.worker.endDate,
+          code: _codeController.text,
         );
 
         // Llamar a la función para actualizar el trabajador
@@ -323,7 +319,7 @@ class _WorkerEditDialogState extends State<WorkerEditDialog> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const Text(
-          'Área / Especialidad',
+          'Área',
           style: TextStyle(
             fontWeight: FontWeight.w600,
             fontSize: 14,

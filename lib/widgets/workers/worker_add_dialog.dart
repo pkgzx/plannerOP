@@ -31,17 +31,19 @@ class _WorkerAddDialogState extends State<WorkerAddDialog> {
   final nameController = TextEditingController();
   final documentController = TextEditingController();
   final phoneController = TextEditingController();
+  final codeController = TextEditingController();
 
   // Estados para controlar errores de validación
   String? _nameError;
   String? _documentError;
   String? _phoneError;
+  String? _codeError;
 
   // Lista de áreas disponibles
   List<Area> areas = [];
 
   // Valor seleccionado por defecto
-  String selectedArea = 'Area por defecto';
+  String selectedArea = 'OPERADORES MC';
 
   @override
   void dispose() {
@@ -115,6 +117,41 @@ class _WorkerAddDialogState extends State<WorkerAddDialog> {
 
     setState(() {
       _documentError = null;
+    });
+    return true;
+  }
+
+  // Metado para validar el codigo
+  bool _validateCode() {
+    final code = codeController.text.trim();
+
+    if (code.isEmpty) {
+      setState(() {
+        _codeError = 'El código es obligatorio';
+      });
+      return false;
+    }
+
+    // Validar que el código tenga entre 4 y 6 caracteres
+    if (code.length < 4 || code.length > 6) {
+      setState(() {
+        _codeError = 'El código debe tener entre 4 y 6 caracteres';
+      });
+      return false;
+    }
+
+    // Validar que solo contenga letras y números
+    RegExp codeRegExp = RegExp(r'^[a-zA-Z0-9]+$');
+    if (!codeRegExp.hasMatch(code)) {
+      setState(() {
+        _codeError =
+            'Solo letras y números, sin espacios ni caracteres especiales';
+      });
+      return false;
+    }
+
+    setState(() {
+      _codeError = null;
     });
     return true;
   }
@@ -302,6 +339,55 @@ class _WorkerAddDialogState extends State<WorkerAddDialog> {
                   ),
                 const SizedBox(height: 12),
 
+                // Para el campo de codigo
+                Container(
+                  decoration: BoxDecoration(
+                    color: Colors.grey.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(10),
+                    border: _codeError != null
+                        ? Border.all(color: Colors.red, width: 1.0)
+                        : null,
+                  ),
+                  child: TextField(
+                    controller: codeController,
+                    decoration: InputDecoration(
+                      labelText: 'Codigo',
+                      labelStyle: TextStyle(
+                        color: _codeError != null ? Colors.red : null,
+                      ),
+                      prefixIcon: Icon(
+                        Icons.qr_code,
+                        color: _codeError != null
+                            ? Colors.red
+                            : const Color(0xFF4299E1),
+                      ),
+                      border: InputBorder.none,
+                      contentPadding: const EdgeInsets.symmetric(vertical: 15),
+                      hintText: 'Codigo de trabajador',
+                      // Quitar errorText para evitar duplicación
+                      // errorText: _documentError,
+                    ),
+                    onChanged: (_) {
+                      if (_codeError != null) _validateCode();
+                    },
+                  ),
+                ),
+                if (_codeError != null)
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: Padding(
+                      padding: const EdgeInsets.only(left: 12, top: 4),
+                      child: Text(
+                        _codeError!,
+                        style: const TextStyle(
+                          color: Colors.red,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ),
+                  ),
+                const SizedBox(height: 12),
+
                 // Campo de área con dropdown
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 12),
@@ -414,6 +500,7 @@ class _WorkerAddDialogState extends State<WorkerAddDialog> {
                               status: WorkerStatus.available,
                               startDate: DateTime.now(),
                               endDate: null,
+                              code: codeController.text.trim(),
                             );
 
                             widget.onWorkerAdded(newWorker);

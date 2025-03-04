@@ -6,6 +6,7 @@ class Worker {
   final DateTime startDate;
   final DateTime? endDate;
   final WorkerStatus status;
+  final String code;
 
   Worker({
     required this.name,
@@ -14,6 +15,7 @@ class Worker {
     required this.document,
     required this.status,
     required this.startDate,
+    required this.code,
     this.endDate,
   });
 }
