@@ -126,6 +126,8 @@ class _WorkersTabState extends State<WorkersTab> {
                   totalWorkers: workersProvider.totalWorkers,
                   assignedWorkers: workersProvider.assignedWorkers,
                   currentFilter: _currentFilter, // Pasar el filtro actual
+                  disabledWorkers: 1, // TODO CHANGE IT
+                  retiredWorkers: 1, // TODO CHANGE IT
                   onFilterChanged:
                       _handleFilterChanged, // Pasar el callback de cambio de filtro
                 );

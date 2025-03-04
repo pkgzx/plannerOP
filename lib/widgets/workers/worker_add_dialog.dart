@@ -41,7 +41,7 @@ class _WorkerAddDialogState extends State<WorkerAddDialog> {
   List<Area> areas = [];
 
   // Valor seleccionado por defecto
-  String selectedArea = 'CARGA GENERAL';
+  String selectedArea = 'Area por defecto';
 
   @override
   void dispose() {

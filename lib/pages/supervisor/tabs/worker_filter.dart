@@ -5,6 +5,8 @@ enum WorkerFilter {
   all,
   available,
   assigned,
+  disabled,
+  retired,
 }
 
 class WorkerStats extends StatelessWidget {
