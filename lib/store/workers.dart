@@ -1,9 +1,21 @@
 import 'package:flutter/material.dart';
 import 'package:plannerop/core/model/worker.dart';
+import 'package:plannerop/services/workers/workers.dart';
+import 'package:plannerop/dto/workers/fetchWorkers.dart';
 
 class WorkersProvider with ChangeNotifier {
   // Lista de trabajadores
   final List<Worker> _workers = [];
+
+  // Estado de carga
+  bool _isLoading = false;
+  bool _hasError = false;
+  String _errorMessage = '';
+  bool _hasLoadedInitialData =
+      false; // Flag para controlar si ya se cargaron datos
+
+  // Servicio de trabajadores
+  final WorkerService _workerService = WorkerService();
 
   // Mapeo de especialidades a colores
   final Map<String, Color> _specialtyColors = {
@@ -16,6 +28,11 @@ class WorkersProvider with ChangeNotifier {
 
   // Getters
   List<Worker> get workers => [..._workers];
+  bool get isLoading => _isLoading;
+  bool get hasError => _hasError;
+  String get errorMessage => _errorMessage;
+
+  bool get hasLoadedInitialData => _hasLoadedInitialData;
 
   List<Worker> getFilteredWorkers(String searchQuery) {
     if (searchQuery.isEmpty) {
@@ -40,9 +57,78 @@ class WorkersProvider with ChangeNotifier {
         const Color(0xFF718096); // Gris por defecto
   }
 
+  // Método modificado para cargar trabajadores solo la primera vez
+  Future<void> fetchWorkersIfNeeded(BuildContext context) async {
+    // Si ya cargamos datos previamente, no hacemos nada
+    if (_hasLoadedInitialData) {
+      debugPrint(
+          'Omitiendo fetchWorkers: los datos ya fueron cargados anteriormente');
+      return;
+    }
+
+    _isLoading = true;
+    _hasError = false;
+    _errorMessage = '';
+    notifyListeners();
+
+    try {
+      debugPrint('Cargando trabajadores desde API (primera vez)...');
+      final FetchWorkersDto result = await _workerService.fetchWorkers(context);
+
+      if (result.isSuccess && result.workers.isNotEmpty) {
+        _workers.clear();
+        _workers.addAll(result.workers);
+        debugPrint(
+            'Datos iniciales cargados correctamente: ${_workers.length} trabajadores');
+      } else {
+        _hasError = true;
+        _errorMessage =
+            'No se encontraron trabajadores o hubo un error en la API';
+        debugPrint('Error o lista vacía en carga de trabajadores');
+      }
+    } catch (e) {
+      _hasError = true;
+      _errorMessage = 'Error de conexión: ${e.toString()}';
+      debugPrint('Excepción en fetchWorkers: $e');
+    } finally {
+      _isLoading = false;
+      _hasLoadedInitialData = true; // Marcar que ya se intentó cargar datos
+      notifyListeners();
+    }
+  }
+
+  // Método para cargar los trabajadores desde la API
+  Future<void> fetchWorkers(BuildContext context) async {
+    _isLoading = true;
+    _hasError = false;
+    _errorMessage = '';
+    notifyListeners();
+
+    try {
+      final FetchWorkersDto result = await _workerService.fetchWorkers(context);
+
+      if (result.isSuccess && result.workers.isNotEmpty) {
+        _workers.clear();
+        _workers.addAll(result.workers);
+      } else {
+        _hasError = true;
+        _errorMessage = 'Error al cargar los trabajadores';
+      }
+    } catch (e) {
+      _hasError = true;
+      _errorMessage = 'Error de conexión: ${e.toString()}';
+    } finally {
+      _isLoading = false;
+      _hasLoadedInitialData =
+          true; // Actualizar el flag también en recargas forzadas
+      notifyListeners();
+    }
+  }
+
   // Métodos para manipular los trabajadores
-  void addWorker(Worker worker) {
+  void addWorker(Worker worker, BuildContext context) {
     _workers.add(worker);
+    _workerService.registerWorker(worker, context);
     notifyListeners();
   }
 
@@ -92,6 +178,7 @@ class WorkersProvider with ChangeNotifier {
   }
 
   // Método para asignar un trabajador (cambia su estado a asignado)
+  // MANTIENE LA FIRMA ORIGINAL
   void assignWorker(Worker worker, DateTime endDate) {
     final index = _workers.indexWhere((w) => w.name == worker.name);
     if (index >= 0) {
@@ -110,6 +197,7 @@ class WorkersProvider with ChangeNotifier {
   }
 
   // Método para liberar un trabajador (cambia su estado a disponible)
+  // MANTIENE LA FIRMA ORIGINAL
   void releaseWorker(Worker worker) {
     final index = _workers.indexWhere((w) => w.name == worker.name);
     if (index >= 0) {
@@ -137,6 +225,7 @@ class WorkersProvider with ChangeNotifier {
   }
 
   // Método alternativo para liberar usando el Worker completo
+  // MANTIENE LA FIRMA ORIGINAL
   void releaseWorkerObject(Worker worker) {
     releaseWorker(worker);
   }

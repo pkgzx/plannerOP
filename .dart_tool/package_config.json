@@ -116,6 +116,12 @@
       "languageVersion": "3.3"
     },
     {
+      "name": "flutter_dotenv",
+      "rootUri": "file:///C:/Users/BANANOVA/AppData/Local/Pub/Cache/hosted/pub.dev/flutter_dotenv-5.2.1",
+      "packageUri": "lib/",
+      "languageVersion": "2.12"
+    },
+    {
       "name": "flutter_lints",
       "rootUri": "file:///C:/Users/BANANOVA/AppData/Local/Pub/Cache/hosted/pub.dev/flutter_lints-5.0.0",
       "packageUri": "lib/",
@@ -166,6 +172,12 @@
     {
       "name": "intl",
       "rootUri": "file:///C:/Users/BANANOVA/AppData/Local/Pub/Cache/hosted/pub.dev/intl-0.17.0",
+      "packageUri": "lib/",
+      "languageVersion": "2.12"
+    },
+    {
+      "name": "jwt_decoder",
+      "rootUri": "file:///C:/Users/BANANOVA/AppData/Local/Pub/Cache/hosted/pub.dev/jwt_decoder-2.0.1",
       "packageUri": "lib/",
       "languageVersion": "2.12"
     },
@@ -512,7 +524,7 @@
       "languageVersion": "3.6"
     }
   ],
-  "generated": "2025-02-26T20:20:18.646946Z",
+  "generated": "2025-02-28T20:15:13.039031Z",
   "generator": "pub",
   "generatorVersion": "3.6.1",
   "flutterRoot": "file:///C:/Users/BANANOVA/dev/flutter",

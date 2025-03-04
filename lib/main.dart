@@ -1,15 +1,23 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:plannerop/store/areas.dart';
 import 'package:plannerop/store/assignments.dart';
+import 'package:plannerop/store/auth.dart';
+import 'package:plannerop/store/user.dart';
 import 'pages/login.dart';
 import 'package:provider/provider.dart';
 import 'package:plannerop/store/workers.dart';
 
-void main() {
+Future<void> main() async {
+  await dotenv.load(fileName: ".env");
   runApp(
     MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => AssignmentsProvider()),
         ChangeNotifierProvider(create: (context) => WorkersProvider()),
+        ChangeNotifierProvider(create: (context) => AuthProvider()),
+        ChangeNotifierProvider(create: (context) => UserProvider()),
+        ChangeNotifierProvider(create: (context) => AreasProvider())
         // Otros providers que puedas tener
       ],
       child: const App(),

@@ -23,4 +23,5 @@ enum WorkerStatus {
   assigned,
   unavailable,
   deactivated,
+  incapacitated,
 }

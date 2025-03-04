@@ -126,6 +126,8 @@ class _WorkersTabState extends State<WorkersTab> {
                   totalWorkers: workersProvider.totalWorkers,
                   assignedWorkers: workersProvider.assignedWorkers,
                   currentFilter: _currentFilter, // Pasar el filtro actual
+                  disabledWorkers: 1, // TODO CHANGE IT
+                  retiredWorkers: 1, // TODO CHANGE IT
                   onFilterChanged:
                       _handleFilterChanged, // Pasar el callback de cambio de filtro
                 );
@@ -248,8 +250,8 @@ class _WorkersTabState extends State<WorkersTab> {
     final workersProvider =
         Provider.of<WorkersProvider>(context, listen: false);
 
-    workersProvider
-        .addWorker(workerData); // Ya no necesitamos crear un nuevo Worker
+    workersProvider.addWorker(
+        workerData, context); // Ya no necesitamos crear un nuevo Worker
   }
 
   void _updateWorker(Worker oldWorker, Worker newWorker) {

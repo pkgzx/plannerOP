@@ -1,7 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_neumorphic_plus/flutter_neumorphic.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:jwt_decoder/jwt_decoder.dart';
+import 'package:plannerop/core/model/user.dart';
+import 'package:plannerop/dto/auth/signin.dart';
 import 'package:plannerop/pages/supervisor/home.dart';
+import 'package:plannerop/services/auth/signin.dart';
+import 'package:plannerop/store/auth.dart';
+import 'package:plannerop/store/user.dart';
+import 'package:provider/provider.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -16,6 +23,7 @@ class _LoginPageState extends State<LoginPage> {
   final TextEditingController _passwordController = TextEditingController();
   final FocusNode _usernameFocusNode = FocusNode();
   final FocusNode _passwordFocusNode = FocusNode();
+  final SigninService _signinService = SigninService();
 
   void _onFocusChange() {
     setState(() {});
@@ -39,13 +47,45 @@ class _LoginPageState extends State<LoginPage> {
     super.dispose();
   }
 
-  void _login() {
+  Future<void> _login() async {
     if (_formKey.currentState!.validate()) {
       // Aquí puedes agregar la lógica de autenticación
       // Si el inicio de sesión es exitoso, redirige a la página de inicio del supervisor
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (context) => const SupervisorHome()),
+      final ResSigninDto response = await _signinService.signin(
+        _usernameController.text,
+        _passwordController.text,
+      );
+
+      if (response.isSuccess) {
+        // Guarda el token de acceso en el provider de autenticación
+        Provider.of<AuthProvider>(context, listen: false)
+            .setAccessToken(response.accessToken);
+
+        // Decodificar el token
+        final decodedToken = JwtDecoder.decode(response.accessToken);
+
+        Provider.of<UserProvider>(context, listen: false).setUser(User(
+          name: decodedToken['username'],
+          id: '${decodedToken['id']}',
+          dni: decodedToken['dni'],
+          phone: decodedToken['phone'],
+        ));
+
+        debugPrint('Token decodificado: $decodedToken');
+
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const SupervisorHome()),
+        );
+        return;
+      }
+
+      // Si el inicio de sesión falla, muestra un mensaje de error
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Usuario o contraseña incorrectos'),
+          backgroundColor: Colors.red,
+        ),
       );
     }
   }
@@ -138,9 +178,9 @@ class _LoginPageState extends State<LoginPage> {
                       ),
                       const SizedBox(height: 20),
                       NeumorphicButton(
-                        onPressed: () {
+                        onPressed: () async {
                           if (_formKey.currentState!.validate()) {
-                            _login();
+                            await _login();
                           }
                         },
                         style: NeumorphicStyle(

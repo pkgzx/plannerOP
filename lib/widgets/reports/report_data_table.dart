@@ -317,19 +317,6 @@ class _ReportDataTableState extends State<ReportDataTable> {
     }
   }
 
-  Widget _buildWorkersCell(List<Worker> workers) {
-    if (workers.isEmpty) {
-      return const Text('-');
-    } else if (workers.length == 1) {
-      return Text(workers[0].name.toString());
-    } else {
-      return Tooltip(
-        message: workers.map((w) => w.name.toString()).join(', '),
-        child: Text('${workers[0].name} y ${workers.length - 1} más'),
-      );
-    }
-  }
-
   DataColumn _buildDataColumn(String label, int columnIndex) {
     return DataColumn(
       label: Text(

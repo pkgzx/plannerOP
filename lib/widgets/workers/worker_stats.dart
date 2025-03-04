@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:plannerop/core/model/worker.dart';
 import 'package:plannerop/pages/supervisor/tabs/worker_filter.dart';
 
 class WorkerStatsCards extends StatelessWidget {
   final int totalWorkers;
   final int assignedWorkers;
+  final int disabledWorkers;
+  final int retiredWorkers;
   final WorkerFilter currentFilter;
   final Function(WorkerFilter) onFilterChanged;
 
@@ -12,113 +13,123 @@ class WorkerStatsCards extends StatelessWidget {
     Key? key,
     required this.totalWorkers,
     required this.assignedWorkers,
+    required this.disabledWorkers,
+    required this.retiredWorkers,
     required this.currentFilter,
     required this.onFilterChanged,
   }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
-    final availableWorkers = totalWorkers - assignedWorkers;
+    final availableWorkers =
+        totalWorkers - assignedWorkers - disabledWorkers - retiredWorkers;
 
-    return Padding(
-      padding: const EdgeInsets.all(20),
-      child: Row(
-        children: [
-          _buildTouchableStatCard(
-            title: 'Total',
-            value: '$totalWorkers',
-            icon: Icons.people_alt,
-            color: const Color(0xFF4299E1),
-            lightColor: const Color(0xFFEBF8FF),
-            isSelected: currentFilter == WorkerFilter.all,
-            onTap: () => onFilterChanged(WorkerFilter.all),
+    return Column(
+      children: [
+        // Cards de filtrado
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          child: SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
+              children: [
+                _buildStatCard(
+                  title: 'Total',
+                  value: '$totalWorkers',
+                  icon: Icons.people_alt,
+                  color: const Color(0xFF4299E1),
+                  isSelected: currentFilter == WorkerFilter.all,
+                  onTap: () => onFilterChanged(WorkerFilter.all),
+                ),
+                _buildStatCard(
+                  title: 'Disponibles',
+                  value: '$availableWorkers',
+                  icon: Icons.check_circle,
+                  color: const Color(0xFF38A169),
+                  isSelected: currentFilter == WorkerFilter.available,
+                  onTap: () => onFilterChanged(WorkerFilter.available),
+                ),
+                _buildStatCard(
+                  title: 'Asignados',
+                  value: '$assignedWorkers',
+                  icon: Icons.assignment_ind,
+                  color: const Color(0xFFED8936),
+                  isSelected: currentFilter == WorkerFilter.assigned,
+                  onTap: () => onFilterChanged(WorkerFilter.assigned),
+                ),
+                _buildStatCard(
+                  title: 'Incapacitados',
+                  value: '$disabledWorkers',
+                  icon: Icons.medical_services_outlined,
+                  color: const Color(0xFF805AD5),
+                  isSelected: currentFilter == WorkerFilter.disabled,
+                  onTap: () => onFilterChanged(WorkerFilter.disabled),
+                ),
+                _buildStatCard(
+                  title: 'Retirados',
+                  value: '$retiredWorkers',
+                  icon: Icons.exit_to_app,
+                  color: const Color(0xFF718096),
+                  isSelected: currentFilter == WorkerFilter.retired,
+                  onTap: () => onFilterChanged(WorkerFilter.retired),
+                ),
+              ],
+            ),
           ),
-          const SizedBox(width: 12),
-          _buildTouchableStatCard(
-            title: 'Disponibles',
-            value: '$availableWorkers',
-            icon: Icons.check_circle,
-            color: const Color(0xFF38A169),
-            lightColor: const Color(0xFFF0FFF4),
-            isSelected: currentFilter == WorkerFilter.available,
-            onTap: () => onFilterChanged(WorkerFilter.available),
-          ),
-          const SizedBox(width: 12),
-          _buildTouchableStatCard(
-            title: 'Asignados',
-            value: '$assignedWorkers',
-            icon: Icons.assignment_ind,
-            color: const Color(0xFFED8936),
-            lightColor: const Color(0xFFFFFAF0),
-            isSelected: currentFilter == WorkerFilter.assigned,
-            onTap: () => onFilterChanged(WorkerFilter.assigned),
-          ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 
-  Widget _buildTouchableStatCard({
+  Widget _buildStatCard({
     required String title,
     required String value,
     required IconData icon,
     required Color color,
-    required Color lightColor,
     required bool isSelected,
     required VoidCallback onTap,
   }) {
-    return Expanded(
-      child: GestureDetector(
-        onTap: onTap,
-        child: Container(
-          padding: const EdgeInsets.all(15),
-          decoration: BoxDecoration(
-            color: isSelected ? color.withOpacity(0.15) : lightColor,
-            borderRadius: BorderRadius.circular(15),
-            border: isSelected ? Border.all(color: color, width: 2) : null,
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.05),
-                blurRadius: 5,
-                offset: const Offset(0, 3),
-              ),
-            ],
-          ),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: isSelected
-                      ? color.withOpacity(0.3)
-                      : color.withOpacity(0.2),
-                  shape: BoxShape.circle,
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 6),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(12),
+          child: Container(
+            width: 120,
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
+            decoration: BoxDecoration(
+              color: isSelected ? color.withOpacity(0.15) : Colors.white,
+              borderRadius: BorderRadius.circular(12),
+              border: isSelected
+                  ? Border.all(color: color, width: 2)
+                  : Border.all(color: Colors.grey.shade200),
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(icon, color: color, size: 24),
+                const SizedBox(height: 8),
+                Text(
+                  value,
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: color,
+                  ),
                 ),
-                child: Icon(
-                  icon,
-                  color: color,
-                  size: 18,
+                const SizedBox(height: 4),
+                Text(
+                  title,
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Colors.grey.shade700,
+                  ),
+                  textAlign: TextAlign.center,
                 ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                value,
-                style: TextStyle(
-                  fontSize: 22,
-                  fontWeight: FontWeight.bold,
-                  color: color,
-                ),
-              ),
-              Text(
-                title,
-                style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                  color: color,
-                ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
