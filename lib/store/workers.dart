@@ -160,6 +160,7 @@ class WorkersProvider with ChangeNotifier {
         status: newStatus,
         startDate: worker.startDate,
         endDate: worker.endDate,
+        code: worker.code,
       );
       _workers[index] = updatedWorker;
       notifyListeners();
@@ -190,6 +191,7 @@ class WorkersProvider with ChangeNotifier {
         status: WorkerStatus.assigned,
         startDate: worker.startDate,
         endDate: endDate,
+        code: worker.code,
       );
       _workers[index] = updatedWorker;
       notifyListeners();
@@ -209,6 +211,7 @@ class WorkersProvider with ChangeNotifier {
         status: WorkerStatus.available,
         startDate: worker.startDate,
         endDate: null,
+        code: worker.code,
       );
       _workers[index] = updatedWorker;
       notifyListeners();
