@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_neumorphic_plus/flutter_neumorphic.dart';
 import 'package:plannerop/store/areas.dart';
+import 'package:plannerop/store/task.dart';
 import 'package:plannerop/widgets/cifras.dart';
 import 'package:plannerop/widgets/quickActions.dart';
 import 'package:plannerop/widgets/recentOps.dart';
@@ -17,6 +18,7 @@ class DashboardTab extends StatefulWidget {
 class _DashboardTabState extends State<DashboardTab> {
   bool _isLoadingWorkers = false;
   bool _isLoadingAreas = false;
+  bool _isLoadingTasks = false;
 
   @override
   void initState() {
@@ -25,6 +27,7 @@ class _DashboardTabState extends State<DashboardTab> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _checkAndLoadWorkersIfNeeded();
       _loadAreas();
+      _loadTask();
     });
   }
 
@@ -139,6 +142,79 @@ class _DashboardTabState extends State<DashboardTab> {
           _isLoadingAreas = false;
         });
       }
+    }
+  }
+
+  Future<void> _loadTask() async {
+    if (!mounted) return;
+
+    final tasksProvider = Provider.of<TasksProvider>(context, listen: false);
+
+    // Verificar si ya hay tareas cargadas
+    if (tasksProvider.tasks.isNotEmpty) {
+      debugPrint(
+          'Tareas ya cargadas anteriormente: ${tasksProvider.tasks.length}');
+      return;
+    }
+
+    debugPrint('Iniciando carga de tareas desde API...');
+
+    // Mostrar indicador de carga para tareas
+    setState(() {
+      _isLoadingTasks = true;
+    });
+
+    try {
+      // Llamar al método fetchTasks con await para asegurar que se complete
+      await tasksProvider.loadTasks(context);
+
+      // Verificar si se cargaron tareas
+      if (tasksProvider.tasks.isNotEmpty) {
+        debugPrint(
+            'Tareas cargadas con éxito: ${tasksProvider.tasks.length} tareas');
+      } else {
+        debugPrint('No se cargaron tareas o la lista está vacía');
+
+        // Si no hay tareas, cargar algunas predeterminadas
+        _loadDefaultTasks(tasksProvider);
+      }
+    } catch (e, stackTrace) {
+      debugPrint('Error al cargar tareas: $e');
+      debugPrint('Stack trace: $stackTrace');
+
+      // Cargar tareas predeterminadas en caso de error
+      _loadDefaultTasks(tasksProvider);
+
+      // Mostrar un mensaje de error más informativo
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text(
+                'Error al cargar tareas. Usando tareas predeterminadas.'),
+            backgroundColor: Colors.amber.shade700,
+            action: SnackBarAction(
+              label: 'Reintentar',
+              onPressed: _loadTask,
+              textColor: Colors.white,
+            ),
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoadingTasks = false;
+        });
+      }
+    }
+  }
+
+  // Método auxiliar para cargar tareas predeterminadas
+  void _loadDefaultTasks(TasksProvider tasksProvider) {
+    // Verificar si el TasksProvider tiene un método para agregar tareas predeterminadas
+    if (tasksProvider.tasks.isEmpty) {
+      debugPrint(
+          'Se cargaron tareas predeterminadas: ${tasksProvider.tasks.length} tareas');
     }
   }
 

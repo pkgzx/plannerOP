@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:plannerop/core/model/worker.dart';
-import 'package:plannerop/utils/constants.dart';
 import 'worker_details_section.dart';
 import 'worker_assignments_section.dart';
 import 'worker_actions_bar.dart';
@@ -208,26 +207,58 @@ class WorkerDetailDialog extends StatelessWidget {
     );
   }
 
+  // Método que muestra el diálogo de edición
   void _showEditWorkerDialog(BuildContext context) {
     showDialog(
       context: context,
       builder: (context) => WorkerEditDialog(
         worker: worker,
         specialtyColor: specialtyColor,
-        onUpdateWorker: onUpdateWorker,
+        onUpdateWorker: (oldWorker, newWorker) {
+          // Actualizar el trabajador en el provider
+          onUpdateWorker(oldWorker, newWorker);
+
+          // También cerrar el diálogo de detalles para que se refresque
+          Navigator.of(context).pop();
+
+          // Opcional: Abrir nuevamente el diálogo con el trabajador actualizado
+          // Solo si quieres que se reabra automáticamente
+          Future.delayed(Duration.zero, () {
+            showDialog(
+              context: context,
+              builder: (context) => WorkerDetailDialog(
+                worker: newWorker,
+                isAssigned: newWorker.status == WorkerStatus.assigned,
+                specialtyColor: specialtyColor,
+                onUpdateWorker: onUpdateWorker,
+                onIncapacitateWorker: onIncapacitateWorker,
+                onRetireWorker: onRetireWorker,
+              ),
+            );
+          });
+        },
       ),
     );
   }
 
+// Ajustar los métodos de incapacitación y retiro
   void _showIncapacitationDialog(BuildContext context) {
     showDialog(
       context: context,
       builder: (context) => WorkerIncapacitationDialog(
         worker: worker,
         specialtyColor: specialtyColor,
-        onIncapacitate: onIncapacitateWorker!,
+        onIncapacitate: (worker, startDate, endDate) {
+          // Esta función se invoca desde dentro del diálogo WorkerIncapacitationDialog
+          if (onIncapacitateWorker != null) {
+            onIncapacitateWorker!(worker, startDate, endDate);
+          }
+        },
       ),
-    );
+    ).then((_) {
+      // Cerrar el diálogo de detalles después de procesar
+      Navigator.of(context).pop();
+    });
   }
 
   void _showRetirementDialog(BuildContext context) {
@@ -236,8 +267,16 @@ class WorkerDetailDialog extends StatelessWidget {
       builder: (context) => WorkerRetirementDialog(
         worker: worker,
         specialtyColor: specialtyColor,
-        onRetire: onRetireWorker!,
+        onRetire: (worker) {
+          // Esta función se invoca desde dentro del diálogo WorkerRetirementDialog
+          if (onRetireWorker != null) {
+            onRetireWorker!(worker);
+          }
+        },
       ),
-    );
+    ).then((_) {
+      // Cerrar el diálogo de detalles después de procesar
+      Navigator.of(context).pop();
+    });
   }
 }

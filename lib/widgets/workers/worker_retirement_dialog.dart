@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:plannerop/core/model/worker.dart';
+import 'package:plannerop/store/workers.dart';
+import 'package:provider/provider.dart';
 
 class WorkerRetirementDialog extends StatefulWidget {
   final Worker worker;
@@ -485,24 +487,30 @@ class _WorkerRetirementDialogState extends State<WorkerRetirementDialog> {
     }
   }
 
-  void _processRetirement() {
+// Modificar el método _processRetirement
+  void _processRetirement() async {
     setState(() {
       _isLoading = true;
     });
 
     try {
       // Actualizar el estado del trabajador a retirado
-      widget.onRetire(widget.worker);
+      final success = await Provider.of<WorkersProvider>(context, listen: false)
+          .retireWorker(widget.worker, _retirementDate, context);
 
-      // Cerrar el diálogo con éxito
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('${widget.worker.name} ha sido retirado'),
-          backgroundColor: Colors.grey[700],
-        ),
-      );
+      if (success) {
+        // Cerrar el diálogo con éxito
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('${widget.worker.name} ha sido retirado'),
+            backgroundColor: Colors.grey[700],
+          ),
+        );
 
-      Navigator.of(context).pop();
+        Navigator.of(context).pop();
+      } else {
+        throw Exception('Error al procesar el retiro en la API');
+      }
     } catch (e) {
       // Mostrar error en caso de fallo
       ScaffoldMessenger.of(context).showSnackBar(

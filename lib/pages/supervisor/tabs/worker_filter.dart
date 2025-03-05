@@ -12,6 +12,8 @@ enum WorkerFilter {
 class WorkerStats extends StatelessWidget {
   final int totalWorkers;
   final int assignedWorkers;
+  final int disabledWorkers;
+  final int retiredWorkers;
   final WorkerFilter currentFilter;
   final Function(WorkerFilter) onFilterChanged;
 
@@ -19,6 +21,8 @@ class WorkerStats extends StatelessWidget {
     Key? key,
     required this.totalWorkers,
     required this.assignedWorkers,
+    required this.disabledWorkers,
+    required this.retiredWorkers,
     required this.currentFilter,
     required this.onFilterChanged,
   }) : super(key: key);
@@ -60,6 +64,26 @@ class WorkerStats extends StatelessWidget {
             isSelected: currentFilter == WorkerFilter.assigned,
             onTap: () => onFilterChanged(WorkerFilter.assigned),
           ),
+          const SizedBox(width: 12),
+          _buildTouchableStatCard(
+            title: 'Incapacitados',
+            value: '$disabledWorkers',
+            icon: Icons.block,
+            color: const Color(0xFFE53E3E),
+            lightColor: const Color(0xFFFEE2E2),
+            isSelected: currentFilter == WorkerFilter.disabled,
+            onTap: () => onFilterChanged(WorkerFilter.disabled),
+          ),
+          const SizedBox(width: 12),
+          _buildTouchableStatCard(
+            title: 'Retirados',
+            value: '$retiredWorkers',
+            icon: Icons.person_remove,
+            color: const Color(0xFF718096),
+            lightColor: const Color(0xFFE2E8F0),
+            isSelected: currentFilter == WorkerFilter.retired,
+            onTap: () => onFilterChanged(WorkerFilter.retired),
+          )
         ],
       ),
     );

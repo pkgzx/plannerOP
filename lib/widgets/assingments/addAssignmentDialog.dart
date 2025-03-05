@@ -5,12 +5,12 @@ import 'package:plannerop/core/model/area.dart';
 import 'package:plannerop/core/model/worker.dart';
 import 'package:plannerop/store/areas.dart';
 import 'package:plannerop/store/assignments.dart';
+import 'package:plannerop/store/task.dart';
 import 'package:plannerop/store/workers.dart';
 import 'package:provider/provider.dart';
 import './selected_worker_list.dart';
 import './assignment_form.dart';
 import './success_dialog.dart';
-import './predefined_tasks.dart';
 
 class AddAssignmentDialog extends StatefulWidget {
   const AddAssignmentDialog({Key? key}) : super(key: key);
@@ -21,10 +21,15 @@ class AddAssignmentDialog extends StatefulWidget {
 
 class _AddAssignmentDialogState extends State<AddAssignmentDialog> {
   // Controladores para los campos de texto
-  final _zoneController = TextEditingController();
+  final _areaController = TextEditingController();
   final _startDateController = TextEditingController();
   final _startTimeController = TextEditingController();
   final _taskController = TextEditingController();
+  final _zoneController = TextEditingController();
+  final _clientController = TextEditingController();
+  final _endDateController = TextEditingController();
+  final _endTimeController = TextEditingController();
+  final _motorshipController = TextEditingController();
 
   // Lista de trabajadores seleccionados
   List<Worker> _selectedWorkers = [];
@@ -34,15 +39,30 @@ class _AddAssignmentDialogState extends State<AddAssignmentDialog> {
 
   List<Area> _areas = [];
 
-  // Lista actual de tareas según el área seleccionada
+  // Boolean para controlar si estamos cargando las tareas
+  bool _isLoadingTasks = false;
+
+  // Ahora usaremos TasksProvider para obtener la lista de tareas
   List<String> _currentTasks = [];
+
+  List<String> _clients = [
+    "SMITCO",
+    "SPSM",
+    "UNIBAN",
+  ];
 
   @override
   void dispose() {
-    _zoneController.dispose();
+    _areaController.dispose();
     _startDateController.dispose();
     _startTimeController.dispose();
-    _taskController.dispose();
+    final _taskController = TextEditingController();
+    final _zoneController = TextEditingController();
+    final _clientController = TextEditingController();
+    final _endDateController = TextEditingController();
+    final _endTimeController = TextEditingController();
+    // Nuevo controlador para el nombre de la motonave
+    final _motorshipController = TextEditingController();
     super.dispose();
   }
 
@@ -52,22 +72,51 @@ class _AddAssignmentDialogState extends State<AddAssignmentDialog> {
     // Establecer la fecha y hora actuales por defecto
     _startDateController.text = DateFormat('dd/MM/yyyy').format(DateTime.now());
     _startTimeController.text = DateFormat('HH:mm').format(DateTime.now());
+    // Cargar tareas cuando se inicia el diálogo
+    _loadTasks();
   }
 
-  // Método para actualizar las tareas según el área seleccionada
-  void _updateTasksForArea(String area) {
-    debugPrint('Actualizando tareas para: "$area"');
-
-    // Obtener las tareas para esta área
-    final List<String> tasksForArea = PredefinedTasks.getTasksForArea(area);
-
+  // Método para cargar tareas desde el API
+  Future<void> _loadTasks() async {
     setState(() {
-      _currentTasks = tasksForArea;
-      // Limpiar el campo de tarea cuando se cambia el área
-      _taskController.clear();
+      _isLoadingTasks = true;
     });
 
-    debugPrint('Total de tareas disponibles: ${_currentTasks.length}');
+    try {
+      // Obtener el provider de tareas
+      final tasksProvider = Provider.of<TasksProvider>(context, listen: false);
+
+      // Cargar tareas si aún no están cargadas
+      if (tasksProvider.tasks.isEmpty) {
+        await tasksProvider.loadTasks(context);
+      }
+
+      // Actualizar la lista local
+      setState(() {
+        _currentTasks = tasksProvider.tasks.map((task) => task.name).toList();
+      });
+    } catch (e) {
+      print('Error al cargar tareas: $e');
+      // Si hay un error, mantener una lista de respaldo
+      _currentTasks = [
+        "SERVICIO DE ESTIBAJE", //! BREAKING CHANGE: Cambio de nombre
+        "SERVICIO DE WINCHERO",
+      ];
+
+      // Mostrar error al usuario
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error al cargar tareas. Usando datos locales.'),
+          backgroundColor: Colors.orange,
+        ),
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoadingTasks = false;
+        });
+      }
+    }
   }
 
   // Método para actualizar la lista de trabajadores seleccionados
@@ -135,13 +184,19 @@ class _AddAssignmentDialogState extends State<AddAssignmentDialog> {
 
               // Formulario de asignación
               AssignmentForm(
-                zoneController: _zoneController,
+                areaController: _areaController,
                 startDateController: _startDateController,
                 startTimeController: _startTimeController,
                 taskController: _taskController,
                 currentTasks: _currentTasks,
+                zoneController: _zoneController,
+                clientController: _clientController,
                 areas: _areas,
-                onAreaSelected: _updateTasksForArea,
+                clients: _clients,
+                endDateController: _endDateController,
+                endTimeController: _endTimeController,
+                showEndDateTime: true,
+                motorshipController: _motorshipController,
               ),
 
               const SizedBox(height: 24),

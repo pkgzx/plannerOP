@@ -49,6 +49,12 @@ class WorkersProvider with ChangeNotifier {
   int get assignedWorkers =>
       _workers.where((w) => w.status == WorkerStatus.assigned).length;
 
+  int get disabledWorkers =>
+      _workers.where((w) => w.status == WorkerStatus.incapacitated).length;
+
+  int get retiredWorkers =>
+      _workers.where((w) => w.status == WorkerStatus.deactivated).length;
+
   int get availableWorkers =>
       _workers.where((w) => w.status == WorkerStatus.available).length;
 
@@ -126,22 +132,94 @@ class WorkersProvider with ChangeNotifier {
   }
 
   // Métodos para manipular los trabajadores
-  void addWorker(Worker worker, BuildContext context) {
-    _workers.add(worker);
-    _workerService.registerWorker(worker, context);
-    notifyListeners();
+  Future<Map<String, dynamic>> addWorker(
+      Worker worker, BuildContext context) async {
+    try {
+      // Llamar al servicio y esperar respuesta
+      final result = await _workerService.registerWorker(worker, context);
+
+      // Si fue exitoso, agregar a la lista local
+      if (result['success']) {
+        _workers.add(worker);
+        notifyListeners();
+      }
+
+      // Devolver el resultado para que la UI pueda mostrar mensajes apropiados
+      return result;
+    } catch (e) {
+      debugPrint('Error en addWorker: $e');
+      return {'success': false, 'message': 'Error al agregar trabajador: $e'};
+    }
   }
 
   List<Worker> getWorkersByStatus(WorkerStatus status) {
     return _workers.where((w) => w.status == status).toList();
   }
 
-  void updateWorker(Worker oldWorker, Worker updatedWorker) {
-    final index = _workers.indexWhere((w) => w.name == oldWorker.name);
-    if (index >= 0) {
-      _workers[index] = updatedWorker;
-      notifyListeners();
+  // Método general para actualizar un trabajador
+  Future<bool> updateWorker(
+      Worker oldWorker, Worker newWorker, BuildContext context) async {
+    try {
+      // Llamar al servicio para actualizar en la API
+      final success = await _workerService.updateWorker(newWorker, context);
+      if (success) {
+        debugPrint('Trabajador actualizado correctamente en la API');
+        // Actualizar en la lista local
+        final index = _workers.indexWhere((w) => w.id == oldWorker.id);
+        if (index >= 0) {
+          _workers[index] = newWorker;
+          notifyListeners();
+        }
+        return true;
+      }
+      return false;
+    } catch (e) {
+      debugPrint('Error en updateWorker del provider: $e');
+      return false;
     }
+  }
+
+  // Mantener métodos específicos para incapacitación
+  Future<bool> incapacitateWorker(Worker worker, DateTime startDate,
+      DateTime endDate, BuildContext context) async {
+    // Crear una copia del trabajador con los nuevos datos
+    final updatedWorker = Worker(
+      id: worker.id,
+      name: worker.name,
+      area: worker.area,
+      phone: worker.phone,
+      document: worker.document,
+      status: WorkerStatus.incapacitated,
+      startDate: worker.startDate,
+      endDate: worker.endDate,
+      code: worker.code,
+      incapacityStartDate: startDate,
+      incapacityEndDate: endDate,
+    );
+
+    // Usar el método general
+    return updateWorker(worker, updatedWorker, context);
+  }
+
+  // Y para retiro
+  Future<bool> retireWorker(
+      Worker worker, DateTime retirementDate, BuildContext context) async {
+    // Crear una copia del trabajador con los nuevos datos
+    final updatedWorker = Worker(
+      id: worker.id,
+      name: worker.name,
+      area: worker.area,
+      phone: worker.phone,
+      document: worker.document,
+      status: WorkerStatus.deactivated,
+      startDate: worker.startDate,
+      endDate: worker.endDate,
+      code: worker.code,
+      deactivationDate: retirementDate,
+    );
+
+    // Usar el método general
+    return updateWorker(worker, updatedWorker, context);
   }
 
   void deleteWorker(Worker worker) {
@@ -153,6 +231,7 @@ class WorkersProvider with ChangeNotifier {
     final index = _workers.indexWhere((w) => w.name == worker.name);
     if (index >= 0) {
       final updatedWorker = Worker(
+        id: worker.id,
         name: worker.name,
         area: worker.area,
         phone: worker.phone,
@@ -160,6 +239,8 @@ class WorkersProvider with ChangeNotifier {
         status: newStatus,
         startDate: worker.startDate,
         endDate: worker.endDate,
+        incapacityEndDate: worker.incapacityEndDate,
+        incapacityStartDate: worker.incapacityStartDate,
         code: worker.code,
       );
       _workers[index] = updatedWorker;
@@ -184,6 +265,7 @@ class WorkersProvider with ChangeNotifier {
     final index = _workers.indexWhere((w) => w.name == worker.name);
     if (index >= 0) {
       final updatedWorker = Worker(
+        id: worker.id,
         name: worker.name,
         area: worker.area,
         phone: worker.phone,
@@ -192,6 +274,8 @@ class WorkersProvider with ChangeNotifier {
         startDate: worker.startDate,
         endDate: endDate,
         code: worker.code,
+        incapacityEndDate: worker.incapacityEndDate,
+        incapacityStartDate: worker.incapacityStartDate,
       );
       _workers[index] = updatedWorker;
       notifyListeners();
@@ -204,6 +288,7 @@ class WorkersProvider with ChangeNotifier {
     final index = _workers.indexWhere((w) => w.name == worker.name);
     if (index >= 0) {
       final updatedWorker = Worker(
+        id: worker.id,
         name: worker.name,
         area: worker.area,
         phone: worker.phone,
@@ -212,11 +297,15 @@ class WorkersProvider with ChangeNotifier {
         startDate: worker.startDate,
         endDate: null,
         code: worker.code,
+        incapacityEndDate: worker.incapacityEndDate,
+        incapacityStartDate: worker.incapacityStartDate,
       );
       _workers[index] = updatedWorker;
       notifyListeners();
     }
   }
+
+  // Agregar estos métodos a la clase WorkersProvider
 
   Map<String, dynamic> workerToMap(Worker worker) {
     return {

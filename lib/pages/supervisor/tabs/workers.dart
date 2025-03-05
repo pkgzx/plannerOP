@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_neumorphic_plus/flutter_neumorphic.dart';
 import 'package:plannerop/store/workers.dart';
+import 'package:plannerop/utils/toast.dart';
 import 'package:provider/provider.dart';
 import 'package:plannerop/core/model/worker.dart';
 import 'package:plannerop/widgets/workers/worker_list_item.dart';
@@ -42,6 +43,7 @@ class _WorkersTabState extends State<WorkersTab> {
   @override
   Widget build(BuildContext context) {
     // Simplemente consume el WorkersProvider que debe estar proporcionado desde un nivel superior
+
     return Scaffold(
       backgroundColor: Colors.white,
       body: SafeArea(
@@ -125,9 +127,9 @@ class _WorkersTabState extends State<WorkersTab> {
                 return WorkerStatsCards(
                   totalWorkers: workersProvider.totalWorkers,
                   assignedWorkers: workersProvider.assignedWorkers,
-                  currentFilter: _currentFilter, // Pasar el filtro actual
-                  disabledWorkers: 1, // TODO CHANGE IT
-                  retiredWorkers: 1, // TODO CHANGE IT
+                  currentFilter: _currentFilter,
+                  disabledWorkers: workersProvider.disabledWorkers,
+                  retiredWorkers: workersProvider.retiredWorkers,
                   onFilterChanged:
                       _handleFilterChanged, // Pasar el callback de cambio de filtro
                 );
@@ -154,10 +156,17 @@ class _WorkersTabState extends State<WorkersTab> {
                       workers = workersProvider
                           .getWorkersByStatus(WorkerStatus.assigned);
                       break;
+                    case WorkerFilter.disabled:
+                      workers = workersProvider
+                          .getWorkersByStatus(WorkerStatus.incapacitated);
+                      break;
+                    case WorkerFilter.retired:
+                      workers = workersProvider
+                          .getWorkersByStatus(WorkerStatus.deactivated);
+                      break;
                     default:
                       workers = workersProvider.workers.toList();
                   }
-
                   // Aplicar filtro de búsqueda sobre el resultado anterior
                   final filteredWorkers = _searchQuery.isEmpty
                       ? workers
@@ -250,13 +259,33 @@ class _WorkersTabState extends State<WorkersTab> {
     final workersProvider =
         Provider.of<WorkersProvider>(context, listen: false);
 
-    workersProvider.addWorker(
-        workerData, context); // Ya no necesitamos crear un nuevo Worker
+    // Mostrar indicador de carga
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => const Center(
+        child: CircularProgressIndicator(),
+      ),
+    );
+
+    // Llamar al método addWorker y manejar el resultado
+    workersProvider.addWorker(workerData, context).then((result) {
+      // Cerrar indicador de carga
+      Navigator.of(context).pop();
+
+      if (result['success']) {
+        // Mostrar notificación de éxito
+        showSuccessToast(context, result['message']);
+      } else {
+        // Mostrar notificación de error
+        showErrorToast(context, result['message']);
+      }
+    });
   }
 
   void _updateWorker(Worker oldWorker, Worker newWorker) {
     final workersProvider =
         Provider.of<WorkersProvider>(context, listen: false);
-    workersProvider.updateWorker(oldWorker, newWorker);
+    workersProvider.updateWorker(oldWorker, newWorker, context);
   }
 }
