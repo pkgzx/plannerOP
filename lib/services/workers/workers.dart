@@ -118,7 +118,9 @@ class WorkerService {
     }
   }
 
-  Future<void> registerWorker(Worker worker, BuildContext context) async {
+  // Modificar el método registerWorker en WorkerService
+  Future<Map<String, dynamic>> registerWorker(
+      Worker worker, BuildContext context) async {
     try {
       final authProvider = Provider.of<AuthProvider>(context, listen: false);
       final String token = authProvider.accessToken;
@@ -128,7 +130,7 @@ class WorkerService {
 
       if (token.isEmpty) {
         debugPrint('No hay token disponible');
-        return;
+        return {'success': false, 'message': 'No hay token disponible'};
       }
 
       var url = Uri.parse('$API_URL/worker');
@@ -148,18 +150,46 @@ class WorkerService {
           }));
 
       debugPrint('Lo que envio: ${response.request}');
+      debugPrint('Respuesta API: ${response.statusCode} - ${response.body}');
 
       if (response.statusCode == 201) {
-        debugPrint('Trabajador registrado correctamente');
+        return {
+          'success': true,
+          'message': 'Trabajador registrado correctamente'
+        };
+      } else if (response.statusCode == 409) {
+        // Conflict - recurso ya existe
+        // Intentar obtener información más específica del error
+        Map<String, dynamic> errorResponse = jsonDecode(response.body);
+        String errorMessage =
+            errorResponse['message'] ?? 'El trabajador ya existe';
+
+        // Analizar mensaje para determinar qué campo está duplicado
+        String fieldError = 'documento';
+        if (errorMessage.toLowerCase().contains('dni')) {
+          fieldError = 'documento';
+        } else if (errorMessage.toLowerCase().contains('phone')) {
+          fieldError = 'teléfono';
+        } else if (errorMessage.toLowerCase().contains('code')) {
+          fieldError = 'código';
+        }
+
+        return {
+          'success': false,
+          'message': 'Ya existe un trabajador con este $fieldError',
+          'field': fieldError
+        };
       } else {
-        debugPrint('Error en API: ${response.statusCode} - ${response.body}');
+        return {
+          'success': false,
+          'message': 'Error en API: ${response.statusCode} - ${response.body}'
+        };
       }
     } catch (e) {
       debugPrint('Error en registerWorker: $e');
+      return {'success': false, 'message': 'Error al registrar trabajador: $e'};
     }
   }
-
-  // Agregar este método a la clase WorkerService
 
   // Método para actualizar el estado de un trabajador en la API
   Future<bool> updateWorkerStatus(

@@ -132,10 +132,24 @@ class WorkersProvider with ChangeNotifier {
   }
 
   // Métodos para manipular los trabajadores
-  void addWorker(Worker worker, BuildContext context) {
-    _workers.add(worker);
-    _workerService.registerWorker(worker, context);
-    notifyListeners();
+  Future<Map<String, dynamic>> addWorker(
+      Worker worker, BuildContext context) async {
+    try {
+      // Llamar al servicio y esperar respuesta
+      final result = await _workerService.registerWorker(worker, context);
+
+      // Si fue exitoso, agregar a la lista local
+      if (result['success']) {
+        _workers.add(worker);
+        notifyListeners();
+      }
+
+      // Devolver el resultado para que la UI pueda mostrar mensajes apropiados
+      return result;
+    } catch (e) {
+      debugPrint('Error en addWorker: $e');
+      return {'success': false, 'message': 'Error al agregar trabajador: $e'};
+    }
   }
 
   List<Worker> getWorkersByStatus(WorkerStatus status) {

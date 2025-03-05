@@ -3,6 +3,7 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:plannerop/store/areas.dart';
 import 'package:plannerop/store/assignments.dart';
 import 'package:plannerop/store/auth.dart';
+import 'package:plannerop/store/task.dart';
 import 'package:plannerop/store/user.dart';
 import 'pages/login.dart';
 import 'package:provider/provider.dart';
@@ -17,7 +18,8 @@ Future<void> main() async {
         ChangeNotifierProvider(create: (context) => WorkersProvider()),
         ChangeNotifierProvider(create: (context) => AuthProvider()),
         ChangeNotifierProvider(create: (context) => UserProvider()),
-        ChangeNotifierProvider(create: (context) => AreasProvider())
+        ChangeNotifierProvider(create: (context) => AreasProvider()),
+        ChangeNotifierProvider(create: (context) => TasksProvider()),
         // Otros providers que puedas tener
       ],
       child: const App(),

@@ -8,6 +8,7 @@ import 'package:plannerop/pages/supervisor/home.dart';
 import 'package:plannerop/services/auth/signin.dart';
 import 'package:plannerop/store/auth.dart';
 import 'package:plannerop/store/user.dart';
+import 'package:plannerop/utils/toast.dart';
 import 'package:provider/provider.dart';
 
 class LoginPage extends StatefulWidget {
@@ -81,12 +82,7 @@ class _LoginPageState extends State<LoginPage> {
       }
 
       // Si el inicio de sesión falla, muestra un mensaje de error
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Usuario o contraseña incorrectos'),
-          backgroundColor: Colors.red,
-        ),
-      );
+      showErrorToast(context, 'Usuario o contraseña incorrectos');
     }
   }
 

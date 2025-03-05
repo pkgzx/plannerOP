@@ -72,7 +72,7 @@ class _DropdownFieldState extends State<DropdownField> {
           GestureDetector(
             onTap: widget.enabled
                 ? () {
-                    _showDropdownDialog(context);
+                    _showSearchableDropdownDialog(context);
                   }
                 : () {
                     // Si no está habilitado, mostrar un mensaje
@@ -130,7 +130,7 @@ class _DropdownFieldState extends State<DropdownField> {
     );
   }
 
-  void _showDropdownDialog(BuildContext context) {
+  void _showSearchableDropdownDialog(BuildContext context) {
     // Comprobar si hay opciones disponibles
     if (widget.options.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -145,39 +145,115 @@ class _DropdownFieldState extends State<DropdownField> {
 
     debugPrint('Mostrando dropdown con ${widget.options.length} opciones');
 
+    // Solo usar búsqueda si hay más de 10 opciones
+    final bool useSearch = widget.options.length > 10;
+
+    // Controlador para el campo de búsqueda
+    final searchController = TextEditingController();
+    // Lista de opciones filtradas
+    List<String> filteredOptions = List.from(widget.options);
+
     showDialog(
       context: context,
       builder: (BuildContext context) {
-        return AlertDialog(
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-          title: Text(widget.hint),
-          content: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: widget.options.map((option) {
-                return ListTile(
-                  title: Text(option),
-                  onTap: () {
-                    // Actualizar el controlador con la opción seleccionada
-                    widget.controller.text = option;
-                    // También actualizar el estado local
-                    setState(() {
-                      _displayText = option;
-                    });
+        return StatefulBuilder(
+          builder: (context, setState) {
+            return AlertDialog(
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16)),
+              title: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(widget.hint),
+                  // Solo mostrar campo de búsqueda si hay más de 10 opciones
+                  if (useSearch) ...[
+                    const SizedBox(height: 8),
+                    // Campo de búsqueda
+                    TextField(
+                      controller: searchController,
+                      decoration: InputDecoration(
+                        hintText: 'Buscar...',
+                        prefixIcon: const Icon(Icons.search, size: 20),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8),
+                          borderSide:
+                              const BorderSide(color: Color(0xFFE2E8F0)),
+                        ),
+                        contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 12, vertical: 8),
+                      ),
+                      onChanged: (value) {
+                        // Filtrar opciones cuando cambia el texto
+                        setState(() {
+                          if (value.isEmpty) {
+                            filteredOptions = List.from(widget.options);
+                          } else {
+                            filteredOptions = widget.options
+                                .where((option) => option
+                                    .toLowerCase()
+                                    .contains(value.toLowerCase()))
+                                .toList();
+                          }
+                        });
+                      },
+                    ),
+                  ],
+                ],
+              ),
+              content: SizedBox(
+                width: double.maxFinite,
+                height:
+                    useSearch ? 300 : null, // Altura controlada si hay búsqueda
+                child: filteredOptions.isEmpty
+                    ? const Center(
+                        child: Padding(
+                          padding: EdgeInsets.all(16.0),
+                          child: Text('No se encontraron resultados',
+                              style: TextStyle(
+                                  color: Colors.grey,
+                                  fontStyle: FontStyle.italic)),
+                        ),
+                      )
+                    : ListView.builder(
+                        shrinkWrap:
+                            !useSearch, // Ajustar tamaño solo si no hay búsqueda
+                        itemCount: filteredOptions.length,
+                        itemBuilder: (context, index) {
+                          final option = filteredOptions[index];
+                          return ListTile(
+                            title: Text(option),
+                            onTap: () {
+                              // Actualizar el controlador con la opción seleccionada
+                              widget.controller.text = option;
+                              // También actualizar el estado local
+                              setState(() {
+                                _displayText = option;
+                              });
 
-                    debugPrint('Seleccionada opción: $option');
-                    Navigator.of(context).pop();
+                              debugPrint('Seleccionada opción: $option');
+                              Navigator.of(context).pop();
 
-                    // Si hay una función de callback, la llamamos
-                    if (widget.onSelected != null) {
-                      widget.onSelected!(option);
-                    }
-                  },
-                );
-              }).toList(),
-            ),
-          ),
+                              // Si hay una función de callback, la llamamos
+                              if (widget.onSelected != null) {
+                                widget.onSelected!(option);
+                              }
+                            },
+                          );
+                        },
+                      ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  child: const Text('Cancelar'),
+                ),
+              ],
+              // Limitar el tamaño del diálogo
+              contentPadding: const EdgeInsets.only(
+                  top: 10, left: 20, right: 20, bottom: 0),
+            );
+          },
         );
       },
     );

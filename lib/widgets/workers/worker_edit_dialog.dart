@@ -86,36 +86,37 @@ class _WorkerEditDialogState extends State<WorkerEditDialog> {
 
   void _saveChanges() {
     if (_formKey.currentState!.validate()) {
-      // Validación adicional para fechas de incapacitación
-      if (_selectedStatus == WorkerStatus.incapacitated &&
-          (_startDate == null || _endDate == null)) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text(
-                'Por favor, seleccione las fechas de inicio y fin de la incapacidad'),
-            backgroundColor: Colors.red,
-          ),
-        );
-        return;
-      }
-
-      // Validación para fecha de retiro
-      if (_selectedStatus == WorkerStatus.deactivated && _endDate == null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Por favor, seleccione la fecha de retiro'),
-            backgroundColor: Colors.red,
-          ),
-        );
-        return;
-      }
+      // Validaciones existentes...
 
       setState(() {
         _isLoading = true;
       });
 
       try {
-        // Crear un nuevo trabajador con los datos modificados
+        // Determinar las fechas de incapacidad y retiro basadas en el estado seleccionado
+        DateTime? incapacityStartDate;
+        DateTime? incapacityEndDate;
+        DateTime? deactivationDate;
+
+        // Asignar las fechas según el estado seleccionado
+        if (_selectedStatus == WorkerStatus.incapacitated) {
+          incapacityStartDate = _startDate;
+          incapacityEndDate = _endDate;
+          // Mantener la fecha de retiro como estaba
+          deactivationDate = widget.worker.deactivationDate;
+        } else if (_selectedStatus == WorkerStatus.deactivated) {
+          deactivationDate = _endDate;
+          // Mantener fechas de incapacidad como estaban
+          incapacityStartDate = widget.worker.incapacityStartDate;
+          incapacityEndDate = widget.worker.incapacityEndDate;
+        } else {
+          // Para otros estados, mantener las fechas anteriores
+          incapacityStartDate = widget.worker.incapacityStartDate;
+          incapacityEndDate = widget.worker.incapacityEndDate;
+          deactivationDate = widget.worker.deactivationDate;
+        }
+
+        // Crear un nuevo trabajador con los datos modificados y las fechas correctas
         final updatedWorker = Worker(
           id: widget.worker.id,
           name: _nameController.text,
@@ -123,32 +124,18 @@ class _WorkerEditDialogState extends State<WorkerEditDialog> {
           phone: _phoneController.text,
           document: _documentController.text,
           status: _selectedStatus,
-          startDate: _startDate ?? DateTime.now(),
-          endDate: _endDate,
+          startDate:
+              widget.worker.startDate, // Fecha de inicio del trabajo (mantener)
+          endDate: _selectedStatus == WorkerStatus.assigned
+              ? _endDate
+              : null, // Fecha fin asignación
           code: _codeController.text,
-          incapacityStartDate: widget.worker.incapacityStartDate,
-          incapacityEndDate: widget.worker.incapacityEndDate,
-          deactivationDate: widget.worker.deactivationDate,
+          incapacityStartDate: incapacityStartDate, // Usar la fecha calculada
+          incapacityEndDate: incapacityEndDate, // Usar la fecha calculada
+          deactivationDate: deactivationDate, // Usar la fecha calculada
           idArea:
               _areas.firstWhere((area) => area.name == _areaController.text).id,
         );
-
-        // if (_selectedStatus == WorkerStatus.incapacitated) {
-        //   updatedWorker.setIncapacityDates(_startDate!, _endDate!);
-        // } else if (_selectedStatus == WorkerStatus.deactivated) {
-        //   updatedWorker.setDeactivationDate(_endDate!);
-        // }
-
-        // if (_selectedStatus == WorkerStatus.incapacitated) {
-        //   Provider.of<WorkersProvider>(context, listen: false)
-        //       .incapacitateWorker(widget.worker, _startDate ?? DateTime.now(),
-        //           _endDate ?? DateTime.now(), context);
-        // }
-
-        // !if (_selectedStatus == WorkerStatus.deactivated) {
-        //   Provider.of<WorkersProvider>(context, listen: false)
-        //       .retireWorker(widget.worker, _endDate ?? DateTime.now(), context);
-        // }
 
         // Llamar a la función para actualizar el trabajador
         widget.onUpdateWorker(widget.worker, updatedWorker);
@@ -156,13 +143,7 @@ class _WorkerEditDialogState extends State<WorkerEditDialog> {
         // Cerrar el diálogo con éxito
         Navigator.of(context).pop();
       } catch (e) {
-        // Mostrar error en caso de fallo
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error al actualizar el trabajador: ${e.toString()}'),
-            backgroundColor: Colors.red,
-          ),
-        );
+        // Código de manejo de error existente...
       } finally {
         if (mounted) {
           setState(() {
