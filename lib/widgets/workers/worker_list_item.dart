@@ -103,17 +103,35 @@ class WorkerListItem extends StatelessWidget {
                   decoration: BoxDecoration(
                     color: worker.status == WorkerStatus.assigned
                         ? const Color(0xFFFED7D7)
-                        : const Color(0xFFE6FFFA),
+                        : worker.status == WorkerStatus.available
+                            ? const Color(0xFFC6F6D5)
+                            : worker.status == WorkerStatus.incapacitated
+                                ? Colors.purple[200]
+                                : worker.status == WorkerStatus.deactivated
+                                    ? const Color(0xFFE2E8F0)
+                                    : const Color(0xFFE2E8F0),
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: Text(
                     worker.status == WorkerStatus.assigned
                         ? 'Asignado'
-                        : 'Disponible',
+                        : worker.status == WorkerStatus.available
+                            ? 'Disponible'
+                            : worker.status == WorkerStatus.incapacitated
+                                ? 'Incapacitado'
+                                : worker.status == WorkerStatus.deactivated
+                                    ? 'Retirado'
+                                    : 'Desconocido',
                     style: TextStyle(
                       color: worker.status == WorkerStatus.assigned
                           ? const Color(0xFFC53030)
-                          : const Color(0xFF2C7A7B),
+                          : worker.status == WorkerStatus.available
+                              ? const Color(0xFF2F855A)
+                              : worker.status == WorkerStatus.incapacitated
+                                  ? Colors.purple[800]
+                                  : worker.status == WorkerStatus.deactivated
+                                      ? const Color(0xFF718096)
+                                      : const Color(0xFF718096),
                       fontWeight: FontWeight.w600,
                       fontSize: 12,
                     ),

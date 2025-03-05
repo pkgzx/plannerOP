@@ -43,7 +43,10 @@ class _WorkerAddDialogState extends State<WorkerAddDialog> {
   List<Area> areas = [];
 
   // Valor seleccionado por defecto
-  String selectedArea = 'OPERADORES MC';
+  int? selectedArea;
+
+  // Flag para inicialización
+  bool _areasInitialized = false;
 
   @override
   void dispose() {
@@ -202,6 +205,12 @@ class _WorkerAddDialogState extends State<WorkerAddDialog> {
   @override
   Widget build(BuildContext context) {
     areas = Provider.of<AreasProvider>(context).areas;
+
+    // Inicializar selectedArea solo la primera vez
+    if (!_areasInitialized && areas.isNotEmpty) {
+      selectedArea = areas.first.id;
+      _areasInitialized = true;
+    }
 
     return Dialog(
       shape: RoundedRectangleBorder(
@@ -401,17 +410,17 @@ class _WorkerAddDialogState extends State<WorkerAddDialog> {
                       const SizedBox(width: 12),
                       Expanded(
                         child: DropdownButtonHideUnderline(
-                          child: DropdownButton<String>(
+                          child: DropdownButton<int>(
                             isExpanded: true,
                             value: selectedArea,
                             hint: const Text('Seleccionar área'),
                             items: areas.map((Area area) {
-                              return DropdownMenuItem<String>(
-                                value: area.name,
+                              return DropdownMenuItem<int>(
+                                value: area.id,
                                 child: Text(area.name),
                               );
                             }).toList(),
-                            onChanged: (String? newValue) {
+                            onChanged: (int? newValue) {
                               if (newValue != null) {
                                 setState(() {
                                   selectedArea = newValue;
@@ -491,10 +500,15 @@ class _WorkerAddDialogState extends State<WorkerAddDialog> {
                     Expanded(
                       child: ElevatedButton(
                         onPressed: () {
-                          if (_validateForm()) {
+                          if (_validateForm() && selectedArea != null) {
+                            debugPrint('Selected area: $selectedArea');
                             final newWorker = Worker(
+                              id: 0,
                               name: nameController.text.trim(),
-                              area: selectedArea,
+                              area: areas
+                                  .firstWhere((area) => area.id == selectedArea)
+                                  .name,
+                              idArea: selectedArea ?? 0,
                               phone: phoneController.text.trim(),
                               document: documentController.text.trim(),
                               status: WorkerStatus.available,

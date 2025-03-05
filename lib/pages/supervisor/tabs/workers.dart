@@ -42,6 +42,7 @@ class _WorkersTabState extends State<WorkersTab> {
   @override
   Widget build(BuildContext context) {
     // Simplemente consume el WorkersProvider que debe estar proporcionado desde un nivel superior
+
     return Scaffold(
       backgroundColor: Colors.white,
       body: SafeArea(
@@ -125,9 +126,9 @@ class _WorkersTabState extends State<WorkersTab> {
                 return WorkerStatsCards(
                   totalWorkers: workersProvider.totalWorkers,
                   assignedWorkers: workersProvider.assignedWorkers,
-                  currentFilter: _currentFilter, // Pasar el filtro actual
-                  disabledWorkers: 1, // TODO CHANGE IT
-                  retiredWorkers: 1, // TODO CHANGE IT
+                  currentFilter: _currentFilter,
+                  disabledWorkers: workersProvider.disabledWorkers,
+                  retiredWorkers: workersProvider.retiredWorkers,
                   onFilterChanged:
                       _handleFilterChanged, // Pasar el callback de cambio de filtro
                 );
@@ -154,10 +155,17 @@ class _WorkersTabState extends State<WorkersTab> {
                       workers = workersProvider
                           .getWorkersByStatus(WorkerStatus.assigned);
                       break;
+                    case WorkerFilter.disabled:
+                      workers = workersProvider
+                          .getWorkersByStatus(WorkerStatus.incapacitated);
+                      break;
+                    case WorkerFilter.retired:
+                      workers = workersProvider
+                          .getWorkersByStatus(WorkerStatus.deactivated);
+                      break;
                     default:
                       workers = workersProvider.workers.toList();
                   }
-
                   // Aplicar filtro de búsqueda sobre el resultado anterior
                   final filteredWorkers = _searchQuery.isEmpty
                       ? workers
@@ -257,6 +265,6 @@ class _WorkersTabState extends State<WorkersTab> {
   void _updateWorker(Worker oldWorker, Worker newWorker) {
     final workersProvider =
         Provider.of<WorkersProvider>(context, listen: false);
-    workersProvider.updateWorker(oldWorker, newWorker);
+    workersProvider.updateWorker(oldWorker, newWorker, context);
   }
 }

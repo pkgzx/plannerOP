@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:plannerop/core/model/worker.dart';
+import 'package:plannerop/store/workers.dart';
+import 'package:provider/provider.dart';
 
 class WorkerIncapacitationDialog extends StatefulWidget {
   final Worker worker;
@@ -420,7 +422,8 @@ class _WorkerIncapacitationDialogState
     return _endDate.difference(_startDate).inDays + 1;
   }
 
-  void _submitIncapacitation() {
+// Modificar el método _submitIncapacitation
+  void _submitIncapacitation() async {
     if (_formKey.currentState!.validate()) {
       setState(() {
         _isLoading = true;
@@ -428,17 +431,23 @@ class _WorkerIncapacitationDialogState
 
       try {
         // Llamar a la función para incapacitar al trabajador
-        widget.onIncapacitate(widget.worker, _startDate, _endDate);
+        final success = await Provider.of<WorkersProvider>(context,
+                listen: false)
+            .incapacitateWorker(widget.worker, _startDate, _endDate, context);
 
-        // Mostrar mensaje de éxito y cerrar el diálogo
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Incapacidad registrada correctamente'),
-            backgroundColor: Colors.green,
-          ),
-        );
+        if (success) {
+          // Mostrar mensaje de éxito y cerrar el diálogo
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Incapacidad registrada correctamente'),
+              backgroundColor: Colors.green,
+            ),
+          );
 
-        Navigator.of(context).pop();
+          Navigator.of(context).pop();
+        } else {
+          throw Exception('Error al registrar la incapacidad en la API');
+        }
       } catch (e) {
         // Mostrar mensaje de error
         ScaffoldMessenger.of(context).showSnackBar(
