@@ -83,30 +83,34 @@ class _AddAssignmentDialogState extends State<AddAssignmentDialog> {
     });
 
     try {
-      // Obtener el provider de tareas
       final tasksProvider = Provider.of<TasksProvider>(context, listen: false);
 
-      // Cargar tareas si aún no están cargadas
-      if (tasksProvider.tasks.isEmpty) {
-        await tasksProvider.loadTasks(context);
+      // Intentar cargar si aún no se ha hecho
+      if (!tasksProvider.hasAttemptedLoading) {
+        await tasksProvider.loadTasksIfNeeded(context);
       }
 
-      // Actualizar la lista local
+      // Actualizar la lista local con los nombres de tareas
+      // Ahora siempre tendremos tareas (predeterminadas o de API)
       setState(() {
-        _currentTasks = tasksProvider.tasks.map((task) => task.name).toList();
+        _currentTasks = tasksProvider.taskNames;
       });
     } catch (e) {
-      print('Error al cargar tareas: $e');
-      // Si hay un error, mantener una lista de respaldo
-      _currentTasks = [
-        "SERVICIO DE ESTIBAJE", //! BREAKING CHANGE: Cambio de nombre
-        "SERVICIO DE WINCHERO",
-      ];
+      debugPrint('Error al cargar tareas: $e');
 
-      // Mostrar error al usuario
+      // En caso de error, usar lista predeterminada
+      setState(() {
+        _currentTasks = [
+          "SERVICIO DE ESTIBAJE",
+          "SERVICIO DE WINCHERO",
+          // Más tareas predeterminadas
+        ];
+      });
+
+      // Mostrar error
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Error al cargar tareas. Usando datos locales.'),
+          content: Text('Error al cargar tareas: Usando lista predeterminada'),
           backgroundColor: Colors.orange,
         ),
       );
@@ -293,6 +297,7 @@ class _AddAssignmentDialogState extends State<AddAssignmentDialog> {
       task: _taskController.text,
       date: DateFormat('dd/MM/yyyy').parse(_startDateController.text),
       time: _startTimeController.text,
+      zoneId: 2,
     );
 
     for (var worker in _selectedWorkers) {

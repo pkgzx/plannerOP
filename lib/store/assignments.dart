@@ -64,6 +64,7 @@ class AssignmentsProvider extends ChangeNotifier {
     required String task,
     required DateTime date,
     required String time,
+    required int zoneId,
   }) async {
     final uuid = const Uuid();
     final newAssignment = Assignment(
@@ -74,6 +75,7 @@ class AssignmentsProvider extends ChangeNotifier {
         date: date,
         time: time,
         endTime: 'No ha finalizado',
+        zone: zoneId,
         supervisor: User(
           id: '1',
           name: 'Supervisor',

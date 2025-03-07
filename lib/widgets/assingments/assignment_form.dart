@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:plannerop/core/model/area.dart';
+import 'package:plannerop/store/task.dart';
+import 'package:provider/provider.dart';
 import './dropdown_field.dart';
 import './date_time_fields.dart';
 
@@ -158,6 +160,12 @@ class _AssignmentFormState extends State<AssignmentForm> {
     final List<String> zones =
         List.generate(10, (index) => 'Zona ${index + 1}');
 
+    // Obtener tareas del provider
+    final tasksProvider = Provider.of<TasksProvider>(context);
+    final List<String> taskNames = tasksProvider.tasks.isNotEmpty
+        ? tasksProvider.taskNames
+        : []; // Tareas de respaldo
+
     return Column(
       children: [
         // Campo de selección de zona
@@ -287,7 +295,7 @@ class _AssignmentFormState extends State<AssignmentForm> {
           hint: 'Seleccionar servicio',
           icon: Icons.assignment_outlined,
           controller: widget.taskController,
-          options: widget.currentTasks,
+          options: taskNames,
           onSelected: (String task) =>
               debugPrint('Servicio seleccionado $task'),
         ),

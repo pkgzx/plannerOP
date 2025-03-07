@@ -12,6 +12,7 @@ class Assignment {
   String endTime;
   String status; // 'pending', 'in_progress', 'completed'
   DateTime? completedDate;
+  final int zone;
 
   Assignment({
     required this.id,
@@ -22,6 +23,7 @@ class Assignment {
     required this.time,
     required this.endTime,
     required this.supervisor,
+    required this.zone,
     this.status = 'pending',
     this.completedDate,
   });
@@ -54,6 +56,7 @@ class Assignment {
       completedDate: json['completedDate'] != null
           ? DateTime.parse(json['completedDate'])
           : null,
+      zone: json['zone'],
     );
   }
 }

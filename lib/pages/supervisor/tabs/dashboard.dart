@@ -148,49 +148,38 @@ class _DashboardTabState extends State<DashboardTab> {
   Future<void> _loadTask() async {
     if (!mounted) return;
 
-    final tasksProvider = Provider.of<TasksProvider>(context, listen: false);
-
-    // Verificar si ya hay tareas cargadas
-    if (tasksProvider.tasks.isNotEmpty) {
-      debugPrint(
-          'Tareas ya cargadas anteriormente: ${tasksProvider.tasks.length}');
-      return;
-    }
-
-    debugPrint('Iniciando carga de tareas desde API...');
-
-    // Mostrar indicador de carga para tareas
     setState(() {
       _isLoadingTasks = true;
     });
 
     try {
-      // Llamar al método fetchTasks con await para asegurar que se complete
+      final tasksProvider = Provider.of<TasksProvider>(context, listen: false);
+
+      // Si ya se ha intentado cargar o ya hay tareas, no hacemos nada
+      if (tasksProvider.hasAttemptedLoading || tasksProvider.tasks.isNotEmpty) {
+        debugPrint('Tareas ya cargadas o intento previo realizado.');
+        return;
+      }
+
       await tasksProvider.loadTasks(context);
 
-      // Verificar si se cargaron tareas
-      if (tasksProvider.tasks.isNotEmpty) {
-        debugPrint(
-            'Tareas cargadas con éxito: ${tasksProvider.tasks.length} tareas');
+      // Verificar resultado después de la carga
+      if (tasksProvider.tasks.isEmpty) {
+        debugPrint('La API devolvió una lista vacía de tareas.');
+        // Esto ahora lo hace automáticamente el provider
+        // _loadDefaultTasks(tasksProvider);
       } else {
-        debugPrint('No se cargaron tareas o la lista está vacía');
-
-        // Si no hay tareas, cargar algunas predeterminadas
-        _loadDefaultTasks(tasksProvider);
+        debugPrint('Tareas cargadas con éxito: ${tasksProvider.tasks.length}');
       }
-    } catch (e, stackTrace) {
+    } catch (e) {
       debugPrint('Error al cargar tareas: $e');
-      debugPrint('Stack trace: $stackTrace');
 
-      // Cargar tareas predeterminadas en caso de error
-      _loadDefaultTasks(tasksProvider);
-
-      // Mostrar un mensaje de error más informativo
+      // En caso de error, mostramos una notificación
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: const Text(
-                'Error al cargar tareas. Usando tareas predeterminadas.'),
+            content:
+                const Text('Error al cargar tareas. Usando predeterminadas.'),
             backgroundColor: Colors.amber.shade700,
             action: SnackBarAction(
               label: 'Reintentar',

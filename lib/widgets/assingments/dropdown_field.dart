@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:plannerop/utils/toast.dart';
 
 class DropdownField extends StatefulWidget {
   final String label;
@@ -133,13 +134,7 @@ class _DropdownFieldState extends State<DropdownField> {
   void _showSearchableDropdownDialog(BuildContext context) {
     // Comprobar si hay opciones disponibles
     if (widget.options.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('No hay opciones disponibles para seleccionar'),
-          backgroundColor: Color(0xFFE53E3E),
-          duration: Duration(seconds: 2),
-        ),
-      );
+      showErrorToast(context, "No hay opciones disponibles");
       return;
     }
 

@@ -17,4 +17,12 @@ class Task {
       name: json['name'] as String,
     );
   }
+
+  // Método para convertir a JSON
+  Map<String, dynamic> toJson(String idUser) {
+    return {
+      'id_user': idUser,
+      'name': name,
+    };
+  }
 }
