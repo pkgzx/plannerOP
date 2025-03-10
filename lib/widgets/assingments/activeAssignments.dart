@@ -375,6 +375,17 @@ class ActiveAssignmentsView extends StatelessWidget {
                               DateFormat('dd/MM/yyyy').format(assignment.date)),
                           _buildDetailRow('Hora', assignment.time),
                           _buildDetailRow('Estado', 'En proceso'),
+                          if (assignment.endTime != null)
+                            _buildDetailRow('Hora de finalización',
+                                assignment.endTime ?? 'No especificada'),
+                          if (assignment.endDate != null)
+                            _buildDetailRow(
+                                'Fecha de finalización',
+                                DateFormat('dd/MM/yyyy')
+                                    .format(assignment.endDate!)),
+                          _buildDetailRow('Zona', 'Zona ${assignment.zone}'),
+                          _buildDetailRow(
+                              'Motonave', assignment.motorship ?? ''),
                         ],
                       ),
                       const SizedBox(height: 20),

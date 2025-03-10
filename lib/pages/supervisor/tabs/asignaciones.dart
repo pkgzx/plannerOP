@@ -135,7 +135,7 @@ class _AsignacionesTabState extends State<AsignacionesTab>
                     const TextStyle(fontWeight: FontWeight.normal),
                 tabs: const [
                   Tab(text: 'Pendientes'),
-                  Tab(text: 'En Proceso'),
+                  Tab(text: 'En Vivo'),
                   Tab(text: 'Finalizadas'),
                 ],
               ),

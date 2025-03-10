@@ -143,8 +143,9 @@ class AssignmentService {
             'Authorization': 'Bearer $token',
             'Content-Type': 'application/json'
           },
-          body: jsonEncode({"status": status}));
-
+          body: jsonEncode(
+              {"status": status == 'IN_PROGRESS' ? 'INPROGRESS' : status}));
+      debugPrint('Actualizando estado de asignación $status');
       if (response.statusCode == 200) {
         debugPrint('Asignación actualizada con éxito: ${response.body}');
         return true;
