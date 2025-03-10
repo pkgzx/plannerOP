@@ -2,10 +2,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter_neumorphic_plus/flutter_neumorphic.dart';
 import 'package:intl/intl.dart';
 import 'package:plannerop/core/model/area.dart';
+import 'package:plannerop/core/model/client.dart';
+import 'package:plannerop/core/model/task.dart';
 import 'package:plannerop/core/model/worker.dart';
 import 'package:plannerop/store/areas.dart';
 import 'package:plannerop/store/assignments.dart';
+import 'package:plannerop/store/auth.dart';
+import 'package:plannerop/store/clients.dart';
 import 'package:plannerop/store/task.dart';
+import 'package:plannerop/store/user.dart';
 import 'package:plannerop/store/workers.dart';
 import 'package:provider/provider.dart';
 import './selected_worker_list.dart';
@@ -45,11 +50,7 @@ class _AddAssignmentDialogState extends State<AddAssignmentDialog> {
   // Ahora usaremos TasksProvider para obtener la lista de tareas
   List<String> _currentTasks = [];
 
-  List<String> _clients = [
-    "SMITCO",
-    "SPSM",
-    "UNIBAN",
-  ];
+  List<Client> _clients = [];
 
   @override
   void dispose() {
@@ -100,11 +101,7 @@ class _AddAssignmentDialogState extends State<AddAssignmentDialog> {
 
       // En caso de error, usar lista predeterminada
       setState(() {
-        _currentTasks = [
-          "SERVICIO DE ESTIBAJE",
-          "SERVICIO DE WINCHERO",
-          // Más tareas predeterminadas
-        ];
+        _currentTasks = [];
       });
 
       // Mostrar error
@@ -133,6 +130,7 @@ class _AddAssignmentDialogState extends State<AddAssignmentDialog> {
   @override
   Widget build(BuildContext context) {
     _areas = Provider.of<AreasProvider>(context).areas;
+    _clients = Provider.of<ClientsProvider>(context).clients;
 
     return Dialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
@@ -236,9 +234,9 @@ class _AddAssignmentDialogState extends State<AddAssignmentDialog> {
                       boxShape: NeumorphicBoxShape.roundRect(
                           BorderRadius.circular(8)),
                     ),
-                    onPressed: () {
+                    onPressed: () async {
                       // Validar los campos antes de continuar
-                      if (_validateFields()) {
+                      if (await _validateFields()) {
                         Navigator.of(context).pop();
                         _showSuccessDialog(context);
                       }
@@ -260,13 +258,14 @@ class _AddAssignmentDialogState extends State<AddAssignmentDialog> {
     );
   }
 
-  bool _validateFields() {
+  Future<bool> _validateFields() async {
+    // Validaciones existentes
     if (_selectedWorkers.isEmpty) {
       _showValidationError('Por favor, selecciona al menos un trabajador');
       return false;
     }
 
-    if (_zoneController.text.isEmpty) {
+    if (_areaController.text.isEmpty) {
       _showValidationError('Por favor, selecciona un área');
       return false;
     }
@@ -286,32 +285,130 @@ class _AddAssignmentDialogState extends State<AddAssignmentDialog> {
       return false;
     }
 
-    // Si la validación es exitosa, actualizar el estado de los trabajadores y guardar la asignación
-    final workersProvider =
-        Provider.of<WorkersProvider>(context, listen: false);
-
-    // Si la validación es exitosa, guardar la asignación
-    Provider.of<AssignmentsProvider>(context, listen: false).addAssignment(
-      workers: _selectedWorkers,
-      area: _zoneController.text,
-      task: _taskController.text,
-      date: DateFormat('dd/MM/yyyy').parse(_startDateController.text),
-      time: _startTimeController.text,
-      zoneId: 2,
-    );
-
-    for (var worker in _selectedWorkers) {
-      // Parse the date string properly to create a DateTime object
-      DateTime assignmentDate =
-          DateFormat('dd/MM/yyyy').parse(_startDateController.text);
-
-      // Asignar fecha final como una semana después
-      DateTime endDate = assignmentDate.add(const Duration(days: 7));
-
-      workersProvider.assignWorker(worker, endDate);
+    if (_zoneController.text.isEmpty) {
+      _showValidationError('Por favor, selecciona una zona');
+      return false;
     }
 
-    return true;
+    if (_clientController.text.isEmpty) {
+      _showValidationError('Por favor, selecciona un cliente');
+      return false;
+    }
+
+    // Validación para el campo de motonave cuando el área es BUQUE
+    if (_areaController.text.toUpperCase() == 'BUQUE' &&
+        _motorshipController.text.isEmpty) {
+      _showValidationError('Por favor, ingresa el nombre de la motonave');
+      return false;
+    }
+
+    try {
+      // Obtener proveedores
+      final workersProvider =
+          Provider.of<WorkersProvider>(context, listen: false);
+      final areasProvider = Provider.of<AreasProvider>(context, listen: false);
+      final tasksProvider = Provider.of<TasksProvider>(context, listen: false);
+      final assignmentsProvider =
+          Provider.of<AssignmentsProvider>(context, listen: false);
+
+      // Parsear fecha de inicio
+      final startDate =
+          DateFormat('dd/MM/yyyy').parse(_startDateController.text);
+
+      // Parsear fecha de fin si está presente
+      DateTime? endDate;
+      if (_endDateController.text.isNotEmpty) {
+        endDate = DateFormat('dd/MM/yyyy').parse(_endDateController.text);
+      }
+
+      // Extraer IDs de las entidades seleccionadas
+      final selectedArea = areasProvider.areas.firstWhere(
+          (area) => area.name == _areaController.text,
+          orElse: () => Area(
+              id: 0,
+              name: _areaController.text) // Área por defecto si no se encuentra
+          );
+
+      // Encontrar ID de la tarea seleccionada
+      int taskId = 1; // Valor por defecto
+      final selectedTask = tasksProvider.tasks.firstWhere(
+          (task) => task.name == _taskController.text,
+          orElse: () => Task(
+              id: 1,
+              name:
+                  _taskController.text) // Tarea por defecto si no se encuentra
+          );
+
+      taskId = selectedTask.id;
+
+      var clientsProvider =
+          Provider.of<ClientsProvider>(context, listen: false);
+
+      // Extraer ID del cliente
+      int clientId = clientsProvider.clients
+          .firstWhere((client) => client.name == _clientController.text,
+              orElse: () => Client(
+                  id: 1,
+                  name: _clientController
+                      .text) // Cliente por defecto si no se encuentra
+              )
+          .id;
+
+      // Obtener zona numéricamente
+      int zoneNum = 1; // Por defecto
+      final zoneText = _zoneController.text;
+      if (zoneText.startsWith('Zona ')) {
+        zoneNum = int.tryParse(zoneText.substring(5)) ?? 1;
+      }
+
+      final userProvider = Provider.of<UserProvider>(context, listen: false);
+
+      // ID del usuario actual
+      final userId = userProvider.user.id ?? 1;
+
+      // Si la validación es exitosa, guardar la asignación
+      final success = await assignmentsProvider.addAssignment(
+        workers: _selectedWorkers,
+        area: _areaController.text,
+        areaId: selectedArea.id,
+        task: _taskController.text,
+        taskId: taskId,
+        date: startDate,
+        time: _startTimeController.text,
+        zoneId: zoneNum,
+        userId: userId,
+        clientId: clientId,
+        clientName: _clientController.text,
+        endDate: endDate,
+        endTime:
+            _endTimeController.text.isNotEmpty ? _endTimeController.text : null,
+        motorship: _areaController.text.toUpperCase() == 'BUQUE'
+            ? _motorshipController.text
+            : null,
+        context: context, // Pasar el contexto para el token
+      );
+
+      // Si hubo error al guardar
+      if (!success) {
+        _showValidationError(
+            'Error al guardar la asignación: ${assignmentsProvider.error}');
+        return false;
+      }
+
+      // Actualizar estado de los trabajadores
+      for (var worker in _selectedWorkers) {
+        // Asignar fecha final como una semana después o usar la fecha proporcionada
+        DateTime workerEndDate =
+            endDate ?? startDate.add(const Duration(days: 7));
+        workersProvider.assignWorker(worker, workerEndDate);
+      }
+
+      return true;
+    } catch (e) {
+      debugPrint('Error en _validateFields: $e');
+      _showValidationError('Error al procesar los datos: $e');
+      return false;
+    }
   }
 
   void _showValidationError(String message) {

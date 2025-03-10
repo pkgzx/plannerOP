@@ -15,8 +15,8 @@ class RecentOps extends StatelessWidget {
         // Obtener las asignaciones ordenadas por fecha reciente
         final allAssignments = [...provider.assignments];
         allAssignments.sort((a, b) {
-          final dateA = a.completedDate ?? a.date;
-          final dateB = b.completedDate ?? b.date;
+          final dateA = a.endDate ?? a.date;
+          final dateB = b.endDate ?? b.date;
           return dateB.compareTo(dateA);
         });
 
@@ -81,17 +81,17 @@ class RecentOps extends StatelessWidget {
                               Color colorTexto;
 
                               switch (assignment.status) {
-                                case 'pending':
+                                case 'PENDING':
                                   estado = 'Pendiente';
                                   colorFondo = const Color(0xFFFEF5E7);
                                   colorTexto = const Color(0xFFB7791F);
                                   break;
-                                case 'in_progress':
+                                case 'IN_PROGRESS':
                                   estado = 'En progreso';
                                   colorFondo = const Color(0xFFEBF4FF);
                                   colorTexto = const Color(0xFF2B6CB0);
                                   break;
-                                case 'completed':
+                                case 'COMPLETED':
                                   estado = 'Finalizada';
                                   colorFondo = const Color(0xFFE6FFED);
                                   colorTexto = const Color(0xFF2F855A);
@@ -261,8 +261,8 @@ class RecentOps extends StatelessWidget {
                               const SizedBox(height: 2),
                               Text(
                                 assignment.status == 'completed' &&
-                                        assignment.completedDate != null
-                                    ? 'Completada el ${DateFormat('dd/MM/yyyy').format(assignment.completedDate!)}'
+                                        assignment.endDate != null
+                                    ? 'Completada el ${DateFormat('dd/MM/yyyy').format(assignment.endDate!)}'
                                     : 'Programada para el ${DateFormat('dd/MM/yyyy').format(assignment.date)}',
                                 style: TextStyle(
                                   color: colorTexto.withOpacity(0.8),

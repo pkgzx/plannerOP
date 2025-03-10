@@ -27,4 +27,12 @@ class AreasProvider extends ChangeNotifier {
       }
     }
   }
+
+  Area? getAreaById(int id) {
+    return _areas.firstWhere((area) => area.id == id,
+        orElse: () => Area(
+              id: 0,
+              name: 'No encontrado',
+            ));
+  }
 }

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_neumorphic_plus/flutter_neumorphic.dart';
 import 'package:intl/intl.dart';
 import 'package:plannerop/core/model/worker.dart';
+import 'package:plannerop/store/areas.dart';
 import 'package:plannerop/store/workers.dart';
 import 'package:provider/provider.dart';
 import 'package:plannerop/store/assignments.dart';
@@ -31,8 +32,7 @@ class ActiveAssignmentsView extends StatelessWidget {
           if (searchQuery.isEmpty) return true;
 
           // Buscar en área, tarea, o nombres de trabajadores
-          final bool matchesArea =
-              assignment.area.toLowerCase().contains(searchQuery.toLowerCase());
+
           final bool matchesTask =
               assignment.task.toLowerCase().contains(searchQuery.toLowerCase());
           final bool matchesWorker = assignment.workers.any((worker) => worker
@@ -41,7 +41,7 @@ class ActiveAssignmentsView extends StatelessWidget {
               .toLowerCase()
               .contains(searchQuery.toLowerCase()));
 
-          return matchesArea || matchesTask || matchesWorker;
+          return matchesTask || matchesWorker;
         }).toList();
 
         if (filteredAssignments.isEmpty) {
@@ -97,6 +97,8 @@ class ActiveAssignmentsView extends StatelessWidget {
 
   Widget _buildAssignmentCard(BuildContext context, Assignment assignment,
       AssignmentsProvider provider) {
+    final areas_provider = Provider.of<AreasProvider>(context, listen: false);
+
     return Neumorphic(
       style: NeumorphicStyle(
         depth: 4,
@@ -185,7 +187,10 @@ class ActiveAssignmentsView extends StatelessWidget {
                         const SizedBox(width: 4),
                         Flexible(
                           child: Text(
-                            assignment.area,
+                            areas_provider
+                                    .getAreaById(assignment.areaId)
+                                    ?.name ??
+                                "",
                             overflow: TextOverflow.ellipsis,
                             style: const TextStyle(
                               fontSize: 13,
@@ -290,6 +295,8 @@ class ActiveAssignmentsView extends StatelessWidget {
   }
 
   void _showAssignmentDetails(BuildContext context, Assignment assignment) {
+    final areas_provider = Provider.of<AreasProvider>(context, listen: false);
+
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -340,7 +347,8 @@ class ActiveAssignmentsView extends StatelessWidget {
                         ),
                         const SizedBox(width: 4),
                         Text(
-                          assignment.area,
+                          areas_provider.getAreaById(assignment.areaId)?.name ??
+                              "",
                           style: const TextStyle(
                             fontSize: 14,
                             color: Color(0xFF3182CE),
@@ -483,9 +491,10 @@ class ActiveAssignmentsView extends StatelessWidget {
                     NeumorphicBoxShape.roundRect(BorderRadius.circular(8)),
               ),
               onPressed: () {
-                provider.updateAssignmentStatus(assignment.id, 'completed');
-                provider.updateAssignmentEndTime(
-                    assignment.id, DateFormat('HH:mm').format(DateTime.now()));
+                provider.updateAssignmentStatus(
+                    assignment.id ?? 0, 'completed', context);
+                provider.updateAssignmentEndTime(assignment.id ?? 0,
+                    DateFormat('HH:mm').format(DateTime.now()));
 
 // 2. Liberar a todos los trabajadores de esta asignación
                 final workersProvider =

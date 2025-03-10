@@ -23,10 +23,7 @@ class ExportOptions extends StatelessWidget {
 
   // Supervisor ficticio para casos donde no hay uno real
   final User _defaultSupervisor = User(
-      id: "default",
-      name: "Supervisor Genérico",
-      dni: "00000000",
-      phone: "000000000");
+      id: 0, name: "Supervisor Genérico", dni: "00000000", phone: "000000000");
 
   ExportOptions({
     Key? key,
@@ -620,7 +617,7 @@ Generado el ${DateFormat('dd/MM/yyyy HH:mm').format(DateTime.now())}
 
   // Método para calcular las horas entre tiempo de inicio y fin
   String _calculateHours(Assignment assignment) {
-    if (assignment.time.isEmpty || assignment.endTime.isEmpty) {
+    if (assignment.time.isEmpty || assignment.endTime == null) {
       return "-";
     }
 
@@ -628,7 +625,7 @@ Generado el ${DateFormat('dd/MM/yyyy HH:mm').format(DateTime.now())}
       // Parsear las horas de inicio y fin
       final DateFormat format = DateFormat("HH:mm");
       final DateTime startTime = format.parse(assignment.time);
-      final DateTime endTime = format.parse(assignment.endTime);
+      final DateTime endTime = format.parse(assignment.endTime ?? "");
 
       // Calcular la diferencia en horas
       final Duration difference = endTime.difference(startTime);

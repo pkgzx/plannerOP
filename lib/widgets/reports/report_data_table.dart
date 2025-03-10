@@ -34,7 +34,7 @@ class _ReportDataTableState extends State<ReportDataTable> {
 
   // Supervisor ficticio para cuando no hay uno asignado
   final User _defaultSupervisor = User(
-    id: "default",
+    id: 0,
     name: "Supervisor Genérico",
     dni: "00000000",
     phone: "000000000",
@@ -65,7 +65,6 @@ class _ReportDataTableState extends State<ReportDataTable> {
         return data.workers.any((worker) =>
                 worker.name.toString().toLowerCase().contains(searchLower)) ||
             data.task.toLowerCase().contains(searchLower) ||
-            data.id.toLowerCase().contains(searchLower) ||
             (data.supervisor?.name.toLowerCase().contains(searchLower) ??
                 false);
       }
@@ -77,9 +76,6 @@ class _ReportDataTableState extends State<ReportDataTable> {
     filtered.sort((a, b) {
       var comparison = 0;
       switch (_sortColumnIndex) {
-        case 0: // ID
-          comparison = a.id.compareTo(b.id);
-          break;
         case 1: // Trabajador (primer trabajador si hay varios)
           final aWorkerName =
               a.workers.isNotEmpty ? a.workers[0].name.toString() : '';

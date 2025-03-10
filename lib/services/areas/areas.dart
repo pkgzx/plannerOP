@@ -19,8 +19,7 @@ class AreaService {
       debugPrint(jsonResponse.toString());
       List<Area> areas = [];
       for (var area in jsonResponse) {
-        areas.add(
-            Area(id: area['id'], name: area['name'], userId: area['id_user']));
+        areas.add(Area(id: area['id'], name: area['name']));
       }
 
       debugPrint('Áreas obtenidas correctamente****');

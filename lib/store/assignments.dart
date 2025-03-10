@@ -1,46 +1,57 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:plannerop/core/model/assignment.dart';
-import 'package:plannerop/core/model/user.dart';
 import 'package:plannerop/core/model/worker.dart';
+import 'package:plannerop/services/assignments/assignment.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:uuid/uuid.dart';
 
 class AssignmentsProvider extends ChangeNotifier {
+  final AssignmentService _assignmentService = AssignmentService();
   List<Assignment> _assignments = [];
   bool _isLoading = false;
+  String? _error;
 
   List<Assignment> get assignments => _assignments;
   bool get isLoading => _isLoading;
+  String? get error => _error;
 
   List<Assignment> get pendingAssignments =>
-      _assignments.where((a) => a.status == 'pending').toList();
+      _assignments.where((a) => a.status == 'PENDING').toList();
 
   List<Assignment> get inProgressAssignments =>
-      _assignments.where((a) => a.status == 'in_progress').toList();
+      _assignments.where((a) => a.status == 'IN_PROGRESS').toList();
 
   List<Assignment> get completedAssignments =>
-      _assignments.where((a) => a.status == 'completed').toList();
+      _assignments.where((a) => a.status == 'COMPLETED').toList();
 
-  AssignmentsProvider() {
-    _loadAssignments();
-  }
+  AssignmentsProvider() {}
 
-  Future<void> _loadAssignments() async {
+  Future<void> loadAssignments(BuildContext context) async {
     _isLoading = true;
+    _error = null; // Resetear error previo
     notifyListeners();
 
     try {
-      final prefs = await SharedPreferences.getInstance();
-      final assignmentsJson = prefs.getString('assignments');
+      debugPrint('Intentando cargar asignaciones desde API...');
+      final assignments = await _assignmentService.fetchAssignments(context);
 
-      if (assignmentsJson != null) {
-        final List<dynamic> decodedList = json.decode(assignmentsJson);
-        _assignments =
-            decodedList.map((item) => Assignment.fromJson(item)).toList();
+      // Limpiar lista existente
+      _assignments.clear();
+
+      // Añadir nuevas asignaciones
+      _assignments.addAll(assignments);
+
+      if (_assignments.isEmpty) {
+        debugPrint('No se encontraron asignaciones en la API.');
+        _error = 'No se encontraron asignaciones disponibles.';
+      } else {
+        debugPrint(
+            'Asignaciones cargadas exitosamente: ${_assignments.length}');
       }
-    } catch (e) {
-      debugPrint('Error loading assignments: $e');
+    } catch (e, stackTrace) {
+      debugPrint('Error al cargar asignaciones: $e');
+      debugPrint('Stack trace: $stackTrace');
+      _error = 'Error al cargar asignaciones: $e';
     } finally {
       _isLoading = false;
       notifyListeners();
@@ -58,54 +69,124 @@ class AssignmentsProvider extends ChangeNotifier {
     }
   }
 
-  Future<void> addAssignment({
+// Método actualizado para agregar asignación con todos los campos
+  Future<bool> addAssignment({
     required List<Worker> workers,
     required String area,
+    required int areaId,
     required String task,
+    required int taskId,
     required DateTime date,
     required String time,
     required int zoneId,
+    required int userId,
+    required int clientId,
+    String? clientName,
+    DateTime? endDate,
+    String? endTime,
+    String? motorship,
+    BuildContext? context, // Necesario para el token
   }) async {
-    final uuid = const Uuid();
-    final newAssignment = Assignment(
-        id: uuid.v4(),
+    _isLoading = true;
+    _error = null;
+    notifyListeners();
+
+    try {
+      final newAssignment = Assignment(
         workers: workers,
         area: area,
         task: task,
         date: date,
         time: time,
-        endTime: 'No ha finalizado',
         zone: zoneId,
-        supervisor: User(
-          id: '1',
-          name: 'Supervisor',
-          dni: '12345678',
-          phone: '555-1234',
-        ));
+        status: 'PENDING',
+        endDate: endDate,
+        endTime: endTime,
+        motorship: motorship,
+        userId: userId,
+        areaId: areaId,
+        taskId: taskId,
+        clientId: clientId,
+      );
 
-    _assignments.add(newAssignment);
-    await _saveAssignments();
-    notifyListeners();
+      // Si tenemos contexto, intentamos enviar al backend
+      bool success = true;
+      if (context != null) {
+        success =
+            await _assignmentService.createAssignment(newAssignment, context);
+      }
+
+      // Si se envió con éxito al backend (o no hay contexto), guardamos localmente
+      if (success) {
+        _assignments.add(newAssignment);
+        await _saveAssignments();
+      } else {
+        _error = "Error al crear la asignación en el servidor";
+      }
+
+      _isLoading = false;
+      notifyListeners();
+      return success;
+    } catch (e) {
+      debugPrint('Error al agregar asignación: $e');
+      _error = 'Error: $e';
+      _isLoading = false;
+      notifyListeners();
+      return false;
+    }
   }
 
-  Future<void> updateAssignmentStatus(String id, String status) async {
+  Future<void> updateAssignmentStatus(
+      int id, String status, BuildContext context) async {
     final index = _assignments.indexWhere((a) => a.id == id);
     if (index >= 0) {
-      _assignments[index].status = status;
+      final currentAssignment = _assignments[index];
+      _assignments[index] = Assignment(
+        id: currentAssignment.id,
+        workers: currentAssignment.workers,
+        area: currentAssignment.area,
+        task: currentAssignment.task,
+        date: currentAssignment.date,
+        time: currentAssignment.time,
+        zone: currentAssignment.zone,
+        status: status,
+        endDate: currentAssignment.endDate,
+        endTime: currentAssignment.endTime,
+        motorship: currentAssignment.motorship,
+        userId: currentAssignment.userId,
+        areaId: currentAssignment.areaId,
+        taskId: currentAssignment.taskId,
+        clientId: currentAssignment.clientId,
+      );
 
-      if (status == 'completed') {
-        _assignments[index].completedDate = DateTime.now();
-      }
+      await _assignmentService.updateStatusAssignment(id, status, context);
 
       await _saveAssignments();
       notifyListeners();
     }
   }
 
-  Future<void> updateAssignmentEndTime(String id, String endTime) async {
+  Future<void> updateAssignmentEndTime(int id, String endTime) async {
     final index = _assignments.indexWhere((a) => a.id == id);
     if (index >= 0) {
-      _assignments[index].endTime = endTime;
+      final currentAssignment = _assignments[index];
+      _assignments[index] = Assignment(
+        id: currentAssignment.id,
+        workers: currentAssignment.workers,
+        area: currentAssignment.area,
+        task: currentAssignment.task,
+        date: currentAssignment.date,
+        time: currentAssignment.time,
+        zone: currentAssignment.zone,
+        status: currentAssignment.status,
+        endDate: currentAssignment.endDate,
+        endTime: endTime,
+        motorship: currentAssignment.motorship,
+        userId: currentAssignment.userId,
+        areaId: currentAssignment.areaId,
+        taskId: currentAssignment.taskId,
+        clientId: currentAssignment.clientId,
+      );
       await _saveAssignments();
       notifyListeners();
     }

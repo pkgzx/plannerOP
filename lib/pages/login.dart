@@ -50,39 +50,72 @@ class _LoginPageState extends State<LoginPage> {
 
   Future<void> _login() async {
     if (_formKey.currentState!.validate()) {
-      // Aquí puedes agregar la lógica de autenticación
-      // Si el inicio de sesión es exitoso, redirige a la página de inicio del supervisor
-      final ResSigninDto response = await _signinService.signin(
-        _usernameController.text,
-        _passwordController.text,
-      );
-
-      if (response.isSuccess) {
-        // Guarda el token de acceso en el provider de autenticación
-        Provider.of<AuthProvider>(context, listen: false)
-            .setAccessToken(response.accessToken);
-
-        // Decodificar el token
-        final decodedToken = JwtDecoder.decode(response.accessToken);
-
-        Provider.of<UserProvider>(context, listen: false).setUser(User(
-          name: decodedToken['username'],
-          id: '${decodedToken['id']}',
-          dni: decodedToken['dni'],
-          phone: decodedToken['phone'],
-        ));
-
-        debugPrint('Token decodificado: $decodedToken');
-
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (context) => const SupervisorHome()),
+      try {
+        // Mostrar indicador de carga (opcional)
+        showDialog(
+          context: context,
+          barrierDismissible: false,
+          builder: (BuildContext context) => const Center(
+            child: CircularProgressIndicator(),
+          ),
         );
-        return;
-      }
 
-      // Si el inicio de sesión falla, muestra un mensaje de error
-      showErrorToast(context, 'Usuario o contraseña incorrectos');
+        final ResSigninDto response = await _signinService.signin(
+          _usernameController.text,
+          _passwordController.text,
+        );
+
+        // Cerrar el diálogo de carga
+        if (mounted) {
+          Navigator.of(context).pop();
+        }
+
+        if (response.isSuccess) {
+          if (!mounted) return; // Verificar si todavía está montado
+
+          // Guarda el token de acceso en el provider de autenticación
+          final authProvider =
+              Provider.of<AuthProvider>(context, listen: false);
+          authProvider.setAccessToken(response.accessToken);
+
+          // Decodificar el token
+          final decodedToken = JwtDecoder.decode(response.accessToken);
+
+          if (!mounted)
+            return; // Verificar de nuevo después de operaciones potencialmente lentas
+
+          final userProvider =
+              Provider.of<UserProvider>(context, listen: false);
+          userProvider.setUser(User(
+            name: decodedToken['username'],
+            id: decodedToken['id'],
+            dni: decodedToken['dni'],
+            phone: decodedToken['phone'],
+          ));
+
+          debugPrint('Token decodificado: $decodedToken');
+
+          if (!mounted) return; // Verificar nuevamente antes de la navegación
+
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (context) => const SupervisorHome()),
+          );
+        } else {
+          if (!mounted) return; // Verificar si todavía está montado
+
+          // Si el inicio de sesión falla, muestra un mensaje de error
+          showErrorToast(context, 'Usuario o contraseña incorrectos');
+        }
+      } catch (e) {
+        debugPrint('Error en login: $e');
+
+        // Cerrar el diálogo de carga si hay error
+        if (mounted) {
+          Navigator.of(context).pop();
+          showErrorToast(context, 'Error de conexión: $e');
+        }
+      }
     }
   }
 

@@ -474,7 +474,8 @@ class PendingAssignmentsView extends StatelessWidget {
                     NeumorphicBoxShape.roundRect(BorderRadius.circular(8)),
               ),
               onPressed: () {
-                provider.updateAssignmentStatus(assignment.id, 'in_progress');
+                provider.updateAssignmentStatus(
+                    assignment.id ?? 0, 'IN_PROGRESS', context);
                 Navigator.pop(context);
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(

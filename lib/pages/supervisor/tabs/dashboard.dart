@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_neumorphic_plus/flutter_neumorphic.dart';
 import 'package:plannerop/store/areas.dart';
+import 'package:plannerop/store/assignments.dart';
+import 'package:plannerop/store/clients.dart';
 import 'package:plannerop/store/task.dart';
 import 'package:plannerop/widgets/cifras.dart';
 import 'package:plannerop/widgets/quickActions.dart';
@@ -19,6 +21,8 @@ class _DashboardTabState extends State<DashboardTab> {
   bool _isLoadingWorkers = false;
   bool _isLoadingAreas = false;
   bool _isLoadingTasks = false;
+  bool _isLoadingClients = false;
+  bool _isLoadingAssignments = false;
 
   @override
   void initState() {
@@ -26,8 +30,6 @@ class _DashboardTabState extends State<DashboardTab> {
     // Usar addPostFrameCallback para programar la carga después del primer frame
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _checkAndLoadWorkersIfNeeded();
-      _loadAreas();
-      _loadTask();
     });
   }
 
@@ -41,6 +43,10 @@ class _DashboardTabState extends State<DashboardTab> {
     // Solo cargaremos si no se han cargado antes
     if (!workersProvider.hasLoadedInitialData) {
       await _loadWorkers();
+      await _loadAreas();
+      await _loadTask();
+      await _loadClients();
+      await _loadAssignments();
     }
   }
 
@@ -198,12 +204,53 @@ class _DashboardTabState extends State<DashboardTab> {
     }
   }
 
-  // Método auxiliar para cargar tareas predeterminadas
-  void _loadDefaultTasks(TasksProvider tasksProvider) {
-    // Verificar si el TasksProvider tiene un método para agregar tareas predeterminadas
-    if (tasksProvider.tasks.isEmpty) {
-      debugPrint(
-          'Se cargaron tareas predeterminadas: ${tasksProvider.tasks.length} tareas');
+  Future<void> _loadAssignments() async {
+    if (!mounted) return;
+
+    // Mostrar indicador de carga
+    setState(() {
+      _isLoadingAssignments = true;
+    });
+
+    try {
+      var assignmentsProvider =
+          Provider.of<AssignmentsProvider>(context, listen: false);
+
+      debugPrint('Iniciando carga de asignaciones desde API...');
+      await assignmentsProvider.loadAssignments(context);
+
+      // Verificar si se cargaron correctamente
+      if (assignmentsProvider.assignments.isNotEmpty) {
+        debugPrint(
+            'Asignaciones cargadas exitosamente: ${assignmentsProvider.assignments.length}');
+      } else {
+        debugPrint('No se cargaron asignaciones o la lista está vacía');
+      }
+    } catch (e, stackTrace) {
+      debugPrint('Error al cargar asignaciones: $e');
+      debugPrint('Stack trace: $stackTrace');
+
+      // Mostrar mensaje de error
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('Error al cargar asignaciones.'),
+            backgroundColor: Colors.amber.shade700,
+            action: SnackBarAction(
+              label: 'Reintentar',
+              onPressed: _loadAssignments,
+              textColor: Colors.white,
+            ),
+          ),
+        );
+      }
+    } finally {
+      // Ocultar indicador de carga
+      if (mounted) {
+        setState(() {
+          _isLoadingAssignments = false;
+        });
+      }
     }
   }
 
@@ -213,6 +260,65 @@ class _DashboardTabState extends State<DashboardTab> {
     if (areasProvider.areas.isEmpty) {
       debugPrint(
           'Se cargaron áreas predeterminadas: ${areasProvider.areas.length} áreas');
+    }
+  }
+
+  Future<bool> _loadClients() async {
+    if (!mounted) return false;
+
+    final clientsProvider =
+        Provider.of<ClientsProvider>(context, listen: false);
+
+    // Si ya se han cargado clientes, no hacer nada
+    if (clientsProvider.clients.isNotEmpty) {
+      debugPrint('Clientes ya cargados: ${clientsProvider.clients.length}');
+      return true;
+    }
+
+    debugPrint('Iniciando carga de clientes desde API...');
+
+    setState(() {
+      _isLoadingClients = true;
+    });
+
+    try {
+      await clientsProvider.fetchClients(context);
+
+      if (clientsProvider.clients.isNotEmpty) {
+        debugPrint(
+            'Clientes cargados con éxito: ${clientsProvider.clients.length}');
+        return true;
+      } else {
+        debugPrint('No se cargaron clientes o la lista está vacía');
+        return false;
+      }
+    } catch (e, stackTrace) {
+      debugPrint('Error al cargar clientes: $e');
+      debugPrint('Stack trace: $stackTrace');
+
+      // Mostrar un mensaje de error más informativo
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text(
+                'Error al cargar clientes. Usando clientes predeterminados.'),
+            backgroundColor: Colors.amber.shade700,
+            action: SnackBarAction(
+              label: 'Reintentar',
+              onPressed: _loadClients,
+              textColor: Colors.white,
+            ),
+          ),
+        );
+      }
+
+      return false;
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoadingClients = false;
+        });
+      }
     }
   }
 

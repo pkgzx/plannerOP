@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:plannerop/core/model/area.dart';
+import 'package:plannerop/core/model/client.dart';
 import 'package:plannerop/store/task.dart';
 import 'package:provider/provider.dart';
 import './dropdown_field.dart';
@@ -16,7 +17,7 @@ class AssignmentForm extends StatefulWidget {
   final TextEditingController? endTimeController;
   final List<String> currentTasks;
   final List<Area> areas;
-  final List<String> clients;
+  final List<Client> clients;
   final bool showEndDateTime;
   final TextEditingController? motorshipController;
 
@@ -313,7 +314,7 @@ class _AssignmentFormState extends State<AssignmentForm> {
           hint: 'Seleccionar cliente',
           icon: Icons.person_outline,
           controller: widget.clientController,
-          options: widget.clients,
+          options: widget.clients.map((client) => client.name).toList(),
         ),
       ],
     );

@@ -62,15 +62,15 @@ class _HistoryAssignmentsViewState extends State<HistoryAssignmentsView> {
       // Filtro por fecha
       bool matchesDate = true;
       if (_startDate != null) {
-        matchesDate = assignment.completedDate != null &&
-            !assignment.completedDate!.isBefore(_startDate!);
+        matchesDate = assignment.endDate != null &&
+            !assignment.endDate!.isBefore(_startDate!);
       }
       if (_endDate != null && matchesDate) {
         // Añadir un día al endDate para incluir todo ese día
         final nextDay =
             DateTime(_endDate!.year, _endDate!.month, _endDate!.day + 1);
-        matchesDate = assignment.completedDate != null &&
-            assignment.completedDate!.isBefore(nextDay);
+        matchesDate =
+            assignment.endDate != null && assignment.endDate!.isBefore(nextDay);
       }
 
       return matchesSearch && matchesArea && matchesDate;
@@ -156,8 +156,8 @@ class _HistoryAssignmentsViewState extends State<HistoryAssignmentsView> {
         // Agrupar por mes basado en la fecha de completado
         final Map<String, List<Assignment>> groupedByMonth = {};
         for (var assignment in filteredAssignments) {
-          if (assignment.completedDate != null) {
-            final month = _formatMonth(assignment.completedDate!);
+          if (assignment.endDate != null) {
+            final month = _formatMonth(assignment.endDate!);
             if (!groupedByMonth.containsKey(month)) {
               groupedByMonth[month] = [];
             }
@@ -230,8 +230,8 @@ class _HistoryAssignmentsViewState extends State<HistoryAssignmentsView> {
 
                 // Ordenar por fecha (más reciente primero)
                 assignments.sort((a, b) {
-                  return (b.completedDate ?? DateTime.now())
-                      .compareTo(a.completedDate ?? DateTime.now());
+                  return (b.endDate ?? DateTime.now())
+                      .compareTo(a.endDate ?? DateTime.now());
                 });
 
                 return Column(
@@ -621,7 +621,7 @@ class _HistoryAssignmentsViewState extends State<HistoryAssignmentsView> {
                       const SizedBox(width: 8),
                       Text(
                         DateFormat('dd/MM/yyyy')
-                            .format(assignment.completedDate ?? DateTime.now()),
+                            .format(assignment.endDate ?? DateTime.now()),
                         style: const TextStyle(
                           fontSize: 13,
                           color: Color(0xFF38A169),
@@ -837,14 +837,14 @@ class _HistoryAssignmentsViewState extends State<HistoryAssignmentsView> {
                           ),
                           DetailItem(
                             label: 'Hora de finalización:',
-                            value: assignment.endTime,
+                            value: assignment.endTime ?? 'No especificada',
                             icon: Icons.timer_outlined,
                           ),
                           DetailItem(
                             icon: Icons.check_circle_outline,
                             label: 'Completada el:',
-                            value: DateFormat('dd/MM/yyyy HH:mm').format(
-                                assignment.completedDate ?? DateTime.now()),
+                            value: DateFormat('dd/MM/yyyy HH:mm')
+                                .format(assignment.endDate ?? DateTime.now()),
                           ),
                         ],
                       ),
