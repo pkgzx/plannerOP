@@ -4,6 +4,8 @@ import 'package:intl/intl.dart';
 import 'package:plannerop/core/model/worker.dart';
 import 'package:plannerop/store/areas.dart';
 import 'package:plannerop/store/workers.dart';
+import 'package:plannerop/utils/toast.dart';
+import 'package:plannerop/widgets/assingments/editAssignmentForm.dart';
 import 'package:provider/provider.dart';
 import 'package:plannerop/store/assignments.dart';
 import 'package:plannerop/widgets/assingments/emptyState.dart';
@@ -146,7 +148,7 @@ class ActiveAssignmentsView extends StatelessWidget {
                     ),
                     const SizedBox(width: 6),
                     const Text(
-                      'EN PROCESO',
+                      'EN VIVO',
                       style: TextStyle(
                         color: Color(0xFF3182CE),
                         fontWeight: FontWeight.w600,
@@ -296,6 +298,8 @@ class ActiveAssignmentsView extends StatelessWidget {
 
   void _showAssignmentDetails(BuildContext context, Assignment assignment) {
     final areas_provider = Provider.of<AreasProvider>(context, listen: false);
+    final assignmentsProvider =
+        Provider.of<AssignmentsProvider>(context, listen: false);
 
     showModalBottomSheet(
       context: context,
@@ -374,7 +378,7 @@ class ActiveAssignmentsView extends StatelessWidget {
                           _buildDetailRow('Fecha',
                               DateFormat('dd/MM/yyyy').format(assignment.date)),
                           _buildDetailRow('Hora', assignment.time),
-                          _buildDetailRow('Estado', 'En proceso'),
+                          _buildDetailRow('Estado', 'En vivo'),
                           if (assignment.endTime != null)
                             _buildDetailRow('Hora de finalización',
                                 assignment.endTime ?? 'No especificada'),
@@ -426,6 +430,38 @@ class ActiveAssignmentsView extends StatelessWidget {
                         ),
                         onPressed: () {
                           Navigator.pop(context);
+
+                          // Mostrar el formulario de edición como un modal o diálogo
+                          showDialog(
+                            context: context,
+                            builder: (BuildContext context) {
+                              return Dialog(
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(20),
+                                ),
+                                child: Container(
+                                  constraints: BoxConstraints(
+                                    maxWidth:
+                                        MediaQuery.of(context).size.width * 0.9,
+                                    maxHeight:
+                                        MediaQuery.of(context).size.height *
+                                            0.9,
+                                  ),
+                                  child: EditAssignmentForm(
+                                    assignment: assignment,
+                                    onSave: (updatedAssignment) {
+                                      assignmentsProvider.updateAssignment(
+                                          updatedAssignment, context);
+                                      showSuccessToast(
+                                          context, 'Asignación actualizada');
+                                      Navigator.pop(context);
+                                    },
+                                    onCancel: () => Navigator.pop(context),
+                                  ),
+                                ),
+                              );
+                            },
+                          );
                         },
                         child: const Text(
                           'Editar',
@@ -501,34 +537,62 @@ class ActiveAssignmentsView extends StatelessWidget {
                 boxShape:
                     NeumorphicBoxShape.roundRect(BorderRadius.circular(8)),
               ),
-              onPressed: () {
-                provider.updateAssignmentStatus(
-                    assignment.id ?? 0, 'completed', context);
-                provider.updateAssignmentEndTime(assignment.id ?? 0,
-                    DateFormat('HH:mm').format(DateTime.now()));
+              onPressed: () async {
+                try {
+                  // Obtener fecha y hora actuales
+                  final now = DateTime.now();
+                  final currentTime = DateFormat('HH:mm').format(now);
 
-// 2. Liberar a todos los trabajadores de esta asignación
-                final workersProvider =
-                    Provider.of<WorkersProvider>(context, listen: false);
+                  // Crear una copia actualizada de la asignación
+                  final updatedAssignment = Assignment(
+                    id: assignment.id,
+                    workers: assignment.workers,
+                    area: assignment.area,
+                    task: assignment.task,
+                    date: assignment.date,
+                    time: assignment.time,
+                    zone: assignment.zone,
+                    status: 'COMPLETED', // Actualizar estado a completado
 
-                // Liberar cada trabajador asignado
-                for (var worker in assignment.workers) {
-                  // Verificar si worker es un Map (formato nuevo) o un Worker (formato antiguo)
-                  if (worker is Map<String, dynamic>) {
-                    workersProvider.releaseWorker(worker);
+                    // Usar la fecha actual si no hay fecha de finalización
+                    endDate: assignment.endDate ?? now,
+
+                    // Usar la hora actual si no hay hora de finalización
+                    endTime: assignment.endTime?.isNotEmpty == true
+                        ? assignment.endTime
+                        : currentTime,
+
+                    motorship: assignment.motorship,
+                    userId: assignment.userId,
+                    areaId: assignment.areaId,
+                    taskId: assignment.taskId,
+                    clientId: assignment.clientId,
+                  );
+
+                  // Actualizar la asignación en el servidor con todos los datos modificados
+                  final success = await provider.updateAssignment(
+                      updatedAssignment, context);
+
+                  if (success) {
+                    // Liberar a los trabajadores
+                    final workersProvider =
+                        Provider.of<WorkersProvider>(context, listen: false);
+                    for (var worker in assignment.workers) {
+                      workersProvider.releaseWorkerObject(worker);
+                    }
+
+                    showSuccessToast(
+                        context, 'Operación completada exitosamente');
                   } else {
-                    // Para compatibilidad con el modelo Worker
-                    workersProvider.releaseWorkerObject(worker);
+                    showErrorToast(context, 'Error al completar la asignación');
                   }
-                }
 
-                Navigator.pop(context);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Asignación completada exitosamente'),
-                    backgroundColor: Color(0xFF38A169),
-                  ),
-                );
+                  Navigator.pop(context);
+                } catch (e) {
+                  debugPrint('Error al completar asignación: $e');
+                  showErrorToast(context, 'Error: $e');
+                  Navigator.pop(context);
+                }
               },
               child: const Text(
                 'Confirmar',
@@ -538,6 +602,16 @@ class ActiveAssignmentsView extends StatelessWidget {
           ],
         );
       },
+    );
+  }
+
+  // Esta función es necesaria si no existe ya en tu proyecto
+  void showErrorToast(BuildContext context, String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: Colors.red,
+      ),
     );
   }
 

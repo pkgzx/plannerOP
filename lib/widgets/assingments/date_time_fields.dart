@@ -7,6 +7,7 @@ class DateField extends StatelessWidget {
   final IconData icon;
   final TextEditingController controller;
   final Function(String)? onDateChanged; // Añadir esta callback
+  final bool isOptional;
 
   const DateField({
     Key? key,
@@ -15,6 +16,7 @@ class DateField extends StatelessWidget {
     required this.icon,
     required this.controller,
     this.onDateChanged, // Opcional para notificar cambios
+    this.isOptional = false,
   }) : super(key: key);
 
   @override
@@ -121,6 +123,7 @@ class TimeField extends StatelessWidget {
   final IconData icon;
   final TextEditingController controller;
   final TextEditingController? dateController;
+  final bool isOptional;
 
   const TimeField({
     Key? key,
@@ -129,6 +132,7 @@ class TimeField extends StatelessWidget {
     required this.icon,
     required this.controller,
     this.dateController,
+    this.isOptional = false,
   }) : super(key: key);
 
   @override

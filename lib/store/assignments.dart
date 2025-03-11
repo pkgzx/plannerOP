@@ -19,7 +19,7 @@ class AssignmentsProvider extends ChangeNotifier {
       _assignments.where((a) => a.status == 'PENDING').toList();
 
   List<Assignment> get inProgressAssignments =>
-      _assignments.where((a) => a.status == 'IN_PROGRESS').toList();
+      _assignments.where((a) => a.status == 'INPROGRESS').toList();
 
   List<Assignment> get completedAssignments =>
       _assignments.where((a) => a.status == 'COMPLETED').toList();
@@ -203,6 +203,41 @@ class AssignmentsProvider extends ChangeNotifier {
       return _assignments.firstWhere((a) => a.id == id);
     } catch (e) {
       return null;
+    }
+  }
+
+  // Añadir este nuevo método al AssignmentsProvider
+  Future<bool> updateAssignment(
+      Assignment updatedAssignment, BuildContext context) async {
+    try {
+      _isLoading = true;
+      _error = null;
+      notifyListeners();
+
+      // Actualizar en el backend
+      final success = await _assignmentService.updateAssignmentToComplete(
+          updatedAssignment, context);
+
+      if (success) {
+        // Actualizar en la lista local
+        final index =
+            _assignments.indexWhere((a) => a.id == updatedAssignment.id);
+        if (index >= 0) {
+          _assignments[index] = updatedAssignment;
+        }
+      } else {
+        _error = "Error al actualizar la asignación en el servidor";
+      }
+
+      _isLoading = false;
+      notifyListeners();
+      return success;
+    } catch (e) {
+      debugPrint('Error en updateAssignment: $e');
+      _error = 'Error: $e';
+      _isLoading = false;
+      notifyListeners();
+      return false;
     }
   }
 }

@@ -86,7 +86,7 @@ class RecentOps extends StatelessWidget {
                                   colorFondo = const Color(0xFFFEF5E7);
                                   colorTexto = const Color(0xFFB7791F);
                                   break;
-                                case 'IN_PROGRESS':
+                                case 'INPROGRESS':
                                   estado = 'En progreso';
                                   colorFondo = const Color(0xFFEBF4FF);
                                   colorTexto = const Color(0xFF2B6CB0);

@@ -46,6 +46,10 @@ class WorkersProvider with ChangeNotifier {
 
   int get totalWorkers => _workers.length;
 
+  List<Worker> getWorkersAvailable() {
+    return _workers.where((w) => w.status == WorkerStatus.available).toList();
+  }
+
   int get assignedWorkers =>
       _workers.where((w) => w.status == WorkerStatus.assigned).length;
 

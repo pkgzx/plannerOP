@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_neumorphic_plus/flutter_neumorphic.dart';
 import 'package:intl/intl.dart';
 import 'package:plannerop/core/model/worker.dart';
+import 'package:plannerop/utils/toast.dart';
+import 'package:plannerop/widgets/assingments/editAssignmentForm.dart';
 import 'package:provider/provider.dart';
 import 'package:plannerop/store/assignments.dart';
 import 'package:plannerop/widgets/assingments/emptyState.dart';
@@ -279,6 +281,9 @@ class PendingAssignmentsView extends StatelessWidget {
   }
 
   void _showAssignmentDetails(BuildContext context, Assignment assignment) {
+    final assignmentsProvider =
+        Provider.of<AssignmentsProvider>(context, listen: false);
+
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -358,7 +363,18 @@ class PendingAssignmentsView extends StatelessWidget {
                           _buildDetailRow('Fecha',
                               DateFormat('dd/MM/yyyy').format(assignment.date)),
                           _buildDetailRow('Hora', assignment.time),
-                          _buildDetailRow('Estado', 'Pendiente'),
+                          _buildDetailRow('Estado', 'En vivo'),
+                          if (assignment.endTime != null)
+                            _buildDetailRow('Hora de finalización',
+                                assignment.endTime ?? 'No especificada'),
+                          if (assignment.endDate != null)
+                            _buildDetailRow(
+                                'Fecha de finalización',
+                                DateFormat('dd/MM/yyyy')
+                                    .format(assignment.endDate!)),
+                          _buildDetailRow('Zona', 'Zona ${assignment.zone}'),
+                          _buildDetailRow(
+                              'Motonave', assignment.motorship ?? ''),
                         ],
                       ),
                       const SizedBox(height: 20),
@@ -399,6 +415,37 @@ class PendingAssignmentsView extends StatelessWidget {
                         ),
                         onPressed: () {
                           Navigator.pop(context);
+
+                          showDialog(
+                            context: context,
+                            builder: (BuildContext context) {
+                              return Dialog(
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(20),
+                                ),
+                                child: Container(
+                                  constraints: BoxConstraints(
+                                    maxWidth:
+                                        MediaQuery.of(context).size.width * 0.9,
+                                    maxHeight:
+                                        MediaQuery.of(context).size.height *
+                                            0.9,
+                                  ),
+                                  child: EditAssignmentForm(
+                                    assignment: assignment,
+                                    onSave: (updatedAssignment) {
+                                      assignmentsProvider.updateAssignment(
+                                          updatedAssignment, context);
+                                      showSuccessToast(
+                                          context, 'Asignación actualizada');
+                                      Navigator.pop(context);
+                                    },
+                                    onCancel: () => Navigator.pop(context),
+                                  ),
+                                ),
+                              );
+                            },
+                          );
                         },
                         child: const Text(
                           'Editar',
@@ -477,12 +524,7 @@ class PendingAssignmentsView extends StatelessWidget {
                 provider.updateAssignmentStatus(
                     assignment.id ?? 0, 'IN_PROGRESS', context);
                 Navigator.pop(context);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Asignación iniciada exitosamente'),
-                    backgroundColor: Color(0xFF3182CE),
-                  ),
-                );
+                showSuccessToast(context, "Asignación iniciada");
               },
               child: const Text(
                 'Confirmar',

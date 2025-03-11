@@ -237,7 +237,7 @@ class ExportOptions extends StatelessWidget {
                         crossAxisAlignment: pw.CrossAxisAlignment.start,
                         children: [
                           pw.Text(
-                              'En progreso: ${filteredAssignments.where((a) => a.status == 'in_progress').length}'),
+                              'En progreso: ${filteredAssignments.where((a) => a.status == 'INPROGRESS').length}'),
                           pw.Text(
                               'Pendientes: ${filteredAssignments.where((a) => a.status == 'pending').length}'),
                         ],
@@ -521,7 +521,7 @@ class ExportOptions extends StatelessWidget {
       sheet
               .cell(CellIndex.indexByColumnRow(columnIndex: 1, rowIndex: rowIndex))
               .value =
-          filteredAssignments.where((a) => a.status == 'in_progress').length;
+          filteredAssignments.where((a) => a.status == 'INPROGRESS').length;
       rowIndex++;
 
       sheet
@@ -596,7 +596,7 @@ class ExportOptions extends StatelessWidget {
     final int completed =
         filteredAssignments.where((a) => a.status == 'completed').length;
     final int inProgress =
-        filteredAssignments.where((a) => a.status == 'in_progress').length;
+        filteredAssignments.where((a) => a.status == 'INPROGRESS').length;
     final int pending =
         filteredAssignments.where((a) => a.status == 'pending').length;
 
@@ -643,7 +643,7 @@ Generado el ${DateFormat('dd/MM/yyyy HH:mm').format(DateTime.now())}
     switch (status) {
       case 'completed':
         return 'Completada';
-      case 'in_progress':
+      case 'INPROGRESS':
         return 'En progreso';
       case 'pending':
         return 'Pendiente';

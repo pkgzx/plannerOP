@@ -35,4 +35,8 @@ class AreasProvider extends ChangeNotifier {
               name: 'No encontrado',
             ));
   }
+
+  Area getAreaByName(String name) {
+    return _areas.firstWhere((area) => area.name == name);
+  }
 }

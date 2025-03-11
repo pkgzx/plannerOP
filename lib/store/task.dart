@@ -80,4 +80,8 @@ class TasksProvider extends ChangeNotifier {
 
   // Lista de nombres de tareas
   List<String> get taskNames => _tasks.map((task) => task.name).toList();
+
+  Task getTaskByName(String name) {
+    return _tasks.firstWhere((task) => task.name == name);
+  }
 }

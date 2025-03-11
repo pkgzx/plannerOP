@@ -30,6 +30,10 @@ class _DashboardTabState extends State<DashboardTab> {
     // Usar addPostFrameCallback para programar la carga después del primer frame
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _checkAndLoadWorkersIfNeeded();
+      _loadAreas();
+      _loadTask();
+      _loadClients();
+      _loadAssignments();
     });
   }
 
@@ -43,10 +47,6 @@ class _DashboardTabState extends State<DashboardTab> {
     // Solo cargaremos si no se han cargado antes
     if (!workersProvider.hasLoadedInitialData) {
       await _loadWorkers();
-      await _loadAreas();
-      await _loadTask();
-      await _loadClients();
-      await _loadAssignments();
     }
   }
 

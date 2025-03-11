@@ -7,7 +7,6 @@ import 'package:plannerop/core/model/task.dart';
 import 'package:plannerop/core/model/worker.dart';
 import 'package:plannerop/store/areas.dart';
 import 'package:plannerop/store/assignments.dart';
-import 'package:plannerop/store/auth.dart';
 import 'package:plannerop/store/clients.dart';
 import 'package:plannerop/store/task.dart';
 import 'package:plannerop/store/user.dart';

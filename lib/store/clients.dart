@@ -34,4 +34,12 @@ class ClientsProvider with ChangeNotifier {
       debugPrint('Error al obtener clientes: $e');
     }
   }
+
+  Client getClientById(int id) {
+    return _clients.firstWhere((client) => client.id == id);
+  }
+
+  Client getClientByName(String name) {
+    return _clients.firstWhere((client) => client.name == name);
+  }
 }

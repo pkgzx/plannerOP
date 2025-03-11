@@ -19,6 +19,14 @@ class Assignment {
   final int taskId;
   final int clientId;
 
+  set endTime(String? endTime) {
+    this.endTime = endTime;
+  }
+
+  set endDate(DateTime? endDate) {
+    this.endDate = endDate;
+  }
+
   Assignment({
     this.id,
     required this.workers,

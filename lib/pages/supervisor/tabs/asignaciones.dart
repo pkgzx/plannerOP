@@ -1,8 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_neumorphic_plus/flutter_neumorphic.dart';
-import 'package:intl/intl.dart';
-import 'package:provider/provider.dart';
-import 'package:plannerop/store/assignments.dart';
 import 'package:plannerop/widgets/assingments/activeAssignments.dart';
 import 'package:plannerop/widgets/assingments/pendingAssignments.dart';
 import 'package:plannerop/widgets/assingments/historyAssignments.dart';
@@ -21,7 +18,6 @@ class _AsignacionesTabState extends State<AsignacionesTab>
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = "";
   bool _isSearching = false;
-  bool _showFloatingSearchBar = false;
 
   @override
   void initState() {
