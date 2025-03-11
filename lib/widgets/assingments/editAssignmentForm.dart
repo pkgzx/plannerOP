@@ -351,7 +351,7 @@ class _EditAssignmentFormState extends State<EditAssignmentForm> {
                       boxShape: NeumorphicBoxShape.roundRect(
                           BorderRadius.circular(8)),
                     ),
-                    onPressed: _saveChanges,
+                    onPressed: () => _saveChanges(context),
                     child: const Text(
                       'Guardar Cambios',
                       textAlign: TextAlign.center,
@@ -419,75 +419,11 @@ class _EditAssignmentFormState extends State<EditAssignmentForm> {
     );
   }
 
-  // Nuevo método para mostrar la sección de trabajadores
-  Widget _buildWorkersSection() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text(
-          'Trabajadores asignados',
-          style: TextStyle(
-            fontWeight: FontWeight.w600,
-            fontSize: 14,
-            color: Color(0xFF4A5568),
-          ),
-        ),
-        const SizedBox(height: 8),
-        Container(
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            border: Border.all(color: const Color(0xFFE2E8F0)),
-            borderRadius: BorderRadius.circular(8),
-            color: const Color(0xFFF7FAFC),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: widget.assignment.workers
-                .map((worker) => Padding(
-                      padding: const EdgeInsets.only(bottom: 8),
-                      child: Row(
-                        children: [
-                          CircleAvatar(
-                            radius: 16,
-                            backgroundColor: Colors.primaries[
-                                worker.name.hashCode % Colors.primaries.length],
-                            child: Text(
-                              worker.name.isNotEmpty
-                                  ? worker.name.substring(0, 1).toUpperCase()
-                                  : "?",
-                              style: const TextStyle(
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.bold),
-                            ),
-                          ),
-                          const SizedBox(width: 10),
-                          Text(
-                            worker.name,
-                            style: const TextStyle(
-                              fontSize: 14,
-                              color: Color(0xFF2D3748),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ))
-                .toList(),
-          ),
-        ),
-      ],
-    );
-  }
-
-  void _saveChanges() async {
+  void _saveChanges(BuildContext context) {
     try {
       // Validaciones
       if (_selectedWorkers.isEmpty) {
         _showValidationError('Por favor, selecciona al menos un trabajador');
-        return;
-      }
-
-      if (_areaController.text.isEmpty) {
-        _showValidationError('Por favor, selecciona un área');
         return;
       }
 
@@ -501,21 +437,6 @@ class _EditAssignmentFormState extends State<EditAssignmentForm> {
         return;
       }
 
-      if (_taskController.text.isEmpty) {
-        _showValidationError('Por favor, selecciona un servicio');
-        return;
-      }
-
-      if (_zoneController.text.isEmpty) {
-        _showValidationError('Por favor, selecciona una zona');
-        return;
-      }
-
-      if (_clientController.text.isEmpty) {
-        _showValidationError('Por favor, selecciona un cliente');
-        return;
-      }
-
       // Validación para motonave en área de buque
       if (_isShipArea && _motorshipController.text.isEmpty) {
         _showValidationError('Por favor, ingresa el nombre de la motonave');
@@ -523,38 +444,12 @@ class _EditAssignmentFormState extends State<EditAssignmentForm> {
       }
 
       // Obtener providers
-      final areasProvider = Provider.of<AreasProvider>(context, listen: false);
-      final tasksProvider = Provider.of<TasksProvider>(context, listen: false);
-      final clientsProvider =
-          Provider.of<ClientsProvider>(context, listen: false);
-
-      // Obtener IDs
-      final selectedArea = areasProvider.getAreaByName(_areaController.text);
-      final selectedTask = tasksProvider.getTaskByName(_taskController.text);
-      final selectedClient =
-          clientsProvider.getClientByName(_clientController.text);
-
-      if (selectedArea == null) {
-        _showValidationError('Área no encontrada');
-        return;
-      }
-
-      if (selectedTask == null) {
-        _showValidationError('Servicio no encontrado');
-        return;
-      }
-
-      if (selectedClient == null) {
-        _showValidationError('Cliente no encontrado');
-        return;
-      }
+      final workersProvider =
+          Provider.of<WorkersProvider>(context, listen: false);
 
       // Procesar fecha y hora
       final startDate =
           DateFormat('dd/MM/yyyy').parse(_startDateController.text);
-
-      // Procesar zona (extraer número)
-      final zoneNum = int.parse(_zoneController.text.replaceAll('Zona ', ''));
 
       // Procesar fecha y hora de fin
       DateTime? endDate;
@@ -562,24 +457,63 @@ class _EditAssignmentFormState extends State<EditAssignmentForm> {
         endDate = DateFormat('dd/MM/yyyy').parse(_endDateController.text);
       }
 
-      // Crear la asignación actualizada
+      // Identificar trabajadores agregados y removidos para actualizar su estado
+      final List<Worker> addedWorkers = [];
+      final List<Worker> removedWorkers = [];
+
+      // Encontrar trabajadores que se añadieron (están en selectedWorkers pero no en assignment.workers)
+      for (var worker in _selectedWorkers) {
+        if (!widget.assignment.workers.any((w) => w.id == worker.id)) {
+          addedWorkers.add(worker);
+        }
+      }
+
+      // Encontrar trabajadores que se quitaron (están en assignment.workers pero no en selectedWorkers)
+      for (var worker in widget.assignment.workers) {
+        if (!_selectedWorkers.any((w) => w.id == worker.id)) {
+          removedWorkers.add(worker);
+        }
+      }
+
+      // Actualizar estados de los trabajadores
+      for (var worker in addedWorkers) {
+        workersProvider.assignWorkerObject(worker, context);
+      }
+
+      for (var worker in removedWorkers) {
+        workersProvider.releaseWorkerObject(worker, context);
+      }
+
+      // Crear la asignación actualizada con los valores editables
       final updatedAssignment = Assignment(
         id: widget.assignment.id,
         workers: _selectedWorkers,
-        area: _areaController.text,
-        task: _taskController.text,
-        date: startDate,
-        time: _startTimeController.text,
-        zone: zoneNum,
-        status: widget.assignment.status,
-        endDate: endDate,
-        endTime:
-            _endTimeController.text.isNotEmpty ? _endTimeController.text : null,
-        motorship: _isShipArea ? _motorshipController.text : null,
-        userId: widget.assignment.userId,
-        areaId: selectedArea.id,
-        taskId: selectedTask.id,
-        clientId: selectedClient.id,
+        area: widget.assignment.area, // No editable
+        task: widget.assignment.task, // No editable
+        date: startDate, // Editable
+        time: _startTimeController.text, // Editable
+        zone: widget.assignment.zone, // No editable
+        status: widget.assignment.status, // No editable por este formulario
+        endDate: endDate, // Editable
+        endTime: _endTimeController.text.isNotEmpty
+            ? _endTimeController.text
+            : null, // Editable
+        motorship: _isShipArea
+            ? _motorshipController.text
+            : null, // Editable si es área de buque
+        userId: widget.assignment.userId, // No editable
+        areaId: widget.assignment.areaId, // No editable
+        taskId: widget.assignment.taskId, // No editable
+        clientId: widget.assignment.clientId, // No editable
+      );
+
+      // Mostrar indicador de carga
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => const Center(
+          child: CircularProgressIndicator(),
+        ),
       );
 
       // Llamar al callback con la asignación actualizada

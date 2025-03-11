@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_neumorphic_plus/flutter_neumorphic.dart';
 import 'package:plannerop/store/workers.dart';
 import 'package:plannerop/utils/toast.dart';
@@ -32,12 +33,22 @@ class _WorkersTabState extends State<WorkersTab> {
         _searchQuery = _searchController.text.toLowerCase();
       });
     });
+
+    // Configurar estilo de barra de estado al iniciar
+    SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
+      statusBarColor: Color(0xFF4299E1), // Color de fondo de la barra de estado
+      statusBarIconBrightness:
+          Brightness.light, // Iconos claros para el fondo azul
+    ));
   }
 
   @override
   void dispose() {
     _searchController.dispose();
     super.dispose();
+
+    // Restaurar estilo por defecto al salir
+    SystemChrome.setSystemUIOverlayStyle(SystemUiOverlayStyle.dark);
   }
 
   @override

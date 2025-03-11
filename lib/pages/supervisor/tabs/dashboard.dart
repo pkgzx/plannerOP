@@ -204,34 +204,37 @@ class _DashboardTabState extends State<DashboardTab> {
     }
   }
 
+  // Modificar _loadAssignments en DashboardTab
   Future<void> _loadAssignments() async {
     if (!mounted) return;
 
-    // Mostrar indicador de carga
-    setState(() {
-      _isLoadingAssignments = true;
-    });
+    // No mostrar indicador de carga si ya hay datos disponibles
+    final assignmentsProvider =
+        Provider.of<AssignmentsProvider>(context, listen: false);
+    final hasExistingData = assignmentsProvider.assignments.isNotEmpty;
+
+    if (!hasExistingData) {
+      setState(() {
+        _isLoadingAssignments = true;
+      });
+    }
 
     try {
-      var assignmentsProvider =
-          Provider.of<AssignmentsProvider>(context, listen: false);
+      // Cargar asignaciones con prioridad
+      await assignmentsProvider.loadAssignmentsWithPriority(context);
 
-      debugPrint('Iniciando carga de asignaciones desde API...');
-      await assignmentsProvider.loadAssignments(context);
-
-      // Verificar si se cargaron correctamente
       if (assignmentsProvider.assignments.isNotEmpty) {
         debugPrint(
             'Asignaciones cargadas exitosamente: ${assignmentsProvider.assignments.length}');
       } else {
         debugPrint('No se cargaron asignaciones o la lista está vacía');
+        _isLoadingAssignments = false;
+        assignmentsProvider.changeIsLoadingOff();
       }
-    } catch (e, stackTrace) {
+    } catch (e) {
       debugPrint('Error al cargar asignaciones: $e');
-      debugPrint('Stack trace: $stackTrace');
 
-      // Mostrar mensaje de error
-      if (mounted) {
+      if (mounted && !hasExistingData) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: const Text('Error al cargar asignaciones.'),
@@ -245,7 +248,6 @@ class _DashboardTabState extends State<DashboardTab> {
         );
       }
     } finally {
-      // Ocultar indicador de carga
       if (mounted) {
         setState(() {
           _isLoadingAssignments = false;
@@ -323,84 +325,214 @@ class _DashboardTabState extends State<DashboardTab> {
   }
 
   @override
+  @override
   Widget build(BuildContext context) {
+    // Obtener la altura de la barra de estado
+    final statusBarHeight = MediaQuery.of(context).viewPadding.top;
+
     return Scaffold(
-      appBar: AppBar(
-        elevation: 0,
-        backgroundColor: const Color(0xFFE0E5EC),
-        centerTitle: true,
-        title: const Text(
-          'Dashboard',
-          style: TextStyle(
-            color: Color(0xFF2D3748),
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        actions: [
-          // Mostrar un indicador si se están cargando áreas
-          if (_isLoadingAreas)
-            Container(
-              margin: const EdgeInsets.only(right: 10),
-              width: 20,
-              height: 20,
-              child: const CircularProgressIndicator(
-                strokeWidth: 2,
-                valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF2D3748)),
+      backgroundColor: Colors.white,
+      body: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Nueva cabecera elegante con gradiente
+          Container(
+            padding: EdgeInsets.fromLTRB(20, 20 + statusBarHeight, 20, 30),
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [Color(0xFF4299E1), Color(0xFF3182CE)],
               ),
+              borderRadius: BorderRadius.only(
+                bottomLeft: Radius.circular(30),
+                bottomRight: Radius.circular(30),
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: Color(0x29000000),
+                  blurRadius: 10,
+                  offset: Offset(0, 5),
+                ),
+              ],
             ),
-          IconButton(
-            icon: const Icon(Icons.refresh, color: Color(0xFF2D3748)),
-            onPressed: () {
-              // Al refrescar manualmente, forzamos la recarga de todo
-              _loadWorkers();
-              _loadAreas();
-            },
-          ),
-        ],
-      ),
-      body: SafeArea(
-        child: _isLoadingWorkers
-            ? const Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Fila superior con título y botón de actualización
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    CircularProgressIndicator(),
-                    SizedBox(height: 16),
-                    Text(
-                      'Cargando datos...',
+                    const Text(
+                      'Dashboard',
                       style: TextStyle(
-                        color: Color(0xFF718096),
-                        fontWeight: FontWeight.w500,
+                        fontSize: 28,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
                       ),
+                    ),
+                    Row(
+                      children: [
+                        // Indicador de carga si es necesario
+                        if (_isLoadingAreas ||
+                            _isLoadingWorkers ||
+                            _isLoadingAssignments)
+                          Container(
+                            margin: const EdgeInsets.only(right: 10),
+                            width: 20,
+                            height: 20,
+                            child: const CircularProgressIndicator(
+                              strokeWidth: 2,
+                              valueColor:
+                                  AlwaysStoppedAnimation<Color>(Colors.white),
+                            ),
+                          ),
+                        // Botón de actualización
+                        IconButton(
+                          icon: const Icon(Icons.refresh, color: Colors.white),
+                          onPressed: () {
+                            // Al refrescar manualmente, forzamos la recarga de todo
+                            _loadWorkers();
+                            _loadAreas();
+                            _loadAssignments();
+                          },
+                        ),
+                      ],
                     ),
                   ],
                 ),
-              )
-            : RefreshIndicator(
-                onRefresh: () async {
-                  // Recargar ambos datos al hacer pull-to-refresh
-                  await _loadWorkers();
-                  await _loadAreas();
-                },
-                child: SingleChildScrollView(
-                  physics: const AlwaysScrollableScrollPhysics(),
-                  child: Padding(
-                    padding: const EdgeInsets.all(14.0),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Cifras(),
-                        const SizedBox(height: 24),
-                        QuickActions(),
-                        const SizedBox(height: 24),
-                        RecentOps(),
-                        const SizedBox(height: 30),
-                      ],
-                    ),
+
+                const SizedBox(height: 5),
+
+                // Subtítulo
+                Text(
+                  'Resumen de tus operaciones',
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: Colors.white.withOpacity(0.9),
                   ),
                 ),
-              ),
+
+                const SizedBox(height: 15),
+
+                // Tarjeta de resumen rápido
+                Container(
+                  padding: const EdgeInsets.all(15),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.15),
+                    borderRadius: BorderRadius.circular(15),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceAround,
+                    children: [
+                      // Operaciones pendientes
+                      _buildQuickStatItem(
+                          context,
+                          Icons.pending_actions_outlined,
+                          'Pendientes',
+                          Provider.of<AssignmentsProvider>(context)
+                              .pendingAssignments
+                              .length
+                              .toString()),
+                      // Contador de operaciones en curso
+                      _buildQuickStatItem(
+                          context,
+                          Icons.directions_run,
+                          'En Curso',
+                          Provider.of<AssignmentsProvider>(context)
+                              .inProgressAssignments
+                              .length
+                              .toString()),
+                      // Contador de asignaciones finalizadas
+                      _buildQuickStatItem(
+                          context,
+                          Icons.check_circle_outline,
+                          'Finalizadas',
+                          Provider.of<AssignmentsProvider>(context)
+                              .completedAssignments
+                              .length
+                              .toString()),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          // Contenido del dashboard
+          Expanded(
+            child: _isLoadingWorkers
+                ? const Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        CircularProgressIndicator(),
+                        SizedBox(height: 16),
+                        Text(
+                          'Cargando datos...',
+                          style: TextStyle(
+                            color: Color(0xFF718096),
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
+                    ),
+                  )
+                : RefreshIndicator(
+                    onRefresh: () async {
+                      // Recargar datos al hacer pull-to-refresh
+                      await Future.wait([
+                        _loadWorkers(),
+                        _loadAreas(),
+                        _loadAssignments(),
+                      ]);
+                    },
+                    child: SingleChildScrollView(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      child: Padding(
+                        padding: const EdgeInsets.all(16.0),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            QuickActions(),
+                            const SizedBox(height: 24),
+                            RecentOps(),
+                            const SizedBox(height: 30),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+          ),
+        ],
       ),
+    );
+  }
+
+  // Widget para mostrar un elemento de estadística rápida
+  Widget _buildQuickStatItem(
+      BuildContext context, IconData icon, String label, String value) {
+    return Column(
+      children: [
+        Icon(icon, color: Colors.white, size: 24),
+        const SizedBox(height: 8),
+        Text(
+          value,
+          style: const TextStyle(
+            color: Colors.white,
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          label,
+          style: TextStyle(
+            color: Colors.white.withOpacity(0.8),
+            fontSize: 12,
+          ),
+        ),
+      ],
     );
   }
 }

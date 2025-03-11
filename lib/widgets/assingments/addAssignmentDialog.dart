@@ -11,6 +11,7 @@ import 'package:plannerop/store/clients.dart';
 import 'package:plannerop/store/task.dart';
 import 'package:plannerop/store/user.dart';
 import 'package:plannerop/store/workers.dart';
+import 'package:plannerop/utils/toast.dart';
 import 'package:provider/provider.dart';
 import './selected_worker_list.dart';
 import './assignment_form.dart';
@@ -50,6 +51,9 @@ class _AddAssignmentDialogState extends State<AddAssignmentDialog> {
   List<String> _currentTasks = [];
 
   List<Client> _clients = [];
+
+  // variable para controlar el estado de carga
+  bool _isSaving = false;
 
   @override
   void dispose() {
@@ -207,9 +211,12 @@ class _AddAssignmentDialogState extends State<AddAssignmentDialog> {
                 children: [
                   NeumorphicButton(
                     style: NeumorphicStyle(
-                      depth: 2,
+                      depth: _isSaving ? 0 : 2,
                       intensity: 0.6,
-                      color: Colors.white,
+                      color: _isSaving
+                          ? const Color(
+                              0xFF90CDF4) // Color más claro cuando está guardando
+                          : const Color.fromARGB(255, 248, 248, 248),
                       boxShape: NeumorphicBoxShape.roundRect(
                           BorderRadius.circular(8)),
                     ),
@@ -233,18 +240,64 @@ class _AddAssignmentDialogState extends State<AddAssignmentDialog> {
                       boxShape: NeumorphicBoxShape.roundRect(
                           BorderRadius.circular(8)),
                     ),
-                    onPressed: () async {
-                      // Validar los campos antes de continuar
-                      if (await _validateFields()) {
-                        Navigator.of(context).pop();
-                        _showSuccessDialog(context);
-                      }
-                    },
-                    child: const Text(
-                      'Guardar',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.w600,
+                    onPressed: _isSaving
+                        ? null
+                        : () async {
+                            // Cambiar al estado de carga
+                            setState(() {
+                              _isSaving = true;
+                            });
+
+                            // Validar los campos antes de continuar
+                            final isValid = await _validateFields(context);
+
+                            // Si la validación falló, volver al estado normal
+                            if (!isValid) {
+                              setState(() {
+                                _isSaving = false;
+                              });
+                              return;
+                            }
+
+                            // Si todo salió bien, cerrar el diálogo y mostrar éxito
+                            Navigator.of(context).pop();
+                            _showSuccessDialog(context);
+                          },
+                    child: Container(
+                      width: 100, // Ancho fijo para evitar cambios de tamaño
+                      child: Center(
+                        child: _isSaving
+                            // Mostrar indicador de progreso mientras guarda
+                            ? Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: const [
+                                  SizedBox(
+                                    width: 16,
+                                    height: 16,
+                                    child: CircularProgressIndicator(
+                                      valueColor: AlwaysStoppedAnimation<Color>(
+                                          Colors.white),
+                                      strokeWidth: 2,
+                                    ),
+                                  ),
+                                  SizedBox(width: 8),
+                                  Text(
+                                    'Guardando',
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ],
+                              )
+                            // Mostrar texto normal cuando no está guardando
+                            : const Text(
+                                'Guardar',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
                       ),
                     ),
                   ),
@@ -257,47 +310,47 @@ class _AddAssignmentDialogState extends State<AddAssignmentDialog> {
     );
   }
 
-  Future<bool> _validateFields() async {
+  Future<bool> _validateFields(BuildContext context) async {
     // Validaciones existentes
     if (_selectedWorkers.isEmpty) {
-      _showValidationError('Por favor, selecciona al menos un trabajador');
+      showAlertToast(context, 'Por favor, selecciona al menos un trabajador');
       return false;
     }
 
     if (_areaController.text.isEmpty) {
-      _showValidationError('Por favor, selecciona un área');
+      showAlertToast(context, 'Por favor, selecciona un área');
       return false;
     }
 
     if (_startDateController.text.isEmpty) {
-      _showValidationError('Por favor, selecciona una fecha de inicio');
+      showAlertToast(context, 'Por favor, selecciona una fecha de inicio');
       return false;
     }
 
     if (_startTimeController.text.isEmpty) {
-      _showValidationError('Por favor, selecciona una hora de inicio');
+      showAlertToast(context, 'Por favor, selecciona una hora de inicio');
       return false;
     }
 
     if (_taskController.text.isEmpty) {
-      _showValidationError('Por favor, selecciona una tarea');
+      showAlertToast(context, 'Por favor, selecciona una tarea');
       return false;
     }
 
     if (_zoneController.text.isEmpty) {
-      _showValidationError('Por favor, selecciona una zona');
+      showAlertToast(context, 'Por favor, selecciona una zona');
       return false;
     }
 
     if (_clientController.text.isEmpty) {
-      _showValidationError('Por favor, selecciona un cliente');
+      showAlertToast(context, 'Por favor, selecciona un cliente');
       return false;
     }
 
     // Validación para el campo de motonave cuando el área es BUQUE
     if (_areaController.text.toUpperCase() == 'BUQUE' &&
         _motorshipController.text.isEmpty) {
-      _showValidationError('Por favor, ingresa el nombre de la motonave');
+      showAlertToast(context, 'Por favor, ingresa el nombre de la motonave');
       return false;
     }
 

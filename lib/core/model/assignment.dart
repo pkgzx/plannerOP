@@ -2,7 +2,7 @@ import 'package:plannerop/core/model/user.dart';
 import 'package:plannerop/core/model/worker.dart';
 
 class Assignment {
-  final int? id;
+  int? id;
   final List<Worker> workers;
   final String area;
   final String task;

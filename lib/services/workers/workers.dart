@@ -214,6 +214,9 @@ class WorkerService {
         'incapacitated': 'DISABLE',
       };
 
+      debugPrint('Nuevo estado: $newStatus');
+      debugPrint('Estado mapeado: ${statusToAPI[newStatus]}');
+
       // Prepara el cuerpo de la solicitud
       Map<String, dynamic> body = {
         'status': statusToAPI[newStatus],

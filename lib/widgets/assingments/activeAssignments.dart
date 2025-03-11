@@ -11,11 +11,19 @@ import 'package:plannerop/store/assignments.dart';
 import 'package:plannerop/widgets/assingments/emptyState.dart';
 import 'package:plannerop/core/model/assignment.dart';
 
-class ActiveAssignmentsView extends StatelessWidget {
+// Actualizar ActiveAssignmentsView para mostrar indicador sutil de actualización
+class ActiveAssignmentsView extends StatefulWidget {
   final String searchQuery;
 
   const ActiveAssignmentsView({Key? key, required this.searchQuery})
       : super(key: key);
+
+  @override
+  _ActiveAssignmentsViewState createState() => _ActiveAssignmentsViewState();
+}
+
+class _ActiveAssignmentsViewState extends State<ActiveAssignmentsView> {
+  bool _isRefreshing = false;
 
   @override
   Widget build(BuildContext context) {
@@ -31,17 +39,18 @@ class ActiveAssignmentsView extends StatelessWidget {
 
         // Filtramos por búsqueda
         final filteredAssignments = activeAssignments.where((assignment) {
-          if (searchQuery.isEmpty) return true;
+          if (widget.searchQuery.isEmpty) return true;
 
           // Buscar en área, tarea, o nombres de trabajadores
 
-          final bool matchesTask =
-              assignment.task.toLowerCase().contains(searchQuery.toLowerCase());
+          final bool matchesTask = assignment.task
+              .toLowerCase()
+              .contains(widget.searchQuery.toLowerCase());
           final bool matchesWorker = assignment.workers.any((worker) => worker
               .name
               .toString()
               .toLowerCase()
-              .contains(searchQuery.toLowerCase()));
+              .contains(widget.searchQuery.toLowerCase()));
 
           return matchesTask || matchesWorker;
         }).toList();
@@ -51,7 +60,7 @@ class ActiveAssignmentsView extends StatelessWidget {
             message: activeAssignments.isEmpty
                 ? 'No hay asignaciones activas en este momento.'
                 : 'No hay asignaciones activas que coincidan con la búsqueda.',
-            showClearButton: searchQuery.isNotEmpty,
+            showClearButton: widget.searchQuery.isNotEmpty,
             onClear: () {
               // Esta función debería limpiar la búsqueda desde el padre
             },
@@ -543,42 +552,27 @@ class ActiveAssignmentsView extends StatelessWidget {
                   final now = DateTime.now();
                   final currentTime = DateFormat('HH:mm').format(now);
 
-                  // Crear una copia actualizada de la asignación
-                  final updatedAssignment = Assignment(
-                    id: assignment.id,
-                    workers: assignment.workers,
-                    area: assignment.area,
-                    task: assignment.task,
-                    date: assignment.date,
-                    time: assignment.time,
-                    zone: assignment.zone,
-                    status: 'COMPLETED', // Actualizar estado a completado
+                  debugPrint('Completando asignación ${assignment.id}');
 
-                    // Usar la fecha actual si no hay fecha de finalización
-                    endDate: assignment.endDate ?? now,
+                  var endTimeToSave = assignment.endTime?.isNotEmpty == true
+                      ? assignment.endTime
+                      : currentTime;
 
-                    // Usar la hora actual si no hay hora de finalización
-                    endTime: assignment.endTime?.isNotEmpty == true
-                        ? assignment.endTime
-                        : currentTime,
-
-                    motorship: assignment.motorship,
-                    userId: assignment.userId,
-                    areaId: assignment.areaId,
-                    taskId: assignment.taskId,
-                    clientId: assignment.clientId,
-                  );
+                  endTimeToSave ??= currentTime;
 
                   // Actualizar la asignación en el servidor con todos los datos modificados
-                  final success = await provider.updateAssignment(
-                      updatedAssignment, context);
+                  final success = await provider.completeAssignment(
+                      assignment.id ?? 0,
+                      assignment.endDate ?? now,
+                      endTimeToSave,
+                      context);
 
                   if (success) {
                     // Liberar a los trabajadores
                     final workersProvider =
                         Provider.of<WorkersProvider>(context, listen: false);
                     for (var worker in assignment.workers) {
-                      workersProvider.releaseWorkerObject(worker);
+                      workersProvider.releaseWorkerObject(worker, context);
                     }
 
                     showSuccessToast(
@@ -590,7 +584,6 @@ class ActiveAssignmentsView extends StatelessWidget {
                   Navigator.pop(context);
                 } catch (e) {
                   debugPrint('Error al completar asignación: $e');
-                  showErrorToast(context, 'Error: $e');
                   Navigator.pop(context);
                 }
               },

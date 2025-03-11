@@ -521,8 +521,9 @@ class PendingAssignmentsView extends StatelessWidget {
                     NeumorphicBoxShape.roundRect(BorderRadius.circular(8)),
               ),
               onPressed: () {
+                debugPrint('Iniciar asignación ${assignment.id}');
                 provider.updateAssignmentStatus(
-                    assignment.id ?? 0, 'IN_PROGRESS', context);
+                    assignment.id ?? 0, 'INPROGRESS', context);
                 Navigator.pop(context);
                 showSuccessToast(context, "Asignación iniciada");
               },
