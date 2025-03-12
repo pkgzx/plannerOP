@@ -93,7 +93,7 @@ class _LoginPageState extends State<LoginPage> {
             phone: decodedToken['phone'],
           ));
 
-          debugPrint('Token decodificado: $decodedToken');
+          // debugPrint('Token decodificado: $decodedToken');
 
           if (!mounted) return; // Verificar nuevamente antes de la navegación
 

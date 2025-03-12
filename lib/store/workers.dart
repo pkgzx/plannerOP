@@ -17,15 +17,6 @@ class WorkersProvider with ChangeNotifier {
   // Servicio de trabajadores
   final WorkerService _workerService = WorkerService();
 
-  // Mapeo de especialidades a colores
-  final Map<String, Color> _specialtyColors = {
-    'CARGA GENERAL': const Color(0xFF4299E1), // Azul
-    'CARGA REFRIGERADA': const Color(0xFF48BB78), // Verde
-    'CARGA PELIGROSA': const Color(0xFFED8936), // Naranja
-    'CARGA ESPECIAL': const Color(0xFFF56565), // Rojo
-    'CARGA A GRANEL': const Color(0xFF9F7AEA), // Púrpura
-  };
-
   // Getters
   List<Worker> get workers => [..._workers];
   bool get isLoading => _isLoading;
@@ -62,9 +53,39 @@ class WorkersProvider with ChangeNotifier {
   int get availableWorkers =>
       _workers.where((w) => w.status == WorkerStatus.available).length;
 
-  Color getSpecialtyColor(String area) {
-    return _specialtyColors[area] ??
-        const Color(0xFF718096); // Gris por defecto
+  Future<bool> registerFault(
+    Worker worker,
+    BuildContext context,
+  ) async {
+    try {
+      final success = await _workerService.registerFault(worker, context);
+      if (success) {
+        final index = _workers.indexWhere((w) => w.id == worker.id);
+        if (index >= 0) {
+          final updatedWorker = Worker(
+            id: worker.id,
+            name: worker.name,
+            area: worker.area,
+            phone: worker.phone,
+            document: worker.document,
+            status: worker.status,
+            startDate: worker.startDate,
+            endDate: worker.endDate,
+            code: worker.code,
+            incapacityStartDate: worker.incapacityStartDate,
+            incapacityEndDate: worker.incapacityEndDate,
+            failures: worker.failures + 1,
+          );
+          _workers[index] = updatedWorker;
+          notifyListeners();
+        }
+        return true;
+      }
+      return false;
+    } catch (e) {
+      debugPrint('Error en registerFault: $e');
+      return false;
+    }
   }
 
   // Método modificado para cargar trabajadores solo la primera vez
@@ -257,10 +278,6 @@ class WorkersProvider with ChangeNotifier {
         .where(
             (worker) => worker.name.toLowerCase().contains(query.toLowerCase()))
         .toList();
-  }
-
-  Color getColorForArea(String area) {
-    return _specialtyColors[area] ?? const Color(0xFF718096);
   }
 
   // Método para asignar un trabajador (cambia su estado a asignado)

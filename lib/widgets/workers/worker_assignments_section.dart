@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:plannerop/core/model/assignment.dart';
 import 'package:plannerop/core/model/worker.dart';
 import 'package:intl/intl.dart';
+import 'package:plannerop/store/assignments.dart';
+import 'package:provider/provider.dart';
 
 class WorkerAssignmentsSection extends StatelessWidget {
   final Worker worker;
@@ -15,20 +18,8 @@ class WorkerAssignmentsSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     // Simulación de asignaciones actuales
-    final List<Map<String, dynamic>> assignments = [
-      {
-        'task': 'Verificación de documentos',
-        'area': worker.area,
-        'date': DateTime.now().add(const Duration(days: 1)),
-        'status': 'Pendiente',
-      },
-      {
-        'task': 'Inspección de contenedores',
-        'area': worker.area,
-        'date': DateTime.now().add(const Duration(days: 3)),
-        'status': 'Programada',
-      },
-    ];
+    final List<Assignment> assignments =
+        Provider.of<AssignmentsProvider>(context).assignments;
 
     if (assignments.isEmpty) {
       return Container();
@@ -51,14 +42,17 @@ class WorkerAssignmentsSection extends StatelessWidget {
         ),
         const SizedBox(height: 12),
         ...assignments
+            .where((assignment) =>
+                assignment.workers.any((w) => w.id == worker.id))
+            .where((assignment) => assignment.status != 'COMPLETED')
             .map((assignment) => _buildAssignmentItem(assignment))
             .toList(),
       ],
     );
   }
 
-  Widget _buildAssignmentItem(Map<String, dynamic> assignment) {
-    final date = assignment['date'] as DateTime;
+  Widget _buildAssignmentItem(Assignment assignment) {
+    final date = assignment.date;
     final formattedDate = DateFormat('dd/MM/yyyy').format(date);
 
     return Container(
@@ -77,7 +71,7 @@ class WorkerAssignmentsSection extends StatelessWidget {
             children: [
               Expanded(
                 child: Text(
-                  assignment['task'],
+                  assignment.task,
                   style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w600,
@@ -88,14 +82,14 @@ class WorkerAssignmentsSection extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
-                  color: _getStatusColor(assignment['status']).withOpacity(0.2),
+                  color: _getStatusColor(assignment.status).withOpacity(0.2),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Text(
-                  assignment['status'],
+                  assignment.status,
                   style: TextStyle(
                     fontSize: 12,
-                    color: _getStatusColor(assignment['status']),
+                    color: _getStatusColor(assignment.status),
                     fontWeight: FontWeight.w600,
                   ),
                 ),
@@ -112,7 +106,7 @@ class WorkerAssignmentsSection extends StatelessWidget {
               ),
               const SizedBox(width: 4),
               Text(
-                assignment['area'],
+                assignment.area,
                 style: TextStyle(
                   color: Colors.grey.shade700,
                 ),

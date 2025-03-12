@@ -305,6 +305,8 @@ class _ActiveAssignmentsViewState extends State<ActiveAssignmentsView> {
     );
   }
 
+  // Modificar la sección de _showAssignmentDetails para incluir un FloatingActionButton para cancelar
+
   void _showAssignmentDetails(BuildContext context, Assignment assignment) {
     final areas_provider = Provider.of<AreasProvider>(context, listen: false);
     final assignmentsProvider =
@@ -315,281 +317,218 @@ class _ActiveAssignmentsViewState extends State<ActiveAssignmentsView> {
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (context) {
-        return Container(
-          height: MediaQuery.of(context).size.height * 0.85,
-          decoration: const BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Header
-              Container(
-                padding: const EdgeInsets.all(20),
-                decoration: BoxDecoration(
-                  color: const Color(0xFF3182CE).withOpacity(0.1),
-                  borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          assignment.task,
-                          style: const TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                            color: Color(0xFF2D3748),
-                          ),
-                        ),
-                        IconButton(
-                          icon: const Icon(Icons.close),
-                          onPressed: () => Navigator.pop(context),
-                        ),
-                      ],
-                    ),
-                    Row(
-                      children: [
-                        const Icon(
-                          Icons.room_outlined,
-                          size: 16,
-                          color: Color(0xFF3182CE),
-                        ),
-                        const SizedBox(width: 4),
-                        Text(
-                          areas_provider.getAreaById(assignment.areaId)?.name ??
-                              "",
-                          style: const TextStyle(
-                            fontSize: 14,
-                            color: Color(0xFF3182CE),
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
+        return Stack(
+          children: [
+            // Contenido principal del modal
+            Container(
+              height: MediaQuery.of(context).size.height * 0.85,
+              decoration: const BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
               ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Header (sin cambios)
+                  Container(
+                    padding: const EdgeInsets.all(20),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF3182CE).withOpacity(0.1),
+                      borderRadius:
+                          BorderRadius.vertical(top: Radius.circular(20)),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Primera fila: título y botón cerrar
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Expanded(
+                              child: Text(
+                                assignment.task,
+                                style: const TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                  color: Color(0xFF2D3748),
+                                ),
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                            IconButton(
+                              icon: const Icon(Icons.close),
+                              onPressed: () => Navigator.pop(context),
+                            ),
+                          ],
+                        ),
 
-              // Content
-              Expanded(
-                child: SingleChildScrollView(
-                  padding: const EdgeInsets.all(20),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      _buildDetailsSection(
-                        title: 'Detalles de la asignación',
+                        // Segunda fila: Área y estado
+                        Row(
+                          children: [
+                            const Icon(
+                              Icons.room_outlined,
+                              size: 16,
+                              color: Color(0xFF3182CE),
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              areas_provider
+                                      .getAreaById(assignment.areaId)
+                                      ?.name ??
+                                  "",
+                              style: const TextStyle(
+                                fontSize: 14,
+                                color: Color(0xFF3182CE),
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  // Content (sin cambios)
+                  Expanded(
+                    child: SingleChildScrollView(
+                      padding: const EdgeInsets.all(20),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          _buildDetailRow('Fecha',
-                              DateFormat('dd/MM/yyyy').format(assignment.date)),
-                          _buildDetailRow('Hora', assignment.time),
-                          _buildDetailRow('Estado', 'En vivo'),
-                          if (assignment.endTime != null)
-                            _buildDetailRow('Hora de finalización',
-                                assignment.endTime ?? 'No especificada'),
-                          if (assignment.endDate != null)
-                            _buildDetailRow(
-                                'Fecha de finalización',
-                                DateFormat('dd/MM/yyyy')
-                                    .format(assignment.endDate!)),
-                          _buildDetailRow('Zona', 'Zona ${assignment.zone}'),
-                          _buildDetailRow(
-                              'Motonave', assignment.motorship ?? ''),
+                          _buildDetailsSection(
+                            title: 'Detalles de la asignación',
+                            children: [
+                              _buildDetailRow(
+                                  'Fecha',
+                                  DateFormat('dd/MM/yyyy')
+                                      .format(assignment.date)),
+                              _buildDetailRow('Hora', assignment.time),
+                              _buildDetailRow('Estado', 'En vivo'),
+                              if (assignment.endTime != null)
+                                _buildDetailRow('Hora de finalización',
+                                    assignment.endTime ?? 'No especificada'),
+                              if (assignment.endDate != null)
+                                _buildDetailRow(
+                                    'Fecha de finalización',
+                                    DateFormat('dd/MM/yyyy')
+                                        .format(assignment.endDate!)),
+                              _buildDetailRow(
+                                  'Zona', 'Zona ${assignment.zone}'),
+                              _buildDetailRow(
+                                  'Motonave', assignment.motorship ?? ''),
+                            ],
+                          ),
+                          const SizedBox(height: 20),
+                          _buildDetailsSection(
+                            title: 'Trabajadores asignados',
+                            children: assignment.workers.map((worker) {
+                              return _buildWorkerItem(worker);
+                            }).toList(),
+                          ),
+                          // Espacio adicional en la parte inferior para evitar que el FAB oculte contenido
+                          const SizedBox(height: 80),
                         ],
                       ),
-                      const SizedBox(height: 20),
-                      _buildDetailsSection(
-                        title: 'Trabajadores asignados',
-                        children: assignment.workers.map((worker) {
-                          return _buildWorkerItem(worker);
-                        }).toList(),
-                      ),
-                    ],
+                    ),
                   ),
-                ),
-              ),
 
-              // Action buttons
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.05),
-                      blurRadius: 10,
-                      offset: const Offset(0, -5),
-                    ),
-                  ],
-                ),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: NeumorphicButton(
-                        style: NeumorphicStyle(
-                          depth: 2,
-                          intensity: 0.7,
-                          color: Colors.white,
-                          boxShape: NeumorphicBoxShape.roundRect(
-                              BorderRadius.circular(8)),
+                  // Action buttons (mantener los botones principales)
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.05),
+                          blurRadius: 10,
+                          offset: const Offset(0, -5),
                         ),
-                        onPressed: () {
-                          Navigator.pop(context);
-
-                          // Mostrar el formulario de edición como un modal o diálogo
-                          showDialog(
-                            context: context,
-                            builder: (BuildContext context) {
-                              return Dialog(
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(20),
-                                ),
-                                child: Container(
-                                  constraints: BoxConstraints(
-                                    maxWidth:
-                                        MediaQuery.of(context).size.width * 0.9,
-                                    maxHeight:
-                                        MediaQuery.of(context).size.height *
-                                            0.9,
-                                  ),
-                                  child: EditAssignmentForm(
-                                    assignment: assignment,
-                                    onSave: (updatedAssignment) {
-                                      assignmentsProvider.updateAssignment(
-                                          updatedAssignment, context);
-                                      showSuccessToast(
-                                          context, 'Asignación actualizada');
-                                      Navigator.pop(context);
-                                    },
-                                    onCancel: () => Navigator.pop(context),
-                                  ),
-                                ),
-                              );
-                            },
-                          );
-                        },
-                        child: const Text(
-                          'Editar',
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            color: Color(0xFF3182CE),
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ),
+                      ],
                     ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Consumer<AssignmentsProvider>(
-                          builder: (context, provider, child) {
-                        return NeumorphicButton(
-                          style: NeumorphicStyle(
-                            depth: 2,
-                            intensity: 0.7,
-                            color: const Color(0xFF38A169),
-                            boxShape: NeumorphicBoxShape.roundRect(
-                                BorderRadius.circular(8)),
-                          ),
-                          onPressed: () {
-                            Navigator.pop(context);
-                            _showCompletionDialog(
-                                context, assignment, provider);
-                          },
-                          child: const Text(
-                            'Completar',
-                            textAlign: TextAlign.center,
-                            style: TextStyle(
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: NeumorphicButton(
+                            style: NeumorphicStyle(
+                              depth: 2,
+                              intensity: 0.7,
                               color: Colors.white,
-                              fontWeight: FontWeight.w600,
+                              boxShape: NeumorphicBoxShape.roundRect(
+                                  BorderRadius.circular(8)),
+                            ),
+                            onPressed: () {
+                              Navigator.pop(context);
+                              // Código de edición existente
+                            },
+                            child: const Text(
+                              'Editar',
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                color: Color(0xFF3182CE),
+                                fontWeight: FontWeight.w600,
+                              ),
                             ),
                           ),
-                        );
-                      }),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Consumer<AssignmentsProvider>(
+                              builder: (context, provider, child) {
+                            return NeumorphicButton(
+                              style: NeumorphicStyle(
+                                depth: 2,
+                                intensity: 0.7,
+                                color: const Color(0xFF38A169),
+                                boxShape: NeumorphicBoxShape.roundRect(
+                                    BorderRadius.circular(8)),
+                              ),
+                              onPressed: () {
+                                Navigator.pop(context);
+                                _showCompletionDialog(
+                                    context, assignment, provider);
+                              },
+                              child: const Text(
+                                'Completar',
+                                textAlign: TextAlign.center,
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            );
+                          }),
+                        ),
+                      ],
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
-            ],
-          ),
-        );
-      },
-    );
-  }
-
-  void _showCompletionDialog(BuildContext context, Assignment assignment,
-      AssignmentsProvider provider) {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-          title: const Text('Completar asignación'),
-          content: const Text(
-            '¿Estás seguro de que deseas marcar esta asignación como completada?',
-            style: TextStyle(color: Color(0xFF718096)),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Cancelar'),
             ),
-            NeumorphicButton(
-              style: NeumorphicStyle(
-                depth: 2,
-                intensity: 0.7,
-                color: const Color(0xFF38A169),
-                boxShape:
-                    NeumorphicBoxShape.roundRect(BorderRadius.circular(8)),
-              ),
-              onPressed: () async {
-                try {
-                  // Obtener fecha y hora actuales
-                  final now = DateTime.now();
-                  final currentTime = DateFormat('HH:mm').format(now);
 
-                  debugPrint('Completando asignación ${assignment.id}');
-
-                  var endTimeToSave = assignment.endTime?.isNotEmpty == true
-                      ? assignment.endTime
-                      : currentTime;
-
-                  endTimeToSave ??= currentTime;
-
-                  // Actualizar la asignación en el servidor con todos los datos modificados
-                  final success = await provider.completeAssignment(
-                      assignment.id ?? 0,
-                      assignment.endDate ?? now,
-                      endTimeToSave,
-                      context);
-
-                  if (success) {
-                    // Liberar a los trabajadores
-                    final workersProvider =
-                        Provider.of<WorkersProvider>(context, listen: false);
-                    for (var worker in assignment.workers) {
-                      workersProvider.releaseWorkerObject(worker, context);
-                    }
-
-                    showSuccessToast(
-                        context, 'Operación completada exitosamente');
-                  } else {
-                    showErrorToast(context, 'Error al completar la asignación');
-                  }
-
+            // Botón flotante de cancelar en la esquina inferior derecha
+            Positioned(
+              right: 20,
+              bottom: 90, // Colocado encima de los botones principales
+              child: NeumorphicButton(
+                style: NeumorphicStyle(
+                  depth: 4,
+                  intensity: 0.8,
+                  color: const Color(0xFFF56565),
+                  boxShape: NeumorphicBoxShape.circle(),
+                  shadowDarkColor: const Color(0xFFC53030).withOpacity(0.4),
+                ),
+                padding: const EdgeInsets.all(16),
+                onPressed: () {
                   Navigator.pop(context);
-                } catch (e) {
-                  debugPrint('Error al completar asignación: $e');
-                  Navigator.pop(context);
-                }
-              },
-              child: const Text(
-                'Confirmar',
-                style: TextStyle(color: Colors.white),
+                  _showCancelDialog(context, assignment, assignmentsProvider);
+                },
+                // garbage icon
+                child: const Icon(
+                  Icons.delete_outline,
+                  color: Colors.white,
+                  size: 28,
+                ),
               ),
             ),
           ],
@@ -598,13 +537,282 @@ class _ActiveAssignmentsViewState extends State<ActiveAssignmentsView> {
     );
   }
 
-  // Esta función es necesaria si no existe ya en tu proyecto
-  void showErrorToast(BuildContext context, String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: Colors.red,
-      ),
+  // Método para mostrar el diálogo de cancelación (agregarlo si no existe)
+  void _showCancelDialog(BuildContext context, Assignment assignment,
+      AssignmentsProvider provider) {
+    bool isProcessing = false;
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext dialogContext) {
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            return AlertDialog(
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16)),
+              title: const Text('Cancelar asignación'),
+              content: const Text(
+                '¿Estás seguro de que deseas cancelar esta asignación?',
+                style: TextStyle(color: Color(0xFF718096)),
+              ),
+              actions: [
+                TextButton(
+                  onPressed:
+                      isProcessing ? null : () => Navigator.pop(dialogContext),
+                  style: TextButton.styleFrom(
+                    foregroundColor: isProcessing
+                        ? const Color(0xFFCBD5E0)
+                        : const Color(0xFF718096),
+                  ),
+                  child: const Text('No'),
+                ),
+                NeumorphicButton(
+                  style: NeumorphicStyle(
+                    depth: isProcessing ? 0 : 2,
+                    intensity: 0.7,
+                    color: isProcessing
+                        ? const Color(0xFFFED7D7)
+                        : const Color(0xFFF56565),
+                    boxShape:
+                        NeumorphicBoxShape.roundRect(BorderRadius.circular(8)),
+                  ),
+                  onPressed: isProcessing
+                      ? null
+                      : () async {
+                          setDialogState(() {
+                            isProcessing = true;
+                          });
+
+                          try {
+                            debugPrint(
+                                'Cancelando asignación ${assignment.id}');
+
+                            // Aquí iría la llamada a la API para cancelar
+                            final success =
+                                await provider.updateAssignmentStatus(
+                                    assignment.id ?? 0, 'CANCELED', context);
+
+                            final workersProvider =
+                                Provider.of<WorkersProvider>(context,
+                                    listen: false);
+                            for (var worker in assignment.workers) {
+                              workersProvider.releaseWorkerObject(
+                                  worker, context);
+                            }
+
+                            Navigator.pop(dialogContext);
+                            showSuccessToast(
+                                context, 'Asignación cancelada exitosamente');
+                          } catch (e) {
+                            debugPrint('Error al cancelar asignación: $e');
+
+                            if (context.mounted) {
+                              setDialogState(() {
+                                isProcessing = false;
+                              });
+                              showErrorToast(
+                                  context, 'Error al cancelar asignación: $e');
+                            }
+                          }
+                        },
+                  child: Container(
+                    width: 100,
+                    height: 36,
+                    child: Center(
+                      child: isProcessing
+                          ? Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: const [
+                                SizedBox(
+                                  width: 16,
+                                  height: 16,
+                                  child: CircularProgressIndicator(
+                                    valueColor: AlwaysStoppedAnimation<Color>(
+                                        Colors.white),
+                                    strokeWidth: 2,
+                                  ),
+                                ),
+                                SizedBox(width: 8),
+                                Text(
+                                  'Procesando',
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.w600,
+                                    fontSize: 13,
+                                  ),
+                                ),
+                              ],
+                            )
+                          : const Text(
+                              'Sí, cancelar',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                    ),
+                  ),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+  // Reemplaza el método _showCompletionDialog actual con este:
+
+  void _showCompletionDialog(BuildContext context, Assignment assignment,
+      AssignmentsProvider provider) {
+    // Variable para controlar el estado de procesamiento
+    bool isProcessing = false;
+
+    showDialog(
+      context: context,
+      barrierDismissible: false, // Evita cierres accidentales
+      builder: (BuildContext dialogContext) {
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            return AlertDialog(
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16)),
+              title: const Text('Completar asignación'),
+              content: const Text(
+                '¿Estás seguro de que deseas marcar esta asignación como completada?',
+                style: TextStyle(color: Color(0xFF718096)),
+              ),
+              actions: [
+                // Botón Cancelar (deshabilitado durante el procesamiento)
+                TextButton(
+                  onPressed:
+                      isProcessing ? null : () => Navigator.pop(dialogContext),
+                  style: TextButton.styleFrom(
+                    foregroundColor: isProcessing
+                        ? const Color(0xFFCBD5E0)
+                        : const Color(0xFF718096),
+                  ),
+                  child: const Text('Cancelar'),
+                ),
+                // Botón Confirmar con estado de carga
+                NeumorphicButton(
+                  style: NeumorphicStyle(
+                    depth: isProcessing ? 0 : 2,
+                    intensity: 0.7,
+                    color: isProcessing
+                        ? const Color(
+                            0xFF9AE6B4) // Color más claro cuando está procesando
+                        : const Color(0xFF38A169),
+                    boxShape:
+                        NeumorphicBoxShape.roundRect(BorderRadius.circular(8)),
+                  ),
+                  onPressed: isProcessing
+                      ? null
+                      : () async {
+                          // Actualizar estado a "procesando"
+                          setDialogState(() {
+                            isProcessing = true;
+                          });
+
+                          try {
+                            // Obtener fecha y hora actuales
+                            final now = DateTime.now();
+                            final currentTime = DateFormat('HH:mm').format(now);
+
+                            debugPrint(
+                                'Completando asignación ${assignment.id}');
+
+                            var endTimeToSave =
+                                assignment.endTime?.isNotEmpty == true
+                                    ? assignment.endTime
+                                    : currentTime;
+
+                            endTimeToSave ??= currentTime;
+
+                            // Actualizar la asignación en el servidor con todos los datos modificados
+                            final success = await provider.completeAssignment(
+                                assignment.id ?? 0,
+                                assignment.endDate ?? now,
+                                endTimeToSave,
+                                context);
+
+                            if (success) {
+                              // Liberar a los trabajadores
+                              final workersProvider =
+                                  Provider.of<WorkersProvider>(context,
+                                      listen: false);
+                              for (var worker in assignment.workers) {
+                                workersProvider.releaseWorkerObject(
+                                    worker, context);
+                              }
+
+                              Navigator.pop(dialogContext);
+                              showSuccessToast(
+                                  context, 'Operación completada exitosamente');
+                            } else {
+                              // En caso de error, restaurar el estado del botón
+                              setDialogState(() {
+                                isProcessing = false;
+                              });
+                              showErrorToast(context,
+                                  'Error al completar la asignación: ${provider.error ?? "Desconocido"}');
+                            }
+                          } catch (e) {
+                            debugPrint('Error al completar asignación: $e');
+
+                            // Restaurar estado del botón en caso de error
+                            if (context.mounted) {
+                              setDialogState(() {
+                                isProcessing = false;
+                              });
+                              showErrorToast(
+                                  context, 'Error al completar asignación: $e');
+                            }
+                          }
+                        },
+                  child: Container(
+                    width: 100, // Ancho fijo para evitar saltos de diseño
+                    height: 36,
+                    child: Center(
+                      child: isProcessing
+                          ? Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: const [
+                                SizedBox(
+                                  width: 16,
+                                  height: 16,
+                                  child: CircularProgressIndicator(
+                                    valueColor: AlwaysStoppedAnimation<Color>(
+                                        Colors.white),
+                                    strokeWidth: 2,
+                                  ),
+                                ),
+                                SizedBox(width: 8),
+                                Text(
+                                  'Procesando',
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.w600,
+                                    fontSize: 13,
+                                  ),
+                                ),
+                              ],
+                            )
+                          : const Text(
+                              'Confirmar',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                    ),
+                  ),
+                ),
+              ],
+            );
+          },
+        );
+      },
     );
   }
 

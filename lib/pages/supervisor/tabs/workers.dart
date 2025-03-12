@@ -51,6 +51,42 @@ class _WorkersTabState extends State<WorkersTab> {
     SystemChrome.setSystemUIOverlayStyle(SystemUiOverlayStyle.dark);
   }
 
+  Color getColorArea(int idArea) {
+    if (idArea % 9 == 0) {
+      return Colors.teal;
+    }
+
+    if (idArea % 8 == 0) {
+      return Colors.blue;
+    }
+
+    if (idArea % 7 == 0) {
+      return Colors.green;
+    }
+
+    if (idArea % 6 == 0) {
+      return Colors.yellow;
+    }
+
+    if (idArea % 5 == 0) {
+      return Colors.purple;
+    }
+
+    if (idArea % 4 == 0) {
+      return Colors.orange;
+    }
+
+    if (idArea % 3 == 0) {
+      return Colors.pink;
+    }
+
+    if (idArea % 2 == 0) {
+      return Colors.teal;
+    }
+
+    return Colors.indigo;
+  }
+
   @override
   Widget build(BuildContext context) {
     // Simplemente consume el WorkersProvider que debe estar proporcionado desde un nivel superior
@@ -205,8 +241,7 @@ class _WorkersTabState extends State<WorkersTab> {
                       itemCount: filteredWorkers.length,
                       itemBuilder: (context, index) {
                         final worker = filteredWorkers[index];
-                        final specialtyColor =
-                            workersProvider.getColorForArea(worker.area);
+                        final specialtyColor = getColorArea(worker.idArea);
 
                         return WorkerListItem(
                           worker: worker,

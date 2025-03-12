@@ -142,6 +142,8 @@ class _EditAssignmentFormState extends State<EditAssignmentForm> {
     final clientsProvider = Provider.of<ClientsProvider>(context);
     final workersProvider = Provider.of<WorkersProvider>(context);
 
+    var client = clientsProvider.getClientById(widget.assignment.clientId);
+
     // Listas de opciones
     final List<String> zones =
         List.generate(10, (index) => 'Zona ${index + 1}');
@@ -298,7 +300,7 @@ class _EditAssignmentFormState extends State<EditAssignmentForm> {
                   // Campo de cliente (NO editable)
                   _buildNonEditableField(
                     label: 'Cliente',
-                    value: _clientController.text,
+                    value: client.name,
                     icon: Icons.person_outline,
                   ),
                 ],

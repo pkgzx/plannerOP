@@ -494,47 +494,133 @@ class PendingAssignmentsView extends StatelessWidget {
     );
   }
 
+  // Reemplazar el método _showStartDialog con esta versión mejorada:
+
   void _showStartDialog(BuildContext context, Assignment assignment,
       AssignmentsProvider provider) {
+    // Variable de estado local para el diálogo
+    bool isProcessing = false;
+
     showDialog(
       context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-          title: const Text('Iniciar asignación'),
-          content: const Text(
-            '¿Estás seguro de que deseas iniciar esta asignación?',
-            style: TextStyle(color: Color(0xFF718096)),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Cancelar'),
+      barrierDismissible: false, // Evitar cierre al tocar fuera del diálogo
+      builder: (BuildContext dialogContext) {
+        return StatefulBuilder(// Usar StatefulBuilder para manejar estado local
+            builder: (context, setDialogState) {
+          return AlertDialog(
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
             ),
-            NeumorphicButton(
-              style: NeumorphicStyle(
-                depth: 2,
-                intensity: 0.7,
-                color: const Color(0xFF3182CE),
-                boxShape:
-                    NeumorphicBoxShape.roundRect(BorderRadius.circular(8)),
-              ),
-              onPressed: () {
-                debugPrint('Iniciar asignación ${assignment.id}');
-                provider.updateAssignmentStatus(
-                    assignment.id ?? 0, 'INPROGRESS', context);
-                Navigator.pop(context);
-                showSuccessToast(context, "Asignación iniciada");
-              },
-              child: const Text(
-                'Confirmar',
-                style: TextStyle(color: Colors.white),
-              ),
+            title: const Text('Iniciar asignación'),
+            content: const Text(
+              '¿Estás seguro de que deseas iniciar esta asignación?',
+              style: TextStyle(color: Color(0xFF718096)),
             ),
-          ],
-        );
+            actions: [
+              // Botón Cancelar (deshabilitado durante el procesamiento)
+              TextButton(
+                onPressed:
+                    isProcessing ? null : () => Navigator.pop(dialogContext),
+                style: TextButton.styleFrom(
+                  foregroundColor: isProcessing
+                      ? const Color(0xFFCBD5E0)
+                      : const Color(0xFF718096),
+                ),
+                child: const Text('Cancelar'),
+              ),
+              // Botón Confirmar con estado de carga
+              NeumorphicButton(
+                style: NeumorphicStyle(
+                  depth: isProcessing ? 0 : 2,
+                  intensity: 0.7,
+                  color: isProcessing
+                      ? const Color(
+                          0xFF90CDF4) // Color más claro cuando está procesando
+                      : const Color(0xFF3182CE),
+                  boxShape:
+                      NeumorphicBoxShape.roundRect(BorderRadius.circular(8)),
+                ),
+                onPressed: isProcessing
+                    ? null
+                    : () async {
+                        // Actualizar estado del diálogo a "procesando"
+                        setDialogState(() {
+                          isProcessing = true;
+                        });
+
+                        try {
+                          debugPrint('Iniciando asignación ${assignment.id}');
+
+                          // Actualizar el estado de la asignación
+                          await provider.updateAssignmentStatus(
+                              assignment.id ?? 0, 'INPROGRESS', context);
+
+                          // Cerrar el diálogo
+                          Navigator.pop(dialogContext);
+
+                          // Mostrar mensaje de éxito
+                          showSuccessToast(context, "Asignación iniciada");
+                        } catch (e) {
+                          // En caso de error, volver a habilitar el botón
+                          if (context.mounted) {
+                            setDialogState(() {
+                              isProcessing = false;
+                            });
+                            showErrorToast(
+                                context, "Error al iniciar la asignación");
+                          }
+                        }
+                      },
+                child: Container(
+                  width: 100, // Ancho fijo para evitar redimensionamiento
+                  height: 36,
+                  child: Center(
+                    child: isProcessing
+                        ? Row(
+                            // Mostrar indicador de carga
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: const [
+                              SizedBox(
+                                width: 16,
+                                height: 16,
+                                child: CircularProgressIndicator(
+                                  valueColor: AlwaysStoppedAnimation<Color>(
+                                      Colors.white),
+                                  strokeWidth: 2,
+                                ),
+                              ),
+                              SizedBox(width: 8),
+                              Text(
+                                'Iniciando',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: 14,
+                                ),
+                              ),
+                            ],
+                          )
+                        : const Text(
+                            'Confirmar',
+                            style: TextStyle(color: Colors.white),
+                          ),
+                  ),
+                ),
+              ),
+            ],
+          );
+        });
       },
+    );
+  }
+
+  // Agregar esta función auxiliar para mostrar errores
+  void showErrorToast(BuildContext context, String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: Colors.red,
+      ),
     );
   }
 

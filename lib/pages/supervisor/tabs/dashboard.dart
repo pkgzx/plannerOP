@@ -4,7 +4,6 @@ import 'package:plannerop/store/areas.dart';
 import 'package:plannerop/store/assignments.dart';
 import 'package:plannerop/store/clients.dart';
 import 'package:plannerop/store/task.dart';
-import 'package:plannerop/widgets/cifras.dart';
 import 'package:plannerop/widgets/quickActions.dart';
 import 'package:plannerop/widgets/recentOps.dart';
 import 'package:plannerop/store/workers.dart';
@@ -62,6 +61,7 @@ class _DashboardTabState extends State<DashboardTab> {
 
     try {
       // Intentar cargar desde la API usando el método que respeta el flag
+      // debugPrint('Cargando trabajadores desde API..++++.');
       await workersProvider.fetchWorkersIfNeeded(context);
 
       // Si después de intentar cargar no hay datos, añadir datos de muestra
@@ -94,12 +94,12 @@ class _DashboardTabState extends State<DashboardTab> {
 
     // Verificar si ya hay áreas cargadas
     if (areasProvider.areas.isNotEmpty) {
-      debugPrint(
-          'Áreas ya cargadas anteriormente: ${areasProvider.areas.length}');
+      // debugPrint(
+      //     'Áreas ya cargadas anteriormente: ${areasProvider.areas.length}');
       return;
     }
 
-    debugPrint('Iniciando carga de áreas desde API...');
+    // debugPrint('Iniciando carga de áreas desde API...');
 
     // Mostrar indicador de carga para áreas
     setState(() {
@@ -112,10 +112,10 @@ class _DashboardTabState extends State<DashboardTab> {
 
       // Verificar si se cargaron áreas
       if (areasProvider.areas.isNotEmpty) {
-        debugPrint(
-            'Áreas cargadas con éxito: ${areasProvider.areas.length} áreas');
+        // debugPrint(
+        //     'Áreas cargadas con éxito: ${areasProvider.areas.length} áreas');
       } else {
-        debugPrint('No se cargaron áreas o la lista está vacía');
+        // debugPrint('No se cargaron áreas o la lista está vacía');
 
         // Si no hay áreas, cargar algunas predeterminadas
         _loadDefaultAreas(areasProvider);
@@ -163,7 +163,7 @@ class _DashboardTabState extends State<DashboardTab> {
 
       // Si ya se ha intentado cargar o ya hay tareas, no hacemos nada
       if (tasksProvider.hasAttemptedLoading || tasksProvider.tasks.isNotEmpty) {
-        debugPrint('Tareas ya cargadas o intento previo realizado.');
+        // debugPrint('Tareas ya cargadas o intento previo realizado.');
         return;
       }
 
