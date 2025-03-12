@@ -6,6 +6,7 @@ import 'package:plannerop/core/model/assignment.dart';
 import 'package:plannerop/core/model/user.dart';
 import 'package:plannerop/core/model/worker.dart';
 import 'package:plannerop/store/assignments.dart';
+import 'package:plannerop/utils/toast.dart';
 import 'package:provider/provider.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:path_provider/path_provider.dart';
@@ -563,12 +564,7 @@ class ExportOptions extends StatelessWidget {
   }
 
   void _showErrorSnackbar(BuildContext context, dynamic error) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Error al exportar: $error'),
-        backgroundColor: Colors.red,
-      ),
-    );
+    showErrorToast(context, 'Error al exportar');
   }
 
   // Método auxiliar para generar el título del reporte

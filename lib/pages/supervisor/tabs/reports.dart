@@ -1,9 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_neumorphic_plus/flutter_neumorphic.dart';
 import 'package:intl/intl.dart';
+import 'package:plannerop/utils/toast.dart';
 import 'package:plannerop/widgets/reports/report_filter.dart';
 import 'package:plannerop/widgets/reports/report_data_table.dart';
 import 'package:plannerop/widgets/reports/export_options.dart';
+import 'package:plannerop/widgets/reports/charts/ship_personnel_chart.dart';
+import 'package:plannerop/widgets/reports/charts/zone_distribution_chart.dart';
+import 'package:plannerop/widgets/reports/charts/worker_status_chart.dart';
+import 'package:plannerop/widgets/reports/charts/service_trend_chart.dart';
 
 class ReportesTab extends StatefulWidget {
   const ReportesTab({Key? key}) : super(key: key);
@@ -19,6 +24,9 @@ class _ReportesTabState extends State<ReportesTab> {
   DateTime _endDate = DateTime.now();
   bool _isFiltering = false;
   bool _isExporting = false;
+  bool _showCharts = true; // Estado para alternar entre gráficos y tabla
+  String _selectedChart =
+      "Personal por Buque"; // Gráfico seleccionado por defecto
 
   final List<String> _periods = [
     "Día",
@@ -36,6 +44,25 @@ class _ReportesTabState extends State<ReportesTab> {
     "ADMINISTRATIVA",
     "MANTENIMIENTO",
     "SEGURIDAD",
+  ];
+
+  final List<Map<String, dynamic>> _chartOptions = [
+    {
+      'title': 'Personal por Buque',
+      'icon': Icons.directions_boat_filled_outlined,
+    },
+    {
+      'title': 'Distribución por Zonas',
+      'icon': Icons.pie_chart_outline_rounded,
+    },
+    {
+      'title': 'Estado del Personal',
+      'icon': Icons.people_outline_rounded,
+    },
+    {
+      'title': 'Tendencia de Servicios',
+      'icon': Icons.trending_up_rounded,
+    },
   ];
 
   void _applyFilter({
@@ -67,6 +94,20 @@ class _ReportesTabState extends State<ReportesTab> {
     });
   }
 
+  void _toggleView() {
+    setState(() {
+      _showCharts = !_showCharts;
+    });
+  }
+
+  // Obtener el ícono para el gráfico seleccionado
+  IconData _getSelectedChartIcon() {
+    final selectedOption = _chartOptions.firstWhere(
+        (option) => option['title'] == _selectedChart,
+        orElse: () => _chartOptions[0]);
+    return selectedOption['icon'];
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -85,10 +126,19 @@ class _ReportesTabState extends State<ReportesTab> {
         actions: [
           IconButton(
             icon: Icon(
+              _showCharts ? Icons.table_chart : Icons.bar_chart,
+              color: Colors.white,
+            ),
+            onPressed: _toggleView,
+            tooltip: _showCharts ? 'Ver tabla de datos' : 'Ver gráficos',
+          ),
+          IconButton(
+            icon: Icon(
               _isFiltering ? Icons.filter_list_off : Icons.filter_list,
               color: Colors.white,
             ),
             onPressed: _toggleFilterPanel,
+            tooltip: 'Filtros',
           ),
         ],
       ),
@@ -113,12 +163,8 @@ class _ReportesTabState extends State<ReportesTab> {
                 endDate: _endDate,
                 area: _selectedArea,
                 onExport: (format) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text('Exportando en formato $format'),
-                      backgroundColor: const Color(0xFF4299E1),
-                    ),
-                  );
+                  showInfoToast(
+                      context, "Exportando reporte en formato $format");
                   setState(() {
                     _isExporting = false;
                   });
@@ -128,14 +174,20 @@ class _ReportesTabState extends State<ReportesTab> {
             // Filtro seleccionado
             if (!_isFiltering && !_isExporting) _buildActiveFilters(),
 
-            // Contenido principal - Tabla de datos simplificada
+            // Selector de gráficos (solo visible cuando se muestran gráficos)
+            if (_showCharts && !_isFiltering && !_isExporting)
+              _buildChartSelector(),
+
+            // Contenido principal - Alternando entre gráficas y tabla
             Expanded(
-              child: ReportDataTable(
-                periodName: _selectedPeriod,
-                startDate: _startDate,
-                endDate: _endDate,
-                area: _selectedArea,
-              ),
+              child: _showCharts
+                  ? _buildSelectedChart()
+                  : ReportDataTable(
+                      periodName: _selectedPeriod,
+                      startDate: _startDate,
+                      endDate: _endDate,
+                      area: _selectedArea,
+                    ),
             ),
           ],
         ),
@@ -148,6 +200,182 @@ class _ReportesTabState extends State<ReportesTab> {
         foregroundColor: Colors.white,
       ),
     );
+  }
+
+  // Widget para selector de gráficos
+  Widget _buildChartSelector() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(8),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.05),
+              blurRadius: 4,
+              spreadRadius: 1,
+              offset: const Offset(0, 1),
+            ),
+          ],
+        ),
+        child: DropdownButtonHideUnderline(
+          child: ButtonTheme(
+            alignedDropdown: true,
+            child: DropdownButton<String>(
+              value: _selectedChart,
+              isExpanded: true,
+              icon: const Icon(Icons.keyboard_arrow_down,
+                  color: Color(0xFF4299E1)),
+              elevation: 2,
+              style: const TextStyle(
+                color: Color(0xFF2D3748),
+                fontSize: 16,
+                fontWeight: FontWeight.w500,
+              ),
+              selectedItemBuilder: (context) {
+                return _chartOptions.map((item) {
+                  return Row(
+                    children: [
+                      Icon(_getSelectedChartIcon(),
+                          color: const Color(0xFF4299E1), size: 20),
+                      const SizedBox(width: 12),
+                      Text(_selectedChart),
+                    ],
+                  );
+                }).toList();
+              },
+              onChanged: (String? newValue) {
+                if (newValue != null) {
+                  setState(() {
+                    _selectedChart = newValue;
+                  });
+                }
+              },
+              items: _chartOptions
+                  .map<DropdownMenuItem<String>>((Map<String, dynamic> item) {
+                return DropdownMenuItem<String>(
+                  value: item['title'],
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 8.0),
+                    child: Row(
+                      children: [
+                        Icon(item['icon'],
+                            color: const Color(0xFF4299E1), size: 20),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                item['title'],
+                                style: const TextStyle(
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              }).toList(),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  // Widget para mostrar el gráfico seleccionado
+  Widget _buildSelectedChart() {
+    switch (_selectedChart) {
+      case 'Personal por Buque':
+        return Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Neumorphic(
+            style: NeumorphicStyle(
+              depth: 3,
+              intensity: 0.6,
+              boxShape: NeumorphicBoxShape.roundRect(BorderRadius.circular(16)),
+              color: Colors.white,
+            ),
+            child: Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: ShipPersonnelChart(
+                startDate: _startDate,
+                endDate: _endDate,
+                area: _selectedArea,
+              ),
+            ),
+          ),
+        );
+      case 'Distribución por Zonas':
+        return Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Neumorphic(
+            style: NeumorphicStyle(
+              depth: 3,
+              intensity: 0.6,
+              boxShape: NeumorphicBoxShape.roundRect(BorderRadius.circular(16)),
+              color: Colors.white,
+            ),
+            child: Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: ZoneDistributionChart(
+                startDate: _startDate,
+                endDate: _endDate,
+                area: _selectedArea,
+              ),
+            ),
+          ),
+        );
+      case 'Estado del Personal':
+        return Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Neumorphic(
+            style: NeumorphicStyle(
+              depth: 3,
+              intensity: 0.6,
+              boxShape: NeumorphicBoxShape.roundRect(BorderRadius.circular(16)),
+              color: Colors.white,
+            ),
+            child: Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: WorkerStatusChart(
+                startDate: _startDate,
+                endDate: _endDate,
+                area: _selectedArea,
+              ),
+            ),
+          ),
+        );
+      case 'Tendencia de Servicios':
+        return Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Neumorphic(
+            style: NeumorphicStyle(
+              depth: 3,
+              intensity: 0.6,
+              boxShape: NeumorphicBoxShape.roundRect(BorderRadius.circular(16)),
+              color: Colors.white,
+            ),
+            child: Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: ServiceTrendChart(
+                startDate: _startDate,
+                endDate: _endDate,
+                area: _selectedArea,
+              ),
+            ),
+          ),
+        );
+      default:
+        return const Center(child: Text('Gráfico no disponible'));
+    }
   }
 
   Widget _buildActiveFilters() {

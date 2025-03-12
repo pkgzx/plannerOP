@@ -78,13 +78,8 @@ class _DropdownFieldState extends State<DropdownField> {
                 : () {
                     // Si no está habilitado, mostrar un mensaje
                     if (widget.label == 'Tarea') {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Primero debes seleccionar un área'),
-                          backgroundColor: Color(0xFFE53E3E),
-                          duration: Duration(seconds: 2),
-                        ),
-                      );
+                      showErrorToast(
+                          context, 'Primero debes seleccionar un área');
                     }
                   },
             child: Container(

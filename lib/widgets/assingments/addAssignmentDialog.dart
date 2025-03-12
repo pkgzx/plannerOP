@@ -108,12 +108,7 @@ class _AddAssignmentDialogState extends State<AddAssignmentDialog> {
       });
 
       // Mostrar error
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Error al cargar tareas: Usando lista predeterminada'),
-          backgroundColor: Colors.orange,
-        ),
-      );
+      showAlertToast(context, 'Error al cargar las tareas');
     } finally {
       if (mounted) {
         setState(() {
@@ -464,12 +459,7 @@ class _AddAssignmentDialogState extends State<AddAssignmentDialog> {
   }
 
   void _showValidationError(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: const Color(0xFFE53E3E),
-      ),
-    );
+    showAlertToast(context, message);
   }
 
   void _showSuccessDialog(BuildContext context) {

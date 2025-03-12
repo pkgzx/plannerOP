@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_neumorphic_plus/flutter_neumorphic.dart';
-import 'dart:math' as math; // Para generar colores aleatorios
+import 'dart:math' as math;
+
+import 'package:plannerop/utils/toast.dart'; // Para generar colores aleatorios
 
 class PerfilTab extends StatefulWidget {
   const PerfilTab({super.key});
@@ -61,7 +63,7 @@ class _PerfilTabState extends State<PerfilTab> {
   }
 
   // Método para guardar cambios
-  void _saveChanges() {
+  void _saveChanges(BuildContext context) {
     setState(() {
       _userData['nombre'] = _nombreController.text;
       _userData['email'] = _emailController.text;
@@ -69,12 +71,7 @@ class _PerfilTabState extends State<PerfilTab> {
       _isEditing = false;
     });
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Cambios guardados correctamente'),
-        backgroundColor: Color(0xFF38A169),
-      ),
-    );
+    showSuccessToast(context, 'Cambios guardados');
   }
 
   // Método para cancelar edición
@@ -176,7 +173,7 @@ class _PerfilTabState extends State<PerfilTab> {
                 Icons.check,
                 color: Color(0xFF38A169),
               ),
-              onPressed: _saveChanges,
+              onPressed: () => _saveChanges(context),
             ),
         ],
       ),
@@ -345,12 +342,7 @@ class _PerfilTabState extends State<PerfilTab> {
                 _avatarColor = _generateRandomColor();
               });
 
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Color de avatar actualizado'),
-                  backgroundColor: Color(0xFF3182CE),
-                ),
-              );
+              showSuccessToast(context, 'Color de avatar cambiado');
             },
             child: const Icon(
               Icons.color_lens,

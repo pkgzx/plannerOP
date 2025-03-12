@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:plannerop/utils/toast.dart';
 
 class DateField extends StatelessWidget {
   final String label;
@@ -262,13 +263,8 @@ class TimeField extends StatelessWidget {
           final minimumMinutes = minimumTime.hour * 60 + minimumTime.minute;
 
           if (selectedMinutes < minimumMinutes) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(
-                    'No puedes seleccionar una hora anterior a la actual (${minimumTime.format(context)})'),
-                backgroundColor: const Color(0xFFE53E3E),
-              ),
-            );
+            showAlertToast(context,
+                'No se puede seleccionar una hora anterior a la actual');
             return; // No actualizar el controlador si la hora es inválida
           }
         }
@@ -290,12 +286,7 @@ class TimeField extends StatelessWidget {
       debugPrint('Stack trace: $stackTrace');
 
       // Mostrar un error genérico
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Ha ocurrido un error al seleccionar la hora: $e'),
-          backgroundColor: Colors.red,
-        ),
-      );
+      showErrorToast(context, 'Error al seleccionar la hora');
     }
   }
 }

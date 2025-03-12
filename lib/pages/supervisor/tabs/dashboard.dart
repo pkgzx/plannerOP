@@ -4,6 +4,7 @@ import 'package:plannerop/store/areas.dart';
 import 'package:plannerop/store/assignments.dart';
 import 'package:plannerop/store/clients.dart';
 import 'package:plannerop/store/task.dart';
+import 'package:plannerop/utils/toast.dart';
 import 'package:plannerop/widgets/quickActions.dart';
 import 'package:plannerop/widgets/recentOps.dart';
 import 'package:plannerop/store/workers.dart';
@@ -71,12 +72,7 @@ class _DashboardTabState extends State<DashboardTab> {
 
       // Mostrar un mensaje de error
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error al cargar trabajadores: ${e.toString()}'),
-            backgroundColor: Colors.red,
-          ),
-        );
+        showErrorToast(context, 'Error al cargar trabajadores.');
       }
     } finally {
       if (mounted) {
@@ -129,18 +125,7 @@ class _DashboardTabState extends State<DashboardTab> {
 
       // Mostrar un mensaje de error más informativo
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: const Text(
-                'Error al cargar áreas. Usando áreas predeterminadas.'),
-            backgroundColor: Colors.amber.shade700,
-            action: SnackBarAction(
-              label: 'Reintentar',
-              onPressed: _loadAreas,
-              textColor: Colors.white,
-            ),
-          ),
-        );
+        showErrorToast(context, "Error al cargar áreas.");
       }
     } finally {
       if (mounted) {
@@ -182,18 +167,7 @@ class _DashboardTabState extends State<DashboardTab> {
 
       // En caso de error, mostramos una notificación
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content:
-                const Text('Error al cargar tareas. Usando predeterminadas.'),
-            backgroundColor: Colors.amber.shade700,
-            action: SnackBarAction(
-              label: 'Reintentar',
-              onPressed: _loadTask,
-              textColor: Colors.white,
-            ),
-          ),
-        );
+        showErrorToast(context, 'Error al cargar tareas.');
       }
     } finally {
       if (mounted) {
@@ -235,17 +209,7 @@ class _DashboardTabState extends State<DashboardTab> {
       debugPrint('Error al cargar asignaciones: $e');
 
       if (mounted && !hasExistingData) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: const Text('Error al cargar asignaciones.'),
-            backgroundColor: Colors.amber.shade700,
-            action: SnackBarAction(
-              label: 'Reintentar',
-              onPressed: _loadAssignments,
-              textColor: Colors.white,
-            ),
-          ),
-        );
+        showErrorToast(context, 'Error al cargar asignaciones.');
       }
     } finally {
       if (mounted) {
@@ -300,18 +264,7 @@ class _DashboardTabState extends State<DashboardTab> {
 
       // Mostrar un mensaje de error más informativo
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: const Text(
-                'Error al cargar clientes. Usando clientes predeterminados.'),
-            backgroundColor: Colors.amber.shade700,
-            action: SnackBarAction(
-              label: 'Reintentar',
-              onPressed: _loadClients,
-              textColor: Colors.white,
-            ),
-          ),
-        );
+        showErrorToast(context, 'Error al cargar clientes.');
       }
 
       return false;

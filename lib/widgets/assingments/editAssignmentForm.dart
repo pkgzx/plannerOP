@@ -10,6 +10,7 @@ import 'package:plannerop/store/assignments.dart';
 import 'package:plannerop/store/clients.dart';
 import 'package:plannerop/store/task.dart';
 import 'package:plannerop/store/workers.dart';
+import 'package:plannerop/utils/toast.dart';
 import 'package:plannerop/widgets/assingments/date_time_fields.dart';
 import 'package:provider/provider.dart';
 import 'package:plannerop/widgets/assingments/dropdown_field.dart';
@@ -527,12 +528,7 @@ class _EditAssignmentFormState extends State<EditAssignmentForm> {
   }
 
   void _showValidationError(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: Colors.red,
-      ),
-    );
+    showErrorToast(context, message);
   }
 }
 
@@ -575,31 +571,16 @@ Future<void> showEditAssignmentForm(
             Navigator.pop(context);
 
             if (success) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Asignación actualizada exitosamente'),
-                  backgroundColor: Color(0xFF38A169),
-                ),
-              );
+              showSuccessToast(context, 'Asignación actualizada correctamente');
             } else {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content:
-                      Text('Error al actualizar: ${assignmentsProvider.error}'),
-                  backgroundColor: Colors.red,
-                ),
-              );
+              showErrorToast(context, 'No se pudo actualizar la asignación');
             }
           } catch (e) {
             // Cerrar indicador de carga si hay error
             Navigator.pop(context);
 
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text('Error: $e'),
-                backgroundColor: Colors.red,
-              ),
-            );
+            showErrorToast(
+                context, 'Ha ocurrido un error al actualizar la asignación');
           }
         },
         onCancel: () {
