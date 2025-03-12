@@ -164,7 +164,7 @@ class _AssignmentFormState extends State<AssignmentForm> {
     // Obtener tareas del provider
     final tasksProvider = Provider.of<TasksProvider>(context);
     final List<String> taskNames = tasksProvider.tasks.isNotEmpty
-        ? tasksProvider.taskNames
+        ? tasksProvider.taskNames.map((n) => n.toUpperCase()).toList()
         : []; // Tareas de respaldo
 
     return Column(
@@ -285,6 +285,7 @@ class _AssignmentFormState extends State<AssignmentForm> {
               icon: Icons.access_time_outlined,
               controller: widget.endTimeController!,
               dateController: widget.endDateController,
+              isEndTime: true,
               key: ValueKey(
                   'end_time_field_${_endDateUpdateCounter}_${_endTimeUpdateCounter}'),
             ),

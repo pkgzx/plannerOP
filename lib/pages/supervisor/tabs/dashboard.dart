@@ -199,7 +199,7 @@ class _DashboardTabState extends State<DashboardTab> {
 
       if (assignmentsProvider.assignments.isNotEmpty) {
         debugPrint(
-            'Asignaciones cargadas exitosamente: ${assignmentsProvider.assignments.length}');
+            'Operaciones cargadas exitosamente: ${assignmentsProvider.assignments.length}');
       } else {
         debugPrint('No se cargaron asignaciones o la lista está vacía');
         _isLoadingAssignments = false;

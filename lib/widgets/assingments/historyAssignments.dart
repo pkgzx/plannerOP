@@ -182,7 +182,7 @@ class _HistoryAssignmentsViewState extends State<HistoryAssignmentsView> {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   const Text(
-                    'Historial de Asignaciones',
+                    'Historial de Operaciones',
                     style: TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,

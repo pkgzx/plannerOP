@@ -95,8 +95,7 @@ class AssignmentsProvider extends ChangeNotifier {
         debugPrint('No se encontraron asignaciones en la API.');
         _error = 'No se encontraron asignaciones disponibles.';
       } else {
-        debugPrint(
-            'Asignaciones cargadas exitosamente: ${_assignments.length}');
+        debugPrint('Operaciones cargadas exitosamente: ${_assignments.length}');
       }
     } catch (e, stackTrace) {
       debugPrint('Error al cargar asignaciones: $e');

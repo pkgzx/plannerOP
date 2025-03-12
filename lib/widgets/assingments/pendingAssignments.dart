@@ -368,7 +368,7 @@ class PendingAssignmentsView extends StatelessWidget {
                                   DateFormat('dd/MM/yyyy')
                                       .format(assignment.date)),
                               _buildDetailRow('Hora', assignment.time),
-                              _buildDetailRow('Estado', 'En vivo'),
+                              _buildDetailRow('Estado', 'En curso'),
                               if (assignment.endTime != null)
                                 _buildDetailRow('Hora de finalización',
                                     assignment.endTime ?? 'No especificada'),

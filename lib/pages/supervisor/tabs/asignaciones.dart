@@ -80,7 +80,7 @@ class _AsignacionesTabState extends State<AsignacionesTab>
                 },
               )
             : const Text(
-                'Asignaciones',
+                'Operaciones',
                 style: TextStyle(
                   color: Colors.white, // Texto blanco
                   fontWeight: FontWeight.bold,
@@ -131,7 +131,7 @@ class _AsignacionesTabState extends State<AsignacionesTab>
                     const TextStyle(fontWeight: FontWeight.normal),
                 tabs: const [
                   Tab(text: 'Pendientes'),
-                  Tab(text: 'En Vivo'),
+                  Tab(text: 'En Curso'),
                   Tab(text: 'Finalizadas'),
                 ],
               ),

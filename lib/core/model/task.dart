@@ -14,7 +14,7 @@ class Task {
   factory Task.fromJson(Map<String, dynamic> json) {
     return Task(
       id: json['id'] as int,
-      name: json['name'] as String,
+      name: json['name'].toString().toUpperCase(),
     );
   }
 

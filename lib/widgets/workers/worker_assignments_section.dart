@@ -33,7 +33,7 @@ class WorkerAssignmentsSection extends StatelessWidget {
           child: Divider(),
         ),
         Text(
-          'Asignaciones Actuales',
+          'Operaciones Actuales',
           style: TextStyle(
             color: specialtyColor,
             fontSize: 18,

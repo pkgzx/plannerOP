@@ -13,6 +13,9 @@ class ReportDataTable extends StatefulWidget {
   final DateTime startDate;
   final DateTime endDate;
   final String area;
+  final int? zone;
+  final String? motorship;
+  final String? status;
 
   const ReportDataTable({
     Key? key,
@@ -20,6 +23,9 @@ class ReportDataTable extends StatefulWidget {
     required this.startDate,
     required this.endDate,
     required this.area,
+    this.zone,
+    this.motorship,
+    this.status,
   }) : super(key: key);
 
   @override
@@ -48,7 +54,7 @@ class _ReportDataTableState extends State<ReportDataTable> {
 
   List<Assignment> _getFilteredData(List<Assignment> allAssignments) {
     final filtered = allAssignments.where((data) {
-      // Filtrar por área si es necesario
+      // Filtrar por área
       if (widget.area != 'Todas' && data.area != widget.area) {
         return false;
       }
@@ -59,14 +65,36 @@ class _ReportDataTableState extends State<ReportDataTable> {
         return false;
       }
 
+      // Filtrar por zona
+      if (widget.zone != null && data.zone != widget.zone.toString()) {
+        return false;
+      }
+
+      debugPrint('Zona: ${widget.zone} - ${data.zone}');
+
+      // Filtrar por motonave
+      if (widget.motorship != null && widget.motorship!.isNotEmpty) {
+        if (data.motorship == null || data.motorship != widget.motorship) {
+          return false;
+        }
+      }
+
+      // Filtrar por estado
+      if (widget.status != null && widget.status!.isNotEmpty) {
+        String normalizedStatus = _normalizeStatus(data.status);
+        if (normalizedStatus != widget.status) {
+          return false;
+        }
+      }
+
       // Filtrar por búsqueda
       if (_searchQuery.isNotEmpty) {
         final searchLower = _searchQuery.toLowerCase();
         return data.workers.any((worker) =>
                 worker.name.toString().toLowerCase().contains(searchLower)) ||
             data.task.toLowerCase().contains(searchLower) ||
-            (data.supervisor?.name.toLowerCase().contains(searchLower) ??
-                false);
+            (data.motorship?.toLowerCase().contains(searchLower) ?? false) ||
+            data.area.toLowerCase().contains(searchLower);
       }
 
       return true;
@@ -123,6 +151,22 @@ class _ReportDataTableState extends State<ReportDataTable> {
     return filtered;
   }
 
+  // Método auxiliar para normalizar estados
+  String _normalizeStatus(String status) {
+    switch (status.toUpperCase()) {
+      case 'COMPLETED':
+        return 'Completada';
+      case 'INPROGRESS':
+        return 'En progreso';
+      case 'PENDING':
+        return 'Pendiente';
+      case 'CANCELED':
+        return 'Cancelada';
+      default:
+        return status;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final assignmentsProvider = Provider.of<AssignmentsProvider>(context);
@@ -169,7 +213,7 @@ class _ReportDataTableState extends State<ReportDataTable> {
           child: TextField(
             controller: _searchController,
             decoration: const InputDecoration(
-              hintText: 'Buscar por ID, trabajador, supervisor o tarea...',
+              hintText: 'Buscar por ID, trabajador o tarea...',
               border: InputBorder.none,
               prefixIcon: Icon(Icons.search),
             ),
@@ -220,43 +264,111 @@ class _ReportDataTableState extends State<ReportDataTable> {
           ),
           columnSpacing: 24,
           horizontalMargin: 16,
-          sortColumnIndex: _sortColumnIndex > 0
-              ? _sortColumnIndex - 1
-              : 0, // Ajustamos el índice debido a la eliminación de ID
+          sortColumnIndex: _sortColumnIndex,
           sortAscending: _sortAscending,
           columns: [
-            _buildDataColumn('Trabajador', 0),
-            _buildDataColumn('Área', 1),
-            _buildDataColumn('Tarea', 2),
-            _buildDataColumn('Fecha', 3),
-            _buildDataColumn('Estado', 4),
-            _buildDataColumn('Hora Ingreso', 5),
-            _buildDataColumn('Hora Finalización', 6),
-            _buildDataColumn('Supervisor', 7),
+            _buildDataColumn('Fecha Inicial', 0),
+            _buildDataColumn('Hora Inicial', 1),
+            _buildDataColumn('Nombre Completo', 2),
+            _buildDataColumn('Documento', 3),
+            _buildDataColumn('Área', 4),
+            _buildDataColumn('Zona', 5),
+            _buildDataColumn('Motonave', 6),
+            _buildDataColumn('Tarea', 7),
+            _buildDataColumn('Fecha Finalización', 8),
+            _buildDataColumn('Hora Finalización', 9),
+            _buildDataColumn('Estado', 10),
           ],
-          rows: data.map((assignment) {
-            // Obtenemos el supervisor de la asignación o usamos el default
-            final supervisor = assignment.supervisor ?? _defaultSupervisor;
-
-            return DataRow(
-              cells: [
-                DataCell(_buildDetailedWorkersCell(assignment.workers)),
-                DataCell(Text(assignment.area)),
-                DataCell(Text(assignment.task)),
-                DataCell(Text(DateFormat('dd/MM/yy').format(assignment.date))),
-                DataCell(_buildStatusWidget(assignment.status)),
-                DataCell(Text(assignment.time)),
-                DataCell(
-                    assignment.endTime != null && assignment.endTime!.isNotEmpty
-                        ? Text(assignment.endTime!)
-                        : const Text('-')),
-                DataCell(Text(supervisor.name)),
-              ],
-            );
-          }).toList(),
+          rows: _buildExpandedRows(data),
         ),
       ),
     );
+  }
+
+  // Nuevo método para expandir las filas con un trabajador por fila como en el Excel
+  List<DataRow> _buildExpandedRows(List<Assignment> data) {
+    List<DataRow> rows = [];
+
+    // Para alternar colores por operación
+    int? lastOperationId;
+    int currentOperationOrder = 0;
+
+    for (var assignment in data) {
+      // Determinar si es una nueva operación
+      bool isNewOperation = lastOperationId != assignment.id;
+      if (isNewOperation) {
+        lastOperationId = assignment.id;
+        currentOperationOrder++;
+      }
+
+      // Color de fondo para filas de la misma operación
+      final backgroundColor = currentOperationOrder % 2 == 0
+          ? const Color(0xFFF7FAFC)
+          : const Color(0xFFEDF2F7);
+
+      // Si no hay trabajadores, crear una fila con "Sin asignar"
+      if (assignment.workers.isEmpty) {
+        rows.add(
+          DataRow(
+            color: MaterialStateProperty.all(backgroundColor),
+            cells: [
+              DataCell(Text(DateFormat('dd/MM/yyyy').format(assignment.date))),
+              DataCell(Text(assignment.time)),
+              DataCell(const Text('Sin asignar')),
+              DataCell(const Text('-')),
+              DataCell(Text(assignment.area)),
+              DataCell(Text('${assignment.zone ?? 'N/A'}')),
+              DataCell(Text(assignment.motorship ?? 'N/A')),
+              DataCell(Text(assignment.task)),
+              DataCell(assignment.endDate != null
+                  ? Text(DateFormat('dd/MM/yyyy').format(assignment.endDate!))
+                  : const Text('')),
+              DataCell(Text(assignment.endTime ?? '')),
+              DataCell(_buildStatusWidget(assignment.status)),
+            ],
+          ),
+        );
+      } else {
+        // Crear una fila para CADA trabajador
+        for (var worker in assignment.workers) {
+          String workerName = '';
+          String workerDocument = '';
+
+          // Obtener nombre y documento según el tipo de datos
+          if (worker is Map<String, dynamic>) {
+            workerName = worker.name ?? '';
+            workerDocument = worker.document ?? '';
+          } else if (worker is Worker) {
+            workerName = worker.name;
+            workerDocument = worker.document;
+          }
+
+          rows.add(
+            DataRow(
+              color: MaterialStateProperty.all(backgroundColor),
+              cells: [
+                DataCell(
+                    Text(DateFormat('dd/MM/yyyy').format(assignment.date))),
+                DataCell(Text(assignment.time)),
+                DataCell(Text(workerName)),
+                DataCell(Text(workerDocument)),
+                DataCell(Text(assignment.area)),
+                DataCell(Text('${assignment.zone ?? 'N/A'}')),
+                DataCell(Text(assignment.motorship ?? 'N/A')),
+                DataCell(Text(assignment.task)),
+                DataCell(assignment.endDate != null
+                    ? Text(DateFormat('dd/MM/yyyy').format(assignment.endDate!))
+                    : const Text('')),
+                DataCell(Text(assignment.endTime ?? '')),
+                DataCell(_buildStatusWidget(assignment.status)),
+              ],
+            ),
+          );
+        }
+      }
+    }
+
+    return rows;
   }
 
   // Nuevo método para mostrar todos los trabajadores

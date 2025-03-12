@@ -75,7 +75,7 @@ class _ActiveAssignmentsViewState extends State<ActiveAssignmentsView> {
             padding: const EdgeInsets.all(16),
             children: [
               const Text(
-                'Asignaciones Activas',
+                'Operaciones Operaciones',
                 style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
@@ -157,7 +157,7 @@ class _ActiveAssignmentsViewState extends State<ActiveAssignmentsView> {
                     ),
                     const SizedBox(width: 6),
                     const Text(
-                      'EN VIVO',
+                      'EN CURSO',
                       style: TextStyle(
                         color: Color(0xFF3182CE),
                         fontWeight: FontWeight.w600,
@@ -404,7 +404,7 @@ class _ActiveAssignmentsViewState extends State<ActiveAssignmentsView> {
                                   DateFormat('dd/MM/yyyy')
                                       .format(assignment.date)),
                               _buildDetailRow('Hora', assignment.time),
-                              _buildDetailRow('Estado', 'En vivo'),
+                              _buildDetailRow('Estado', 'En curso'),
                               if (assignment.endTime != null)
                                 _buildDetailRow('Hora de finalización',
                                     assignment.endTime ?? 'No especificada'),
