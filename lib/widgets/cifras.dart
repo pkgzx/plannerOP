@@ -72,7 +72,7 @@ class Cifras extends StatelessWidget {
                       child: _buildStatCard(
                         context,
                         icon: Icons.assignment_turned_in,
-                        label: 'Activas',
+                        label: 'En curso',
                         value: '$activeAssignments',
                         color: const Color(0xFFE6FFED),
                         iconColor: const Color(0xFF2F855A),

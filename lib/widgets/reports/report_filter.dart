@@ -5,22 +5,38 @@ import 'package:intl/intl.dart';
 class ReportFilter extends StatefulWidget {
   final List<String> periods;
   final List<String> areas;
+  final List<int> zones;
+  final List<String> motorships;
+  final List<String> statuses;
   final String selectedPeriod;
   final String selectedArea;
+  final int? selectedZone;
+  final String? selectedMotorship;
+  final String? selectedStatus;
   final DateTime startDate;
   final DateTime endDate;
-  final Function(
-      {String? period,
-      String? area,
-      DateTime? startDate,
-      DateTime? endDate}) onApply;
+  final Function({
+    String? period,
+    String? area,
+    int? zone,
+    String? motorship,
+    String? status,
+    DateTime? startDate,
+    DateTime? endDate,
+  }) onApply;
 
   const ReportFilter({
     Key? key,
     required this.periods,
     required this.areas,
+    required this.zones,
+    required this.motorships,
+    required this.statuses,
     required this.selectedPeriod,
     required this.selectedArea,
+    this.selectedZone,
+    this.selectedMotorship,
+    this.selectedStatus,
     required this.startDate,
     required this.endDate,
     required this.onApply,
@@ -33,6 +49,9 @@ class ReportFilter extends StatefulWidget {
 class _ReportFilterState extends State<ReportFilter> {
   late String _period;
   late String _area;
+  int? _zone;
+  String? _motorship;
+  String? _status;
   late DateTime _startDate;
   late DateTime _endDate;
 
@@ -41,6 +60,9 @@ class _ReportFilterState extends State<ReportFilter> {
     super.initState();
     _period = widget.selectedPeriod;
     _area = widget.selectedArea;
+    _zone = widget.selectedZone;
+    _motorship = widget.selectedMotorship;
+    _status = widget.selectedStatus;
     _startDate = widget.startDate;
     _endDate = widget.endDate;
   }
@@ -72,83 +94,176 @@ class _ReportFilterState extends State<ReportFilter> {
           ),
           const SizedBox(height: 16),
 
-          // Selección de periodo
-          _buildDropdown(
-            'Periodo',
-            _period,
-            widget.periods,
-            (String? value) {
-              if (value != null) {
-                setState(() {
-                  _period = value;
-
-                  // Actualizar fechas según el periodo seleccionado
-                  if (value == 'Día') {
-                    _startDate = DateTime.now();
-                    _endDate = DateTime.now();
-                  } else if (value == 'Semana') {
-                    _startDate =
-                        DateTime.now().subtract(const Duration(days: 7));
-                    _endDate = DateTime.now();
-                  } else if (value == 'Mes') {
-                    _startDate =
-                        DateTime(DateTime.now().year, DateTime.now().month, 1);
-                    _endDate = DateTime.now();
-                  } else if (value == 'Trimestre') {
-                    _startDate =
-                        DateTime.now().subtract(const Duration(days: 90));
-                    _endDate = DateTime.now();
-                  }
-                });
-              }
-            },
-          ),
-          const SizedBox(height: 16),
-
-          // Selección de área
-          _buildDropdown(
-            'Área',
-            _area,
-            widget.areas,
-            (String? value) {
-              if (value != null) {
-                setState(() {
-                  _area = value;
-                });
-              }
-            },
-          ),
-          const SizedBox(height: 16),
-
-          // Fechas personalizadas (mostrar solo si está seleccionado "Personalizado")
-          if (_period == 'Personalizado')
-            Row(
+          // Columna con scroll para todos los filtros
+          SingleChildScrollView(
+            child: Column(
               children: [
-                Expanded(
-                  child: _buildDateField(
-                    'Fecha inicio',
-                    _startDate,
-                    (date) {
-                      setState(() {
-                        _startDate = date;
-                      });
-                    },
-                  ),
+                // Primera fila de filtros
+                Row(
+                  children: [
+                    // Periodo
+                    Expanded(
+                      child: _buildDropdown(
+                        'Periodo',
+                        _period,
+                        widget.periods,
+                        (String? value) {
+                          if (value != null) {
+                            setState(() {
+                              _period = value;
+                              // Actualizar fechas según el periodo
+                              if (value == 'Hoy') {
+                                // Establecer fecha de inicio al comienzo del día actual
+                                final now = DateTime.now();
+                                _startDate =
+                                    DateTime(now.year, now.month, now.day)
+                                        .subtract(const Duration(days: 1));
+                                // Establecer fecha de fin al final del día actual
+                                _endDate = DateTime(
+                                    now.year, now.month, now.day, 23, 59, 59);
+                              } else if (value == 'Semana') {
+                                _startDate = DateTime.now()
+                                    .subtract(const Duration(days: 7));
+                                _endDate = DateTime.now();
+                              } else if (value == 'Mes') {
+                                _startDate = DateTime(DateTime.now().year,
+                                    DateTime.now().month, 1);
+                                _endDate = DateTime.now();
+                              }
+                            });
+                          }
+                        },
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    // Área
+                    Expanded(
+                      child: _buildDropdown(
+                        'Área',
+                        _area,
+                        widget.areas,
+                        (String? value) {
+                          if (value != null) {
+                            setState(() {
+                              _area = value;
+                              // Reset zona y motonave al cambiar área
+                              _zone = null;
+                              _motorship = null;
+                            });
+                          }
+                        },
+                      ),
+                    ),
+                  ],
                 ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: _buildDateField(
-                    'Fecha fin',
-                    _endDate,
-                    (date) {
-                      setState(() {
-                        _endDate = date;
-                      });
-                    },
-                  ),
+                const SizedBox(height: 16),
+
+                // Segunda fila de filtros
+                Row(
+                  children: [
+                    // Zona
+                    Expanded(
+                      child: _buildIntDropdown(
+                        'Zona',
+                        _zone,
+                        widget.zones,
+                        (int? value) {
+                          setState(() {
+                            _zone = value;
+                          });
+                        },
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    // Motonave
+                    Expanded(
+                      child: _buildDropdown(
+                        'Motonave',
+                        _motorship,
+                        widget.motorships,
+                        (String? value) {
+                          setState(() {
+                            _motorship = value;
+                          });
+                        },
+                        nullOption: 'Todas',
+                      ),
+                    ),
+                  ],
                 ),
+                const SizedBox(height: 16),
+
+                // Tercera fila - Estado y Fechas personalizadas
+                Row(
+                  children: [
+                    // Estado
+                    Expanded(
+                      child: _buildDropdown(
+                        'Estado',
+                        _status,
+                        widget.statuses,
+                        (String? value) {
+                          setState(() {
+                            _status = value;
+                          });
+                        },
+                        nullOption: 'Todos',
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    // Espacio para equilibrar o indicador visual
+                    Expanded(
+                      child: _period == 'Personalizado'
+                          ? const SizedBox.shrink()
+                          : Container(
+                              padding: const EdgeInsets.symmetric(vertical: 20),
+                              child: Text(
+                                _period == 'Personalizado'
+                                    ? ''
+                                    : 'Filtro de fecha: $_period',
+                                style: TextStyle(
+                                  color: Colors.grey[600],
+                                  fontStyle: FontStyle.italic,
+                                ),
+                              ),
+                            ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+
+                // Fechas personalizadas (mostrar solo si está seleccionado "Personalizado")
+                if (_period == 'Personalizado')
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _buildDateField(
+                          'Fecha inicio',
+                          _startDate,
+                          (date) {
+                            setState(() {
+                              _startDate = date;
+                            });
+                          },
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: _buildDateField(
+                          'Fecha fin',
+                          _endDate,
+                          (date) {
+                            setState(() {
+                              _endDate = date;
+                            });
+                          },
+                        ),
+                      ),
+                    ],
+                  ),
               ],
             ),
+          ),
 
           const SizedBox(height: 24),
 
@@ -169,6 +284,9 @@ class _ReportFilterState extends State<ReportFilter> {
                   widget.onApply(
                     period: 'Semana',
                     area: 'Todas',
+                    zone: null,
+                    motorship: null,
+                    status: null,
                     startDate: DateTime.now().subtract(const Duration(days: 7)),
                     endDate: DateTime.now(),
                   );
@@ -194,6 +312,9 @@ class _ReportFilterState extends State<ReportFilter> {
                   widget.onApply(
                     period: _period,
                     area: _area,
+                    zone: _zone,
+                    motorship: _motorship,
+                    status: _status,
                     startDate: _startDate,
                     endDate: _endDate,
                   );
@@ -213,12 +334,17 @@ class _ReportFilterState extends State<ReportFilter> {
     );
   }
 
-  Widget _buildDropdown(
-    String label,
-    String value,
-    List<String> items,
-    Function(String?) onChanged,
-  ) {
+  // Dropdown para String
+  Widget _buildDropdown(String label, String? value, List<String> items,
+      Function(String?) onChanged,
+      {String? nullOption}) {
+    List<String> dropdownItems = [...items];
+
+    // Si se proporciona una opción nula, agregarla al principio
+    if (nullOption != null && !dropdownItems.contains(nullOption)) {
+      dropdownItems.insert(0, nullOption);
+    }
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -243,13 +369,16 @@ class _ReportFilterState extends State<ReportFilter> {
               value: value,
               isExpanded: true,
               icon: const Icon(Icons.arrow_drop_down, color: Color(0xFF718096)),
-              items: items.map((String item) {
+              items: dropdownItems.map((String item) {
                 return DropdownMenuItem<String>(
-                  value: item,
+                  value: item == nullOption ? null : item,
                   child: Text(item),
                 );
               }).toList(),
               onChanged: onChanged as void Function(String?),
+              hint: nullOption != null
+                  ? Text(nullOption, style: TextStyle(color: Colors.grey[700]))
+                  : null,
             ),
           ),
         ),
@@ -257,6 +386,61 @@ class _ReportFilterState extends State<ReportFilter> {
     );
   }
 
+  // Dropdown para Int
+  Widget _buildIntDropdown(
+    String label,
+    int? value,
+    List<int> items,
+    Function(int?) onChanged,
+  ) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: const TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.w500,
+            color: Color(0xFF4A5568),
+          ),
+        ),
+        const SizedBox(height: 8),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12),
+          decoration: BoxDecoration(
+            color: const Color(0xFFF7FAFC),
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: const Color(0xFFE2E8F0)),
+          ),
+          child: DropdownButtonHideUnderline(
+            child: DropdownButton<int>(
+              value: value,
+              isExpanded: true,
+              icon: const Icon(Icons.arrow_drop_down, color: Color(0xFF718096)),
+              items: [
+                // Opción "Todas"
+                const DropdownMenuItem<int>(
+                  value: null,
+                  child: Text("Todas"),
+                ),
+                // Opciones de zonas
+                ...items.map((int item) {
+                  return DropdownMenuItem<int>(
+                    value: item,
+                    child: Text('Zona $item'),
+                  );
+                }).toList(),
+              ],
+              onChanged: onChanged as void Function(int?),
+              hint: Text('Todas', style: TextStyle(color: Colors.grey[700])),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  // Selector de fecha
   Widget _buildDateField(
     String label,
     DateTime initialDate,

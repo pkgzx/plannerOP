@@ -17,15 +17,6 @@ class WorkersProvider with ChangeNotifier {
   // Servicio de trabajadores
   final WorkerService _workerService = WorkerService();
 
-  // Mapeo de especialidades a colores
-  final Map<String, Color> _specialtyColors = {
-    'CARGA GENERAL': const Color(0xFF4299E1), // Azul
-    'CARGA REFRIGERADA': const Color(0xFF48BB78), // Verde
-    'CARGA PELIGROSA': const Color(0xFFED8936), // Naranja
-    'CARGA ESPECIAL': const Color(0xFFF56565), // Rojo
-    'CARGA A GRANEL': const Color(0xFF9F7AEA), // Púrpura
-  };
-
   // Getters
   List<Worker> get workers => [..._workers];
   bool get isLoading => _isLoading;
@@ -46,6 +37,10 @@ class WorkersProvider with ChangeNotifier {
 
   int get totalWorkers => _workers.length;
 
+  List<Worker> getWorkersAvailable() {
+    return _workers.where((w) => w.status == WorkerStatus.available).toList();
+  }
+
   int get assignedWorkers =>
       _workers.where((w) => w.status == WorkerStatus.assigned).length;
 
@@ -58,9 +53,39 @@ class WorkersProvider with ChangeNotifier {
   int get availableWorkers =>
       _workers.where((w) => w.status == WorkerStatus.available).length;
 
-  Color getSpecialtyColor(String area) {
-    return _specialtyColors[area] ??
-        const Color(0xFF718096); // Gris por defecto
+  Future<bool> registerFault(
+    Worker worker,
+    BuildContext context,
+  ) async {
+    try {
+      final success = await _workerService.registerFault(worker, context);
+      if (success) {
+        final index = _workers.indexWhere((w) => w.id == worker.id);
+        if (index >= 0) {
+          final updatedWorker = Worker(
+            id: worker.id,
+            name: worker.name,
+            area: worker.area,
+            phone: worker.phone,
+            document: worker.document,
+            status: worker.status,
+            startDate: worker.startDate,
+            endDate: worker.endDate,
+            code: worker.code,
+            incapacityStartDate: worker.incapacityStartDate,
+            incapacityEndDate: worker.incapacityEndDate,
+            failures: worker.failures + 1,
+          );
+          _workers[index] = updatedWorker;
+          notifyListeners();
+        }
+        return true;
+      }
+      return false;
+    } catch (e) {
+      debugPrint('Error en registerFault: $e');
+      return false;
+    }
   }
 
   // Método modificado para cargar trabajadores solo la primera vez
@@ -255,10 +280,6 @@ class WorkersProvider with ChangeNotifier {
         .toList();
   }
 
-  Color getColorForArea(String area) {
-    return _specialtyColors[area] ?? const Color(0xFF718096);
-  }
-
   // Método para asignar un trabajador (cambia su estado a asignado)
   // MANTIENE LA FIRMA ORIGINAL
   void assignWorker(Worker worker, DateTime endDate) {
@@ -316,9 +337,79 @@ class WorkersProvider with ChangeNotifier {
     };
   }
 
-  // Método alternativo para liberar usando el Worker completo
+  // Método para liberar un trabajador (cambia su estado a disponible)
   // MANTIENE LA FIRMA ORIGINAL
-  void releaseWorkerObject(Worker worker) {
-    releaseWorker(worker);
+  // Actualiza estos métodos en WorkersProvider
+
+  // Método para asignar un trabajador en el backend
+  Future<bool> assignWorkerObject(Worker worker, BuildContext context) async {
+    try {
+      // Llamar al servicio para actualizar el estado en el backend
+      final success = await _workerService.updateWorkerStatus(
+          worker.id, "ASSIGNED", context);
+
+      if (success) {
+        // Actualizar estado localmente
+        final index = _workers.indexWhere((w) => w.id == worker.id);
+        if (index >= 0) {
+          final updatedWorker = Worker(
+            id: worker.id,
+            name: worker.name,
+            area: worker.area,
+            phone: worker.phone,
+            document: worker.document,
+            status: WorkerStatus.assigned,
+            startDate: worker.startDate,
+            endDate: null,
+            code: worker.code,
+            incapacityEndDate: worker.incapacityEndDate,
+            incapacityStartDate: worker.incapacityStartDate,
+          );
+          _workers[index] = updatedWorker;
+          notifyListeners();
+        }
+        return true;
+      }
+      return false;
+    } catch (e) {
+      debugPrint('Error al asignar trabajador: $e');
+      return false;
+    }
+  }
+
+  // Método para liberar un trabajador en el backend
+  Future<bool> releaseWorkerObject(Worker worker, BuildContext context) async {
+    try {
+      // Llamar al servicio para actualizar el estado en el backend
+      final success = await _workerService.updateWorkerStatus(
+          worker.id, "available", context);
+
+      if (success) {
+        // Actualizar estado localmente
+        final index = _workers.indexWhere((w) => w.id == worker.id);
+        if (index >= 0) {
+          final updatedWorker = Worker(
+            id: worker.id,
+            name: worker.name,
+            area: worker.area,
+            phone: worker.phone,
+            document: worker.document,
+            status: WorkerStatus.available,
+            startDate: worker.startDate,
+            endDate: null,
+            code: worker.code,
+            incapacityEndDate: worker.incapacityEndDate,
+            incapacityStartDate: worker.incapacityStartDate,
+          );
+          _workers[index] = updatedWorker;
+          notifyListeners();
+        }
+        return true;
+      }
+      return false;
+    } catch (e) {
+      debugPrint('Error al liberar trabajador: $e');
+      return false;
+    }
   }
 }

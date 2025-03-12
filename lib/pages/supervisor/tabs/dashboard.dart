@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_neumorphic_plus/flutter_neumorphic.dart';
 import 'package:plannerop/store/areas.dart';
+import 'package:plannerop/store/assignments.dart';
+import 'package:plannerop/store/clients.dart';
 import 'package:plannerop/store/task.dart';
-import 'package:plannerop/widgets/cifras.dart';
+import 'package:plannerop/utils/toast.dart';
 import 'package:plannerop/widgets/quickActions.dart';
 import 'package:plannerop/widgets/recentOps.dart';
 import 'package:plannerop/store/workers.dart';
@@ -19,6 +21,8 @@ class _DashboardTabState extends State<DashboardTab> {
   bool _isLoadingWorkers = false;
   bool _isLoadingAreas = false;
   bool _isLoadingTasks = false;
+  bool _isLoadingClients = false;
+  bool _isLoadingAssignments = false;
 
   @override
   void initState() {
@@ -28,6 +32,8 @@ class _DashboardTabState extends State<DashboardTab> {
       _checkAndLoadWorkersIfNeeded();
       _loadAreas();
       _loadTask();
+      _loadClients();
+      _loadAssignments();
     });
   }
 
@@ -56,6 +62,7 @@ class _DashboardTabState extends State<DashboardTab> {
 
     try {
       // Intentar cargar desde la API usando el método que respeta el flag
+      // debugPrint('Cargando trabajadores desde API..++++.');
       await workersProvider.fetchWorkersIfNeeded(context);
 
       // Si después de intentar cargar no hay datos, añadir datos de muestra
@@ -65,12 +72,7 @@ class _DashboardTabState extends State<DashboardTab> {
 
       // Mostrar un mensaje de error
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error al cargar trabajadores: ${e.toString()}'),
-            backgroundColor: Colors.red,
-          ),
-        );
+        showErrorToast(context, 'Error al cargar trabajadores.');
       }
     } finally {
       if (mounted) {
@@ -88,12 +90,12 @@ class _DashboardTabState extends State<DashboardTab> {
 
     // Verificar si ya hay áreas cargadas
     if (areasProvider.areas.isNotEmpty) {
-      debugPrint(
-          'Áreas ya cargadas anteriormente: ${areasProvider.areas.length}');
+      // debugPrint(
+      //     'Áreas ya cargadas anteriormente: ${areasProvider.areas.length}');
       return;
     }
 
-    debugPrint('Iniciando carga de áreas desde API...');
+    // debugPrint('Iniciando carga de áreas desde API...');
 
     // Mostrar indicador de carga para áreas
     setState(() {
@@ -106,10 +108,10 @@ class _DashboardTabState extends State<DashboardTab> {
 
       // Verificar si se cargaron áreas
       if (areasProvider.areas.isNotEmpty) {
-        debugPrint(
-            'Áreas cargadas con éxito: ${areasProvider.areas.length} áreas');
+        // debugPrint(
+        //     'Áreas cargadas con éxito: ${areasProvider.areas.length} áreas');
       } else {
-        debugPrint('No se cargaron áreas o la lista está vacía');
+        // debugPrint('No se cargaron áreas o la lista está vacía');
 
         // Si no hay áreas, cargar algunas predeterminadas
         _loadDefaultAreas(areasProvider);
@@ -123,18 +125,7 @@ class _DashboardTabState extends State<DashboardTab> {
 
       // Mostrar un mensaje de error más informativo
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: const Text(
-                'Error al cargar áreas. Usando áreas predeterminadas.'),
-            backgroundColor: Colors.amber.shade700,
-            action: SnackBarAction(
-              label: 'Reintentar',
-              onPressed: _loadAreas,
-              textColor: Colors.white,
-            ),
-          ),
-        );
+        showErrorToast(context, "Error al cargar áreas.");
       }
     } finally {
       if (mounted) {
@@ -148,57 +139,35 @@ class _DashboardTabState extends State<DashboardTab> {
   Future<void> _loadTask() async {
     if (!mounted) return;
 
-    final tasksProvider = Provider.of<TasksProvider>(context, listen: false);
-
-    // Verificar si ya hay tareas cargadas
-    if (tasksProvider.tasks.isNotEmpty) {
-      debugPrint(
-          'Tareas ya cargadas anteriormente: ${tasksProvider.tasks.length}');
-      return;
-    }
-
-    debugPrint('Iniciando carga de tareas desde API...');
-
-    // Mostrar indicador de carga para tareas
     setState(() {
       _isLoadingTasks = true;
     });
 
     try {
-      // Llamar al método fetchTasks con await para asegurar que se complete
+      final tasksProvider = Provider.of<TasksProvider>(context, listen: false);
+
+      // Si ya se ha intentado cargar o ya hay tareas, no hacemos nada
+      if (tasksProvider.hasAttemptedLoading || tasksProvider.tasks.isNotEmpty) {
+        // debugPrint('Tareas ya cargadas o intento previo realizado.');
+        return;
+      }
+
       await tasksProvider.loadTasks(context);
 
-      // Verificar si se cargaron tareas
-      if (tasksProvider.tasks.isNotEmpty) {
-        debugPrint(
-            'Tareas cargadas con éxito: ${tasksProvider.tasks.length} tareas');
+      // Verificar resultado después de la carga
+      if (tasksProvider.tasks.isEmpty) {
+        debugPrint('La API devolvió una lista vacía de tareas.');
+        // Esto ahora lo hace automáticamente el provider
+        // _loadDefaultTasks(tasksProvider);
       } else {
-        debugPrint('No se cargaron tareas o la lista está vacía');
-
-        // Si no hay tareas, cargar algunas predeterminadas
-        _loadDefaultTasks(tasksProvider);
+        debugPrint('Tareas cargadas con éxito: ${tasksProvider.tasks.length}');
       }
-    } catch (e, stackTrace) {
+    } catch (e) {
       debugPrint('Error al cargar tareas: $e');
-      debugPrint('Stack trace: $stackTrace');
 
-      // Cargar tareas predeterminadas en caso de error
-      _loadDefaultTasks(tasksProvider);
-
-      // Mostrar un mensaje de error más informativo
+      // En caso de error, mostramos una notificación
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: const Text(
-                'Error al cargar tareas. Usando tareas predeterminadas.'),
-            backgroundColor: Colors.amber.shade700,
-            action: SnackBarAction(
-              label: 'Reintentar',
-              onPressed: _loadTask,
-              textColor: Colors.white,
-            ),
-          ),
-        );
+        showErrorToast(context, 'Error al cargar tareas.');
       }
     } finally {
       if (mounted) {
@@ -209,12 +178,45 @@ class _DashboardTabState extends State<DashboardTab> {
     }
   }
 
-  // Método auxiliar para cargar tareas predeterminadas
-  void _loadDefaultTasks(TasksProvider tasksProvider) {
-    // Verificar si el TasksProvider tiene un método para agregar tareas predeterminadas
-    if (tasksProvider.tasks.isEmpty) {
-      debugPrint(
-          'Se cargaron tareas predeterminadas: ${tasksProvider.tasks.length} tareas');
+  // Modificar _loadAssignments en DashboardTab
+  Future<void> _loadAssignments() async {
+    if (!mounted) return;
+
+    // No mostrar indicador de carga si ya hay datos disponibles
+    final assignmentsProvider =
+        Provider.of<AssignmentsProvider>(context, listen: false);
+    final hasExistingData = assignmentsProvider.assignments.isNotEmpty;
+
+    if (!hasExistingData) {
+      setState(() {
+        _isLoadingAssignments = true;
+      });
+    }
+
+    try {
+      // Cargar asignaciones con prioridad
+      await assignmentsProvider.loadAssignmentsWithPriority(context);
+
+      if (assignmentsProvider.assignments.isNotEmpty) {
+        debugPrint(
+            'Operaciones cargadas exitosamente: ${assignmentsProvider.assignments.length}');
+      } else {
+        debugPrint('No se cargaron asignaciones o la lista está vacía');
+        _isLoadingAssignments = false;
+        assignmentsProvider.changeIsLoadingOff();
+      }
+    } catch (e) {
+      debugPrint('Error al cargar asignaciones: $e');
+
+      if (mounted && !hasExistingData) {
+        showErrorToast(context, 'Error al cargar asignaciones.');
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoadingAssignments = false;
+        });
+      }
     }
   }
 
@@ -227,85 +229,263 @@ class _DashboardTabState extends State<DashboardTab> {
     }
   }
 
+  Future<bool> _loadClients() async {
+    if (!mounted) return false;
+
+    final clientsProvider =
+        Provider.of<ClientsProvider>(context, listen: false);
+
+    // Si ya se han cargado clientes, no hacer nada
+    if (clientsProvider.clients.isNotEmpty) {
+      debugPrint('Clientes ya cargados: ${clientsProvider.clients.length}');
+      return true;
+    }
+
+    debugPrint('Iniciando carga de clientes desde API...');
+
+    setState(() {
+      _isLoadingClients = true;
+    });
+
+    try {
+      await clientsProvider.fetchClients(context);
+
+      if (clientsProvider.clients.isNotEmpty) {
+        debugPrint(
+            'Clientes cargados con éxito: ${clientsProvider.clients.length}');
+        return true;
+      } else {
+        debugPrint('No se cargaron clientes o la lista está vacía');
+        return false;
+      }
+    } catch (e, stackTrace) {
+      debugPrint('Error al cargar clientes: $e');
+      debugPrint('Stack trace: $stackTrace');
+
+      // Mostrar un mensaje de error más informativo
+      if (mounted) {
+        showErrorToast(context, 'Error al cargar clientes.');
+      }
+
+      return false;
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoadingClients = false;
+        });
+      }
+    }
+  }
+
+  @override
   @override
   Widget build(BuildContext context) {
+    // Obtener la altura de la barra de estado
+    final statusBarHeight = MediaQuery.of(context).viewPadding.top;
+
     return Scaffold(
-      appBar: AppBar(
-        elevation: 0,
-        backgroundColor: const Color(0xFFE0E5EC),
-        centerTitle: true,
-        title: const Text(
-          'Dashboard',
-          style: TextStyle(
-            color: Color(0xFF2D3748),
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        actions: [
-          // Mostrar un indicador si se están cargando áreas
-          if (_isLoadingAreas)
-            Container(
-              margin: const EdgeInsets.only(right: 10),
-              width: 20,
-              height: 20,
-              child: const CircularProgressIndicator(
-                strokeWidth: 2,
-                valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF2D3748)),
+      backgroundColor: Colors.white,
+      body: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Nueva cabecera elegante con gradiente
+          Container(
+            padding: EdgeInsets.fromLTRB(20, 20 + statusBarHeight, 20, 30),
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [Color(0xFF4299E1), Color(0xFF3182CE)],
               ),
+              borderRadius: BorderRadius.only(
+                bottomLeft: Radius.circular(30),
+                bottomRight: Radius.circular(30),
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: Color(0x29000000),
+                  blurRadius: 10,
+                  offset: Offset(0, 5),
+                ),
+              ],
             ),
-          IconButton(
-            icon: const Icon(Icons.refresh, color: Color(0xFF2D3748)),
-            onPressed: () {
-              // Al refrescar manualmente, forzamos la recarga de todo
-              _loadWorkers();
-              _loadAreas();
-            },
-          ),
-        ],
-      ),
-      body: SafeArea(
-        child: _isLoadingWorkers
-            ? const Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Fila superior con título y botón de actualización
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    CircularProgressIndicator(),
-                    SizedBox(height: 16),
-                    Text(
-                      'Cargando datos...',
+                    const Text(
+                      'Dashboard',
                       style: TextStyle(
-                        color: Color(0xFF718096),
-                        fontWeight: FontWeight.w500,
+                        fontSize: 28,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
                       ),
+                    ),
+                    Row(
+                      children: [
+                        // Indicador de carga si es necesario
+                        if (_isLoadingAreas ||
+                            _isLoadingWorkers ||
+                            _isLoadingAssignments)
+                          Container(
+                            margin: const EdgeInsets.only(right: 10),
+                            width: 20,
+                            height: 20,
+                            child: const CircularProgressIndicator(
+                              strokeWidth: 2,
+                              valueColor:
+                                  AlwaysStoppedAnimation<Color>(Colors.white),
+                            ),
+                          ),
+                        // Botón de actualización
+                        IconButton(
+                          icon: const Icon(Icons.refresh, color: Colors.white),
+                          onPressed: () {
+                            // Al refrescar manualmente, forzamos la recarga de todo
+                            _loadWorkers();
+                            _loadAreas();
+                            _loadAssignments();
+                          },
+                        ),
+                      ],
                     ),
                   ],
                 ),
-              )
-            : RefreshIndicator(
-                onRefresh: () async {
-                  // Recargar ambos datos al hacer pull-to-refresh
-                  await _loadWorkers();
-                  await _loadAreas();
-                },
-                child: SingleChildScrollView(
-                  physics: const AlwaysScrollableScrollPhysics(),
-                  child: Padding(
-                    padding: const EdgeInsets.all(14.0),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Cifras(),
-                        const SizedBox(height: 24),
-                        QuickActions(),
-                        const SizedBox(height: 24),
-                        RecentOps(),
-                        const SizedBox(height: 30),
-                      ],
-                    ),
+
+                const SizedBox(height: 5),
+
+                // Subtítulo
+                Text(
+                  'Resumen de tus operaciones',
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: Colors.white.withOpacity(0.9),
                   ),
                 ),
-              ),
+
+                const SizedBox(height: 15),
+
+                // Tarjeta de resumen rápido
+                Container(
+                  padding: const EdgeInsets.all(15),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.15),
+                    borderRadius: BorderRadius.circular(15),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceAround,
+                    children: [
+                      // Operaciones pendientes
+                      _buildQuickStatItem(
+                          context,
+                          Icons.pending_actions_outlined,
+                          'Pendientes',
+                          Provider.of<AssignmentsProvider>(context)
+                              .pendingAssignments
+                              .length
+                              .toString()),
+                      // Contador de operaciones en curso
+                      _buildQuickStatItem(
+                          context,
+                          Icons.directions_run,
+                          'En Curso',
+                          Provider.of<AssignmentsProvider>(context)
+                              .inProgressAssignments
+                              .length
+                              .toString()),
+                      // Contador de asignaciones finalizadas
+                      _buildQuickStatItem(
+                          context,
+                          Icons.check_circle_outline,
+                          'Finalizadas',
+                          Provider.of<AssignmentsProvider>(context)
+                              .completedAssignments
+                              .length
+                              .toString()),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          // Contenido del dashboard
+          Expanded(
+            child: _isLoadingWorkers
+                ? const Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        CircularProgressIndicator(),
+                        SizedBox(height: 16),
+                        Text(
+                          'Cargando datos...',
+                          style: TextStyle(
+                            color: Color(0xFF718096),
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
+                    ),
+                  )
+                : RefreshIndicator(
+                    onRefresh: () async {
+                      // Recargar datos al hacer pull-to-refresh
+                      await Future.wait([
+                        _loadWorkers(),
+                        _loadAreas(),
+                        _loadAssignments(),
+                      ]);
+                    },
+                    child: SingleChildScrollView(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      child: Padding(
+                        padding: const EdgeInsets.all(16.0),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            QuickActions(),
+                            const SizedBox(height: 24),
+                            RecentOps(),
+                            const SizedBox(height: 30),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+          ),
+        ],
       ),
+    );
+  }
+
+  // Widget para mostrar un elemento de estadística rápida
+  Widget _buildQuickStatItem(
+      BuildContext context, IconData icon, String label, String value) {
+    return Column(
+      children: [
+        Icon(icon, color: Colors.white, size: 24),
+        const SizedBox(height: 8),
+        Text(
+          value,
+          style: const TextStyle(
+            color: Colors.white,
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          label,
+          style: TextStyle(
+            color: Colors.white.withOpacity(0.8),
+            fontSize: 12,
+          ),
+        ),
+      ],
     );
   }
 }

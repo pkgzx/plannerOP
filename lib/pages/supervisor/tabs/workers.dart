@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_neumorphic_plus/flutter_neumorphic.dart';
 import 'package:plannerop/store/workers.dart';
 import 'package:plannerop/utils/toast.dart';
@@ -32,12 +33,58 @@ class _WorkersTabState extends State<WorkersTab> {
         _searchQuery = _searchController.text.toLowerCase();
       });
     });
+
+    // Configurar estilo de barra de estado al iniciar
+    SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
+      statusBarColor: Color(0xFF4299E1), // Color de fondo de la barra de estado
+      statusBarIconBrightness:
+          Brightness.light, // Iconos claros para el fondo azul
+    ));
   }
 
   @override
   void dispose() {
     _searchController.dispose();
     super.dispose();
+
+    // Restaurar estilo por defecto al salir
+    SystemChrome.setSystemUIOverlayStyle(SystemUiOverlayStyle.dark);
+  }
+
+  Color getColorArea(int idArea) {
+    if (idArea % 9 == 0) {
+      return Colors.teal;
+    }
+
+    if (idArea % 8 == 0) {
+      return Colors.blue;
+    }
+
+    if (idArea % 7 == 0) {
+      return Colors.green;
+    }
+
+    if (idArea % 6 == 0) {
+      return Colors.yellow;
+    }
+
+    if (idArea % 5 == 0) {
+      return Colors.purple;
+    }
+
+    if (idArea % 4 == 0) {
+      return Colors.orange;
+    }
+
+    if (idArea % 3 == 0) {
+      return Colors.pink;
+    }
+
+    if (idArea % 2 == 0) {
+      return Colors.teal;
+    }
+
+    return Colors.indigo;
   }
 
   @override
@@ -194,8 +241,7 @@ class _WorkersTabState extends State<WorkersTab> {
                       itemCount: filteredWorkers.length,
                       itemBuilder: (context, index) {
                         final worker = filteredWorkers[index];
-                        final specialtyColor =
-                            workersProvider.getColorForArea(worker.area);
+                        final specialtyColor = getColorArea(worker.idArea);
 
                         return WorkerListItem(
                           worker: worker,

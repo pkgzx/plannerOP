@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:plannerop/utils/toast.dart';
 
 class DateField extends StatelessWidget {
   final String label;
@@ -7,6 +8,7 @@ class DateField extends StatelessWidget {
   final IconData icon;
   final TextEditingController controller;
   final Function(String)? onDateChanged; // Añadir esta callback
+  final bool isOptional;
 
   const DateField({
     Key? key,
@@ -15,6 +17,7 @@ class DateField extends StatelessWidget {
     required this.icon,
     required this.controller,
     this.onDateChanged, // Opcional para notificar cambios
+    this.isOptional = false,
   }) : super(key: key);
 
   @override
@@ -121,6 +124,8 @@ class TimeField extends StatelessWidget {
   final IconData icon;
   final TextEditingController controller;
   final TextEditingController? dateController;
+  final bool isOptional;
+  final bool isEndTime; // Nuevo parámetro para identificar si es hora de fin
 
   const TimeField({
     Key? key,
@@ -129,13 +134,14 @@ class TimeField extends StatelessWidget {
     required this.icon,
     required this.controller,
     this.dateController,
+    this.isOptional = false,
+    this.isEndTime = false, // Por defecto, asumimos que es hora de inicio
   }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
-    // Crear un valor clave para debugging
     debugPrint(
-        'TimeField build - date: ${dateController?.text}, time: ${controller.text}');
+        'TimeField build - date: ${dateController?.text}, time: ${controller.text}, isEndTime: $isEndTime');
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 16),
@@ -183,7 +189,6 @@ class TimeField extends StatelessWidget {
     );
   }
 
-  // Extraemos la lógica de selección a un método separado para mayor claridad
   Future<void> _selectTime(BuildContext context) async {
     try {
       // Determinar la hora inicial para el selector
@@ -203,12 +208,14 @@ class TimeField extends StatelessWidget {
         initialTime = TimeOfDay.now();
       }
 
-      // Verificar si es hoy para establecer restricciones de hora
+      // Verificar si es hoy para establecer restricciones de hora (solo para hora de inicio)
       bool isToday = false;
       TimeOfDay? minimumTime;
 
-      // Solo verificamos restricciones si tenemos una fecha
-      if (dateController != null && dateController!.text.isNotEmpty) {
+      // Solo verificamos restricciones para hora de inicio si tenemos una fecha y no es hora final
+      if (!isEndTime &&
+          dateController != null &&
+          dateController!.text.isNotEmpty) {
         try {
           final selectedDate =
               DateFormat('dd/MM/yyyy').parse(dateController!.text);
@@ -221,15 +228,20 @@ class TimeField extends StatelessWidget {
 
           if (isToday) {
             minimumTime = TimeOfDay.now();
-            debugPrint('Es hoy: ${minimumTime.hour}:${minimumTime.minute}');
-          } else {
-            debugPrint('No es hoy: ${dateController!.text}');
+            // Añadir log más detallado para depuración
+            final period = minimumTime.hour >= 12 ? 'PM' : 'AM';
+            final hour12Format = minimumTime.hour > 12
+                ? minimumTime.hour - 12
+                : minimumTime.hour == 0
+                    ? 12
+                    : minimumTime.hour;
+
+            debugPrint(
+                'Hora mínima: ${minimumTime.hour}:${minimumTime.minute} ($hour12Format:${minimumTime.minute.toString().padLeft(2, '0')} $period)');
           }
         } catch (e) {
           debugPrint('Error al validar fecha: $e');
         }
-      } else {
-        debugPrint('No hay fecha seleccionada');
       }
 
       // Mostrar el selector de hora
@@ -252,19 +264,30 @@ class TimeField extends StatelessWidget {
 
       // Si el usuario seleccionó una hora
       if (picked != null) {
-        // Comprobación solo si es el día de hoy
-        if (isToday && minimumTime != null) {
+        // Añadir log detallado para la hora seleccionada
+        final pickedPeriod = picked.hour >= 12 ? 'PM' : 'AM';
+        final pickedHour12 = picked.hour > 12
+            ? picked.hour - 12
+            : picked.hour == 0
+                ? 12
+                : picked.hour;
+
+        debugPrint(
+            'Hora seleccionada: ${picked.hour}:${picked.minute} ($pickedHour12:${picked.minute.toString().padLeft(2, '0')} $pickedPeriod)');
+
+        // Comprobación solo si es el día de hoy y es una hora de inicio
+        if (!isEndTime && isToday && minimumTime != null) {
           final selectedMinutes = picked.hour * 60 + picked.minute;
           final minimumMinutes = minimumTime.hour * 60 + minimumTime.minute;
 
           if (selectedMinutes < minimumMinutes) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(
-                    'No puedes seleccionar una hora anterior a la actual (${minimumTime.format(context)})'),
-                backgroundColor: const Color(0xFFE53E3E),
-              ),
-            );
+            // Mensaje más claro especificando la hora actual
+            final formattedMinTime =
+                '${minimumTime.hour}:${minimumTime.minute.toString().padLeft(2, '0')}';
+            showAlertToast(
+                context,
+                'No puedes seleccionar ${picked.hour}:${picked.minute.toString().padLeft(2, '0')}, '
+                'debe ser posterior a la hora actual ($formattedMinTime)');
             return; // No actualizar el controlador si la hora es inválida
           }
         }
@@ -279,19 +302,14 @@ class TimeField extends StatelessWidget {
           (context.state as State).setState(() {});
         }
 
-        debugPrint('Hora seleccionada: ${controller.text}');
+        debugPrint('Hora guardada: ${controller.text}');
       }
     } catch (e, stackTrace) {
       debugPrint('Error en selector de hora: $e');
       debugPrint('Stack trace: $stackTrace');
 
       // Mostrar un error genérico
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Ha ocurrido un error al seleccionar la hora: $e'),
-          backgroundColor: Colors.red,
-        ),
-      );
+      showErrorToast(context, 'Error al seleccionar la hora');
     }
   }
 }

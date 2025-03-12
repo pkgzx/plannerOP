@@ -82,7 +82,7 @@ class ReportSummary extends StatelessWidget {
           children: [
             Expanded(
               child: _buildMetricCard(
-                'Asignaciones Totales',
+                'Operaciones Totales',
                 '128',
                 Icons.assignment_outlined,
                 const Color(0xFF3182CE),
@@ -92,7 +92,7 @@ class ReportSummary extends StatelessWidget {
             const SizedBox(width: 16),
             Expanded(
               child: _buildMetricCard(
-                'Asignaciones Completadas',
+                'Operaciones Completadas',
                 '97',
                 Icons.check_circle_outline,
                 const Color(0xFF38A169),

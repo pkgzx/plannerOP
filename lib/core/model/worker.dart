@@ -12,6 +12,7 @@ class Worker {
   int idArea;
   final WorkerStatus status;
   final String code;
+  final int failures;
 
   Worker({
     required this.name,
@@ -26,6 +27,7 @@ class Worker {
     this.incapacityEndDate,
     this.deactivationDate,
     this.idArea = 0,
+    this.failures = 0,
     required this.id,
   });
 

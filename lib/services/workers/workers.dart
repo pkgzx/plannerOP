@@ -60,6 +60,8 @@ class WorkerService {
               status = WorkerStatus.available;
             }
 
+            debugPrint('Failures: ${w['failures']}');
+
             workers.add(Worker(
               id: w['id'],
               document: w['dni'],
@@ -68,6 +70,7 @@ class WorkerService {
               status: status,
               area: '${w['jobArea']['name']}',
               code: '${w['code']}',
+              failures: w['failures'] ?? 0,
               startDate: startDate ?? DateTime.now(),
               endDate: endDate ?? DateTime.now(),
               incapacityStartDate: w['dateDisableStart'] != null
@@ -115,6 +118,38 @@ class WorkerService {
     } catch (e) {
       debugPrint('Error en contexto de fetchWorkers: $e');
       return FetchWorkersDto(workers: [], isSuccess: false);
+    }
+  }
+
+  Future<bool> registerFault(Worker worker, BuildContext context) async {
+    try {
+      final authProvider = Provider.of<AuthProvider>(context, listen: false);
+      final String token = authProvider.accessToken;
+
+      if (token.isEmpty) {
+        debugPrint('No hay token disponible');
+        return false;
+      }
+
+      var url = Uri.parse('$API_URL/worker/${worker.id}');
+
+      var response = await http.patch(
+        url,
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json'
+        },
+        body: jsonEncode({
+          'failures': worker.failures + 1,
+        }),
+      );
+
+      debugPrint('API Response: ${response.statusCode} - ${response.body}');
+
+      return response.statusCode >= 200 && response.statusCode < 300;
+    } catch (e) {
+      debugPrint('Error en registerFault: $e');
+      return false;
     }
   }
 
@@ -213,6 +248,9 @@ class WorkerService {
         'deactivated': 'DEACTIVATED',
         'incapacitated': 'DISABLE',
       };
+
+      debugPrint('Nuevo estado: $newStatus');
+      debugPrint('Estado mapeado: ${statusToAPI[newStatus]}');
 
       // Prepara el cuerpo de la solicitud
       Map<String, dynamic> body = {

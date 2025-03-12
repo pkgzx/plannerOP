@@ -115,7 +115,7 @@ class QuickActions extends StatelessWidget {
                           FittedBox(
                             fit: BoxFit.scaleDown,
                             child: Text(
-                              'Ver Asignaciones',
+                              'Ver Operaciones',
                               textAlign: TextAlign.center,
                               style: TextStyle(
                                 color: Colors.white,

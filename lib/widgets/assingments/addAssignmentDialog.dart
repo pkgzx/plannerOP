@@ -2,11 +2,16 @@ import 'package:flutter/material.dart';
 import 'package:flutter_neumorphic_plus/flutter_neumorphic.dart';
 import 'package:intl/intl.dart';
 import 'package:plannerop/core/model/area.dart';
+import 'package:plannerop/core/model/client.dart';
+import 'package:plannerop/core/model/task.dart';
 import 'package:plannerop/core/model/worker.dart';
 import 'package:plannerop/store/areas.dart';
 import 'package:plannerop/store/assignments.dart';
+import 'package:plannerop/store/clients.dart';
 import 'package:plannerop/store/task.dart';
+import 'package:plannerop/store/user.dart';
 import 'package:plannerop/store/workers.dart';
+import 'package:plannerop/utils/toast.dart';
 import 'package:provider/provider.dart';
 import './selected_worker_list.dart';
 import './assignment_form.dart';
@@ -45,11 +50,10 @@ class _AddAssignmentDialogState extends State<AddAssignmentDialog> {
   // Ahora usaremos TasksProvider para obtener la lista de tareas
   List<String> _currentTasks = [];
 
-  List<String> _clients = [
-    "SMITCO",
-    "SPSM",
-    "UNIBAN",
-  ];
+  List<Client> _clients = [];
+
+  // variable para controlar el estado de carga
+  bool _isSaving = false;
 
   @override
   void dispose() {
@@ -83,33 +87,28 @@ class _AddAssignmentDialogState extends State<AddAssignmentDialog> {
     });
 
     try {
-      // Obtener el provider de tareas
       final tasksProvider = Provider.of<TasksProvider>(context, listen: false);
 
-      // Cargar tareas si aún no están cargadas
-      if (tasksProvider.tasks.isEmpty) {
-        await tasksProvider.loadTasks(context);
+      // Intentar cargar si aún no se ha hecho
+      if (!tasksProvider.hasAttemptedLoading) {
+        await tasksProvider.loadTasksIfNeeded(context);
       }
 
-      // Actualizar la lista local
+      // Actualizar la lista local con los nombres de tareas
+      // Ahora siempre tendremos tareas (predeterminadas o de API)
       setState(() {
-        _currentTasks = tasksProvider.tasks.map((task) => task.name).toList();
+        _currentTasks = tasksProvider.taskNames;
       });
     } catch (e) {
-      print('Error al cargar tareas: $e');
-      // Si hay un error, mantener una lista de respaldo
-      _currentTasks = [
-        "SERVICIO DE ESTIBAJE", //! BREAKING CHANGE: Cambio de nombre
-        "SERVICIO DE WINCHERO",
-      ];
+      debugPrint('Error al cargar tareas: $e');
 
-      // Mostrar error al usuario
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Error al cargar tareas. Usando datos locales.'),
-          backgroundColor: Colors.orange,
-        ),
-      );
+      // En caso de error, usar lista predeterminada
+      setState(() {
+        _currentTasks = [];
+      });
+
+      // Mostrar error
+      showAlertToast(context, 'Error al cargar las tareas');
     } finally {
       if (mounted) {
         setState(() {
@@ -129,6 +128,7 @@ class _AddAssignmentDialogState extends State<AddAssignmentDialog> {
   @override
   Widget build(BuildContext context) {
     _areas = Provider.of<AreasProvider>(context).areas;
+    _clients = Provider.of<ClientsProvider>(context).clients;
 
     return Dialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
@@ -206,9 +206,12 @@ class _AddAssignmentDialogState extends State<AddAssignmentDialog> {
                 children: [
                   NeumorphicButton(
                     style: NeumorphicStyle(
-                      depth: 2,
+                      depth: _isSaving ? 0 : 2,
                       intensity: 0.6,
-                      color: Colors.white,
+                      color: _isSaving
+                          ? const Color(
+                              0xFF90CDF4) // Color más claro cuando está guardando
+                          : const Color.fromARGB(255, 248, 248, 248),
                       boxShape: NeumorphicBoxShape.roundRect(
                           BorderRadius.circular(8)),
                     ),
@@ -232,18 +235,64 @@ class _AddAssignmentDialogState extends State<AddAssignmentDialog> {
                       boxShape: NeumorphicBoxShape.roundRect(
                           BorderRadius.circular(8)),
                     ),
-                    onPressed: () {
-                      // Validar los campos antes de continuar
-                      if (_validateFields()) {
-                        Navigator.of(context).pop();
-                        _showSuccessDialog(context);
-                      }
-                    },
-                    child: const Text(
-                      'Guardar',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.w600,
+                    onPressed: _isSaving
+                        ? null
+                        : () async {
+                            // Cambiar al estado de carga
+                            setState(() {
+                              _isSaving = true;
+                            });
+
+                            // Validar los campos antes de continuar
+                            final isValid = await _validateFields(context);
+
+                            // Si la validación falló, volver al estado normal
+                            if (!isValid) {
+                              setState(() {
+                                _isSaving = false;
+                              });
+                              return;
+                            }
+
+                            // Si todo salió bien, cerrar el diálogo y mostrar éxito
+                            Navigator.of(context).pop();
+                            _showSuccessDialog(context);
+                          },
+                    child: Container(
+                      width: 100, // Ancho fijo para evitar cambios de tamaño
+                      child: Center(
+                        child: _isSaving
+                            // Mostrar indicador de progreso mientras guarda
+                            ? Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: const [
+                                  SizedBox(
+                                    width: 16,
+                                    height: 16,
+                                    child: CircularProgressIndicator(
+                                      valueColor: AlwaysStoppedAnimation<Color>(
+                                          Colors.white),
+                                      strokeWidth: 2,
+                                    ),
+                                  ),
+                                  SizedBox(width: 8),
+                                  Text(
+                                    'Guardando',
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ],
+                              )
+                            // Mostrar texto normal cuando no está guardando
+                            : const Text(
+                                'Guardar',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
                       ),
                     ),
                   ),
@@ -256,66 +305,161 @@ class _AddAssignmentDialogState extends State<AddAssignmentDialog> {
     );
   }
 
-  bool _validateFields() {
+  Future<bool> _validateFields(BuildContext context) async {
+    // Validaciones existentes
     if (_selectedWorkers.isEmpty) {
-      _showValidationError('Por favor, selecciona al menos un trabajador');
+      showAlertToast(context, 'Por favor, selecciona al menos un trabajador');
       return false;
     }
 
-    if (_zoneController.text.isEmpty) {
-      _showValidationError('Por favor, selecciona un área');
+    if (_areaController.text.isEmpty) {
+      showAlertToast(context, 'Por favor, selecciona un área');
       return false;
     }
 
     if (_startDateController.text.isEmpty) {
-      _showValidationError('Por favor, selecciona una fecha de inicio');
+      showAlertToast(context, 'Por favor, selecciona una fecha de inicio');
       return false;
     }
 
     if (_startTimeController.text.isEmpty) {
-      _showValidationError('Por favor, selecciona una hora de inicio');
+      showAlertToast(context, 'Por favor, selecciona una hora de inicio');
       return false;
     }
 
     if (_taskController.text.isEmpty) {
-      _showValidationError('Por favor, selecciona una tarea');
+      showAlertToast(context, 'Por favor, selecciona una tarea');
       return false;
     }
 
-    // Si la validación es exitosa, actualizar el estado de los trabajadores y guardar la asignación
-    final workersProvider =
-        Provider.of<WorkersProvider>(context, listen: false);
-
-    // Si la validación es exitosa, guardar la asignación
-    Provider.of<AssignmentsProvider>(context, listen: false).addAssignment(
-      workers: _selectedWorkers,
-      area: _zoneController.text,
-      task: _taskController.text,
-      date: DateFormat('dd/MM/yyyy').parse(_startDateController.text),
-      time: _startTimeController.text,
-    );
-
-    for (var worker in _selectedWorkers) {
-      // Parse the date string properly to create a DateTime object
-      DateTime assignmentDate =
-          DateFormat('dd/MM/yyyy').parse(_startDateController.text);
-
-      // Asignar fecha final como una semana después
-      DateTime endDate = assignmentDate.add(const Duration(days: 7));
-
-      workersProvider.assignWorker(worker, endDate);
+    if (_zoneController.text.isEmpty) {
+      showAlertToast(context, 'Por favor, selecciona una zona');
+      return false;
     }
 
-    return true;
+    if (_clientController.text.isEmpty) {
+      showAlertToast(context, 'Por favor, selecciona un cliente');
+      return false;
+    }
+
+    // Validación para el campo de motonave cuando el área es BUQUE
+    if (_areaController.text.toUpperCase() == 'BUQUE' &&
+        _motorshipController.text.isEmpty) {
+      showAlertToast(context, 'Por favor, ingresa el nombre de la motonave');
+      return false;
+    }
+
+    try {
+      // Obtener proveedores
+      final workersProvider =
+          Provider.of<WorkersProvider>(context, listen: false);
+      final areasProvider = Provider.of<AreasProvider>(context, listen: false);
+      final tasksProvider = Provider.of<TasksProvider>(context, listen: false);
+      final assignmentsProvider =
+          Provider.of<AssignmentsProvider>(context, listen: false);
+
+      // Parsear fecha de inicio
+      final startDate =
+          DateFormat('dd/MM/yyyy').parse(_startDateController.text);
+
+      // Parsear fecha de fin si está presente
+      DateTime? endDate;
+      if (_endDateController.text.isNotEmpty) {
+        endDate = DateFormat('dd/MM/yyyy').parse(_endDateController.text);
+      }
+
+      // Extraer IDs de las entidades seleccionadas
+      final selectedArea = areasProvider.areas.firstWhere(
+          (area) => area.name == _areaController.text,
+          orElse: () => Area(
+              id: 0,
+              name: _areaController.text) // Área por defecto si no se encuentra
+          );
+
+      // Encontrar ID de la tarea seleccionada
+      int taskId = 1; // Valor por defecto
+      final selectedTask = tasksProvider.tasks.firstWhere(
+          (task) => task.name == _taskController.text,
+          orElse: () => Task(
+              id: 1,
+              name:
+                  _taskController.text) // Tarea por defecto si no se encuentra
+          );
+
+      taskId = selectedTask.id;
+
+      var clientsProvider =
+          Provider.of<ClientsProvider>(context, listen: false);
+
+      // Extraer ID del cliente
+      int clientId = clientsProvider.clients
+          .firstWhere((client) => client.name == _clientController.text,
+              orElse: () => Client(
+                  id: 1,
+                  name: _clientController
+                      .text) // Cliente por defecto si no se encuentra
+              )
+          .id;
+
+      // Obtener zona numéricamente
+      int zoneNum = 1; // Por defecto
+      final zoneText = _zoneController.text;
+      if (zoneText.startsWith('Zona ')) {
+        zoneNum = int.tryParse(zoneText.substring(5)) ?? 1;
+      }
+
+      final userProvider = Provider.of<UserProvider>(context, listen: false);
+
+      // ID del usuario actual
+      final userId = userProvider.user.id ?? 1;
+
+      // Si la validación es exitosa, guardar la asignación
+      final success = await assignmentsProvider.addAssignment(
+        workers: _selectedWorkers,
+        area: _areaController.text,
+        areaId: selectedArea.id,
+        task: _taskController.text,
+        taskId: taskId,
+        date: startDate,
+        time: _startTimeController.text,
+        zoneId: zoneNum,
+        userId: userId,
+        clientId: clientId,
+        clientName: _clientController.text,
+        endDate: endDate,
+        endTime:
+            _endTimeController.text.isNotEmpty ? _endTimeController.text : null,
+        motorship: _areaController.text.toUpperCase() == 'BUQUE'
+            ? _motorshipController.text
+            : null,
+        context: context, // Pasar el contexto para el token
+      );
+
+      // Si hubo error al guardar
+      if (!success) {
+        _showValidationError(
+            'Error al guardar la asignación: ${assignmentsProvider.error}');
+        return false;
+      }
+
+      // Actualizar estado de los trabajadores
+      for (var worker in _selectedWorkers) {
+        // Asignar fecha final como una semana después o usar la fecha proporcionada
+        DateTime workerEndDate =
+            endDate ?? startDate.add(const Duration(days: 7));
+        workersProvider.assignWorker(worker, workerEndDate);
+      }
+
+      return true;
+    } catch (e) {
+      debugPrint('Error en _validateFields: $e');
+      _showValidationError('Error al procesar los datos: $e');
+      return false;
+    }
   }
 
   void _showValidationError(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: const Color(0xFFE53E3E),
-      ),
-    );
+    showAlertToast(context, message);
   }
 
   void _showSuccessDialog(BuildContext context) {

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:plannerop/core/model/worker.dart';
 import 'package:plannerop/store/workers.dart';
+import 'package:plannerop/utils/toast.dart';
 import 'package:provider/provider.dart';
 
 class WorkerRetirementDialog extends StatefulWidget {
@@ -500,12 +501,7 @@ class _WorkerRetirementDialogState extends State<WorkerRetirementDialog> {
 
       if (success) {
         // Cerrar el diálogo con éxito
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('${widget.worker.name} ha sido retirado'),
-            backgroundColor: Colors.grey[700],
-          ),
-        );
+        showInfoToast(context, 'Trabajador retirado exitosamente');
 
         Navigator.of(context).pop();
       } else {
@@ -513,12 +509,7 @@ class _WorkerRetirementDialogState extends State<WorkerRetirementDialog> {
       }
     } catch (e) {
       // Mostrar error en caso de fallo
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Error al procesar el retiro: ${e.toString()}'),
-          backgroundColor: Colors.red,
-        ),
-      );
+      showErrorToast(context, 'Error al retirar al trabajador');
 
       setState(() {
         _isLoading = false;

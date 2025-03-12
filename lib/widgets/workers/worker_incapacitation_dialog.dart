@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:plannerop/core/model/worker.dart';
 import 'package:plannerop/store/workers.dart';
+import 'package:plannerop/utils/toast.dart';
 import 'package:provider/provider.dart';
 
 class WorkerIncapacitationDialog extends StatefulWidget {
@@ -437,12 +438,7 @@ class _WorkerIncapacitationDialogState
 
         if (success) {
           // Mostrar mensaje de éxito y cerrar el diálogo
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Incapacidad registrada correctamente'),
-              backgroundColor: Colors.green,
-            ),
-          );
+          showSuccessToast(context, 'Incapacidad registrada con éxito');
 
           Navigator.of(context).pop();
         } else {
@@ -450,12 +446,7 @@ class _WorkerIncapacitationDialogState
         }
       } catch (e) {
         // Mostrar mensaje de error
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error al registrar la incapacidad: ${e.toString()}'),
-            backgroundColor: Colors.red,
-          ),
-        );
+        showErrorToast(context, 'Error al registrar la incapacidad');
 
         setState(() {
           _isLoading = false;

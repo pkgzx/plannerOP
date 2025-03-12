@@ -2,58 +2,88 @@ import 'package:plannerop/core/model/user.dart';
 import 'package:plannerop/core/model/worker.dart';
 
 class Assignment {
-  final String id;
+  int? id;
   final List<Worker> workers;
   final String area;
   final String task;
   final DateTime date;
   final String time;
-  final User supervisor;
-  String endTime;
-  String status; // 'pending', 'in_progress', 'completed'
-  DateTime? completedDate;
+  final User? supervisor;
+  final String? endTime;
+  final String status; // 'PENDING', 'INPROGRESS', 'COMPLETED', 'CANCELED'
+  final DateTime? endDate;
+  final int zone;
+  final String? motorship;
+  final int userId;
+  final int areaId;
+  final int taskId;
+  final int clientId;
+
+  set endTime(String? endTime) {
+    this.endTime = endTime;
+  }
+
+  set endDate(DateTime? endDate) {
+    this.endDate = endDate;
+  }
 
   Assignment({
-    required this.id,
+    this.id,
     required this.workers,
     required this.area,
     required this.task,
     required this.date,
     required this.time,
-    required this.endTime,
-    required this.supervisor,
-    this.status = 'pending',
-    this.completedDate,
+    this.endTime,
+    required this.zone,
+    this.status = 'PENDING',
+    this.endDate,
+    this.motorship,
+    this.supervisor,
+    required this.userId,
+    required this.areaId,
+    required this.taskId,
+    required this.clientId,
   });
 
   Map<String, dynamic> toJson() {
     return {
       'id': id,
-      'workers': workers,
+      'workers': workers.map((worker) => worker.id).toList(),
       'area': area,
       'task': task,
       'date': date.toIso8601String(),
       'time': time,
       'status': status,
       'endTime': endTime,
-      'completedDate': completedDate?.toIso8601String(),
+      'endDate': endDate?.toIso8601String(),
+      'zone': zone,
+      'motorship': motorship,
+      'userId': userId,
+      'areaId': areaId,
+      'taskId': taskId,
+      'clientId': clientId,
     };
   }
 
-  factory Assignment.fromJson(Map<String, dynamic> json) {
+  static Assignment fromJson(
+      Map<String, dynamic> json, List<Worker> workers, User supervisor) {
     return Assignment(
       id: json['id'],
-      workers: List<Worker>.from(json['workers']),
-      area: json['area'],
-      task: json['task'],
-      date: DateTime.parse(json['date']),
-      time: json['time'],
+      workers: json['workers'], // ! NOT WORKING
+      area: json['jobArea']['name'],
+      task: json['task']['name'],
+      date: DateTime.parse(json['dateStart']),
+      time: json['timeStrat'],
       status: json['status'],
-      supervisor: User.fromJson(json['supervisor']),
-      endTime: json['endTime'],
-      completedDate: json['completedDate'] != null
-          ? DateTime.parse(json['completedDate'])
-          : null,
+      endTime: json['timeEnd'],
+      endDate: json['dateEnd'] != null ? DateTime.parse(json['dateEnd']) : null,
+      zone: json['zone'],
+      motorship: json['motorship'],
+      userId: json['id_user'],
+      areaId: json['jobArea']['id'],
+      taskId: json['task']['id'],
+      clientId: json['id_client'],
     );
   }
 }
