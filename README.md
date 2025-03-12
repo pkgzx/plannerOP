@@ -21,10 +21,10 @@ PlannerOP es una aplicación móvil desarrollada en Flutter para optimizar la ge
 ## 🖼️ Capturas de Pantalla
 
 <p align="center">
-  <img src="assets/images/dashboard.png" width="200" alt="Dashboard"/>
-  <img src="assets/images/assignments.png" width="200" alt="Asignaciones"/>
-  <img src="assets/images/reports.png" width="200" alt="Reportes"/>
-  <img src="assets/images/filters.png" width="200" alt="Filtros"/>
+  <img src="assets/dash.jpeg" width="200" alt="Dashboard"/>
+  <img src="assets/ops.jpeg" width="200" alt="Operaciones"/>
+  <img src="assets/stats.jpeg" width="200" alt="Reportes"/>
+  <img src="assets/workers.jpeg" width="200" alt="Gestion de Trabajadores"/>
 </p>
 
 ## 🛠️ Tecnologías
