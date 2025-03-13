@@ -40,9 +40,6 @@ class _DashboardTabState extends State<DashboardTab> {
         await _loadClients();
         await _loadAssignments();
         isLoading = false;
-
-        // Forzar una actualización final para limpiar cualquier estado pendiente
-        setState(() {});
       }
     });
   }
