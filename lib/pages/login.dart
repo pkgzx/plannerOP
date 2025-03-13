@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_neumorphic_plus/flutter_neumorphic.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import 'package:jwt_decoder/jwt_decoder.dart';
+import 'package:lottie/lottie.dart';
 import 'package:plannerop/core/model/user.dart';
 import 'package:plannerop/dto/auth/signin.dart';
 import 'package:plannerop/pages/supervisor/home.dart';
@@ -161,12 +161,7 @@ class _LoginPageState extends State<LoginPage> {
                   bottomLeft: Radius.circular(20.0),
                   bottomRight: Radius.circular(20.0),
                 ),
-                child: SvgPicture.asset(
-                  'assets/auth.svg',
-                  width: double.infinity,
-                  fit: BoxFit.contain,
-                  height: 300,
-                ),
+                child: Lottie.asset('assets/auth-animation.json'),
               ),
             ),
             Expanded(

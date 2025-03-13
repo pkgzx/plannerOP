@@ -26,7 +26,6 @@ Future<void> main() async {
         ChangeNotifierProvider(create: (context) => AreasProvider()),
         ChangeNotifierProvider(create: (context) => TasksProvider()),
         ChangeNotifierProvider(create: (context) => ClientsProvider()),
-        // Otros providers que puedas tener
       ],
       child: const App(),
     ),
@@ -40,28 +39,26 @@ class App extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Planeador de Operaciones',
+      debugShowCheckedModeBanner: false,
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),
         useMaterial3: true,
       ),
-      home: MaterialApp(
-        debugShowCheckedModeBanner: false,
-        home: AnimatedSplash(
-          type: Transition.size,
-          curve: Curves.easeInOut,
-          backgroundColor: Colors.blue,
-          navigator: const LoginPage(),
-          durationInSeconds: 2,
-          child: Image.asset(
-            "assets/LogoBlanco.png", // Usar imagen local en lugar de una URL
-            width: 200,
-            height: 200,
-          ),
+      // Eliminar el MaterialApp anidado
+      home: AnimatedSplash(
+        type: Transition.size,
+        curve: Curves.easeInOut,
+        backgroundColor: Colors.blue,
+        navigator: const LoginPage(),
+        durationInSeconds: 2,
+        child: Image.asset(
+          "assets/splash.png",
+          width: 200,
+          height: 200,
         ),
       ),
       routes: {
-        '/login': (context) =>
-            const LoginPage(), // Ruta para la página de login
+        '/login': (context) => const LoginPage(),
       },
     );
   }

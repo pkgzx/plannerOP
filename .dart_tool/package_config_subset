@@ -98,10 +98,6 @@ flutter_neumorphic_plus
 3.0
 file:///C:/Users/BANANOVA/AppData/Local/Pub/Cache/hosted/pub.dev/flutter_neumorphic_plus-3.4.0/
 file:///C:/Users/BANANOVA/AppData/Local/Pub/Cache/hosted/pub.dev/flutter_neumorphic_plus-3.4.0/lib/
-flutter_svg
-2.17
-file:///C:/Users/BANANOVA/AppData/Local/Pub/Cache/hosted/pub.dev/flutter_svg-1.1.6/
-file:///C:/Users/BANANOVA/AppData/Local/Pub/Cache/hosted/pub.dev/flutter_svg-1.1.6/lib/
 fluttertoast
 2.12
 file:///C:/Users/BANANOVA/AppData/Local/Pub/Cache/hosted/pub.dev/fluttertoast-8.2.12/
@@ -150,6 +146,10 @@ lints
 3.6
 file:///C:/Users/BANANOVA/AppData/Local/Pub/Cache/hosted/pub.dev/lints-5.1.1/
 file:///C:/Users/BANANOVA/AppData/Local/Pub/Cache/hosted/pub.dev/lints-5.1.1/lib/
+lottie
+3.2
+file:///C:/Users/BANANOVA/AppData/Local/Pub/Cache/hosted/pub.dev/lottie-3.0.0/
+file:///C:/Users/BANANOVA/AppData/Local/Pub/Cache/hosted/pub.dev/lottie-3.0.0/lib/
 matcher
 3.0
 file:///C:/Users/BANANOVA/AppData/Local/Pub/Cache/hosted/pub.dev/matcher-0.12.16+1/
@@ -174,10 +174,6 @@ path
 3.0
 file:///C:/Users/BANANOVA/AppData/Local/Pub/Cache/hosted/pub.dev/path-1.9.0/
 file:///C:/Users/BANANOVA/AppData/Local/Pub/Cache/hosted/pub.dev/path-1.9.0/lib/
-path_drawing
-2.12
-file:///C:/Users/BANANOVA/AppData/Local/Pub/Cache/hosted/pub.dev/path_drawing-1.0.1/
-file:///C:/Users/BANANOVA/AppData/Local/Pub/Cache/hosted/pub.dev/path_drawing-1.0.1/lib/
 path_parsing
 3.3
 file:///C:/Users/BANANOVA/AppData/Local/Pub/Cache/hosted/pub.dev/path_parsing-1.1.0/
