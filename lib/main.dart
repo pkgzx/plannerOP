@@ -9,8 +9,12 @@ import 'package:plannerop/store/user.dart';
 import 'pages/login.dart';
 import 'package:provider/provider.dart';
 import 'package:plannerop/store/workers.dart';
+import 'package:flutter_animated_splash/flutter_animated_splash.dart';
 
 Future<void> main() async {
+  // Asegúrate de inicializar Flutter
+  WidgetsFlutterBinding.ensureInitialized();
+
   await dotenv.load(fileName: ".env");
   runApp(
     MultiProvider(
@@ -40,7 +44,21 @@ class App extends StatelessWidget {
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),
         useMaterial3: true,
       ),
-      home: const LoginPage(),
+      home: MaterialApp(
+        debugShowCheckedModeBanner: false,
+        home: AnimatedSplash(
+          type: Transition.size,
+          curve: Curves.easeInOut,
+          backgroundColor: Colors.blue,
+          navigator: const LoginPage(),
+          durationInSeconds: 2,
+          child: Image.asset(
+            "assets/LogoBlanco.png", // Usar imagen local en lugar de una URL
+            width: 200,
+            height: 200,
+          ),
+        ),
+      ),
       routes: {
         '/login': (context) =>
             const LoginPage(), // Ruta para la página de login

@@ -50,39 +50,71 @@ class _LoginPageState extends State<LoginPage> {
 
   Future<void> _login() async {
     if (_formKey.currentState!.validate()) {
+      // Variable para controlar si el diálogo está mostrado
+      bool dialogIsOpen = true;
+
+      // Mantener una referencia al contexto del diálogo
+      BuildContext? dialogContextRef;
+
+      // Mostrar indicador de carga
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (BuildContext dialogContext) {
+          // Guardar la referencia al contexto del diálogo
+          dialogContextRef = dialogContext;
+
+          return WillPopScope(
+            onWillPop: () async => false, // Prevenir cierre con el botón atrás
+            child: const Center(
+              child: CircularProgressIndicator(
+                valueColor: AlwaysStoppedAnimation<Color>(Colors.blue),
+              ),
+            ),
+          );
+        },
+      );
+
+      // Función para cerrar el diálogo de manera segura
+      void closeDialog() {
+        if (dialogIsOpen && mounted && dialogContextRef != null) {
+          Navigator.of(dialogContextRef!).pop();
+          dialogIsOpen = false;
+        }
+      }
+
+      // Configurar un timeout para cerrar el diálogo después de 10 segundos
+      Future.delayed(const Duration(seconds: 10), () {
+        if (dialogIsOpen) {
+          closeDialog();
+          showAlertToast(
+              context, 'La operación está tardando demasiado tiempo');
+          debugPrint(
+              '⚠️ Timeout de login activado - Diálogo cerrado por timeout');
+        }
+      });
+
       try {
-        // Mostrar indicador de carga (opcional)
-        showDialog(
-          context: context,
-          barrierDismissible: false,
-          builder: (BuildContext context) => const Center(
-            child: CircularProgressIndicator(),
-          ),
-        );
+        debugPrint('🔒 Iniciando proceso de login...');
 
         final ResSigninDto response = await _signinService.signin(
           _usernameController.text,
           _passwordController.text,
         );
 
-        // Cerrar el diálogo de carga
-        if (mounted) {
-          Navigator.of(context).pop();
-        }
+        // Cerrar el diálogo de carga si aún está abierto
+        closeDialog();
+        debugPrint('✅ Login completado - Diálogo cerrado normalmente');
 
         if (response.isSuccess) {
-          if (!mounted) return; // Verificar si todavía está montado
+          if (!mounted) return;
 
-          // Guarda el token de acceso en el provider de autenticación
+          // Resto del código para iniciar sesión exitosa...
           final authProvider =
               Provider.of<AuthProvider>(context, listen: false);
           authProvider.setAccessToken(response.accessToken);
 
-          // Decodificar el token
           final decodedToken = JwtDecoder.decode(response.accessToken);
-
-          if (!mounted)
-            return; // Verificar de nuevo después de operaciones potencialmente lentas
 
           final userProvider =
               Provider.of<UserProvider>(context, listen: false);
@@ -93,26 +125,22 @@ class _LoginPageState extends State<LoginPage> {
             phone: decodedToken['phone'],
           ));
 
-          // debugPrint('Token decodificado: $decodedToken');
-
-          if (!mounted) return; // Verificar nuevamente antes de la navegación
-
           Navigator.pushReplacement(
             context,
             MaterialPageRoute(builder: (context) => const SupervisorHome()),
           );
         } else {
-          if (!mounted) return; // Verificar si todavía está montado
-
-          // Si el inicio de sesión falla, muestra un mensaje de error
+          if (!mounted) return;
           showErrorToast(context, 'Usuario o contraseña incorrectos');
         }
       } catch (e) {
-        debugPrint('Error en login: $e');
+        debugPrint('❌ Error en login: $e');
 
-        // Cerrar el diálogo de carga si hay error
+        // Cerrar el diálogo de carga si hay error y está abierto
+        closeDialog();
+        debugPrint('⚠️ Login fallido - Diálogo cerrado por error');
+
         if (mounted) {
-          Navigator.of(context).pop();
           showErrorToast(context, 'Error de conexión: $e');
         }
       }
@@ -233,6 +261,27 @@ class _LoginPageState extends State<LoginPage> {
                             ),
                           ),
                         ),
+                      ),
+
+                      // Footer con "Created by" y logo
+                      const SizedBox(height: 90),
+                      Column(
+                        children: [
+                          Text(
+                            'Created by',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Colors.grey[600],
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                          const SizedBox(height: 6),
+                          Image.asset(
+                            'assets/cargoban.png',
+                            height: 100, // Tamaño controlado de la imagen
+                            fit: BoxFit.contain,
+                          ),
+                        ],
                       ),
                     ],
                   ),

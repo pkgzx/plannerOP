@@ -27,13 +27,23 @@ class _DashboardTabState extends State<DashboardTab> {
   @override
   void initState() {
     super.initState();
+    // Evitar multiples cargas simultáneas
+    bool isLoading = false;
+
     // Usar addPostFrameCallback para programar la carga después del primer frame
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _checkAndLoadWorkersIfNeeded();
-      _loadAreas();
-      _loadTask();
-      _loadClients();
-      _loadAssignments();
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      if (!isLoading) {
+        isLoading = true;
+        await _checkAndLoadWorkersIfNeeded();
+        await _loadAreas();
+        await _loadTask();
+        await _loadClients();
+        await _loadAssignments();
+        isLoading = false;
+
+        // Forzar una actualización final para limpiar cualquier estado pendiente
+        setState(() {});
+      }
     });
   }
 
@@ -178,9 +188,23 @@ class _DashboardTabState extends State<DashboardTab> {
     }
   }
 
-  // Modificar _loadAssignments en DashboardTab
   Future<void> _loadAssignments() async {
     if (!mounted) return;
+
+    // Configurar un timeout para evitar carga infinita
+    final loadingTimeout = Future.delayed(const Duration(seconds: 10), () {
+      if (mounted && _isLoadingAssignments) {
+        debugPrint('⚠️ Timeout en carga de asignaciones');
+        setState(() {
+          _isLoadingAssignments = false;
+        });
+        // Desactivar loading en el provider también
+        Provider.of<AssignmentsProvider>(context, listen: false)
+            .changeIsLoadingOff();
+        showAlertToast(
+            context, 'La carga de datos está tomando demasiado tiempo');
+      }
+    });
 
     // No mostrar indicador de carga si ya hay datos disponibles
     final assignmentsProvider =
@@ -202,8 +226,6 @@ class _DashboardTabState extends State<DashboardTab> {
             'Operaciones cargadas exitosamente: ${assignmentsProvider.assignments.length}');
       } else {
         debugPrint('No se cargaron asignaciones o la lista está vacía');
-        _isLoadingAssignments = false;
-        assignmentsProvider.changeIsLoadingOff();
       }
     } catch (e) {
       debugPrint('Error al cargar asignaciones: $e');
@@ -212,12 +234,17 @@ class _DashboardTabState extends State<DashboardTab> {
         showErrorToast(context, 'Error al cargar asignaciones.');
       }
     } finally {
+      // Asegurar que el estado de carga se desactive siempre al finalizar
       if (mounted) {
         setState(() {
           _isLoadingAssignments = false;
         });
+        // Asegurar que el provider también deshabilite su indicador de carga
+        assignmentsProvider.changeIsLoadingOff();
       }
     }
+
+    // No necesitamos esperar el timeout
   }
 
   // Método auxiliar para cargar áreas predeterminadas
@@ -343,12 +370,23 @@ class _DashboardTabState extends State<DashboardTab> {
                         // Botón de actualización
                         IconButton(
                           icon: const Icon(Icons.refresh, color: Colors.white),
-                          onPressed: () {
-                            // Al refrescar manualmente, forzamos la recarga de todo
-                            _loadWorkers();
-                            _loadAreas();
-                            _loadAssignments();
-                          },
+                          onPressed: _isLoadingAreas ||
+                                  _isLoadingWorkers ||
+                                  _isLoadingAssignments
+                              ? null
+                              : () async {
+                                  // Al refrescar manualmente, forzamos la recarga de todo
+                                  await _loadWorkers();
+                                  await _loadAreas();
+                                  await _loadAssignments();
+
+                                  // Forzar actualización final
+                                  setState(() {
+                                    _isLoadingWorkers = false;
+                                    _isLoadingAreas = false;
+                                    _isLoadingAssignments = false;
+                                  });
+                                },
                         ),
                       ],
                     ),
