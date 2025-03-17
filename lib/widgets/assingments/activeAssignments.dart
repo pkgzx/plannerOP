@@ -460,6 +460,39 @@ class _ActiveAssignmentsViewState extends State<ActiveAssignmentsView> {
                             onPressed: () {
                               Navigator.pop(context);
                               // Código de edición existente
+
+                              showDialog(
+                                context: context,
+                                builder: (BuildContext context) {
+                                  return Dialog(
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(20),
+                                    ),
+                                    child: Container(
+                                      constraints: BoxConstraints(
+                                        maxWidth:
+                                            MediaQuery.of(context).size.width *
+                                                0.9,
+                                        maxHeight:
+                                            MediaQuery.of(context).size.height *
+                                                0.9,
+                                      ),
+                                      child: EditAssignmentForm(
+                                        assignment: assignment,
+                                        onSave: (updatedAssignment) {
+                                          assignmentsProvider.updateAssignment(
+                                              updatedAssignment, context);
+                                          showSuccessToast(context,
+                                              'Asignación actualizada');
+                                          Navigator.pop(context);
+                                          Navigator.pop(context);
+                                        },
+                                        onCancel: () => Navigator.pop(context),
+                                      ),
+                                    ),
+                                  );
+                                },
+                              );
                             },
                             child: const Text(
                               'Editar',

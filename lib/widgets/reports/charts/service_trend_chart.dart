@@ -132,9 +132,18 @@ class _ServiceTrendChartState extends State<ServiceTrendChart> {
       serviceAssignments.forEach((service, assignments) {
         // Contar personal total (sin duplicados)
         final Set<int> uniqueWorkerIds = {};
+
+        final List<Map<String, dynamic>> workersDetails = [];
+
         for (var assignment in assignments) {
           for (var worker in assignment.workers) {
             uniqueWorkerIds.add(worker.id);
+            workersDetails.add({
+              'id': worker.id,
+              'name': worker.name,
+              'code': worker.code,
+              'phone': worker.phone,
+            });
           }
         }
 
@@ -146,6 +155,8 @@ class _ServiceTrendChartState extends State<ServiceTrendChart> {
             dateRange:
                 '${intl.DateFormat('dd/MM/yyyy').format(widget.startDate)} - ${intl.DateFormat('dd/MM/yyyy').format(widget.endDate)}',
             assignments: assignments.length,
+            workers: workersDetails,
+            assignmentList: assignments,
           ),
         );
       });
@@ -216,14 +227,6 @@ class _ServiceTrendChartState extends State<ServiceTrendChart> {
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
-              'Personal por Servicio',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-                color: Color(0xFF2D3748),
-              ),
-            ),
             const SizedBox(height: 16),
             Expanded(
               child: _buildContent(assignmentsProvider, tasksProvider),
@@ -272,7 +275,7 @@ class _ServiceTrendChartState extends State<ServiceTrendChart> {
         // Nueva sección: Leyenda de servicios en la parte superior
         Container(
           margin: const EdgeInsets.only(bottom: 16),
-          padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+          padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 8),
           decoration: BoxDecoration(
             color: Colors.white,
             borderRadius: BorderRadius.circular(12),
@@ -749,7 +752,7 @@ class _ServiceTrendChartState extends State<ServiceTrendChart> {
         Expanded(
           child: Padding(
             padding:
-                const EdgeInsets.only(top: 16, left: 45, right: 16, bottom: 8),
+                const EdgeInsets.only(top: 0, left: 45, right: 16, bottom: 8),
             child: CustomPaint(
               size: Size.infinite,
               painter: GridPainter(maxValue),
@@ -760,6 +763,8 @@ class _ServiceTrendChartState extends State<ServiceTrendChart> {
                 final spacing =
                     (constraints.maxWidth - (barWidth * _servicesData.length)) /
                         (_servicesData.length + 1);
+                // Dejar un pequeño margen en la parte superior para evitar desbordamiento
+                final availableHeight = constraints.maxHeight * 0.90;
 
                 return Stack(
                   children: [
@@ -781,11 +786,11 @@ class _ServiceTrendChartState extends State<ServiceTrendChart> {
                         final data = _servicesData[index];
                         final serviceColor = _getColorForService(index);
 
-                        // Asegurar un valor mínimo para barHeight
+                        // Cálculo mejorado de altura
                         final barHeightPercentage = data.workerCount / maxValue;
                         final double barHeight = math.max(
                             constraints.maxHeight * 0.05,
-                            constraints.maxHeight * barHeightPercentage);
+                            availableHeight * barHeightPercentage);
 
                         return SizedBox(
                           width: barWidth,
@@ -858,7 +863,7 @@ class _ServiceTrendChartState extends State<ServiceTrendChart> {
                         right: 0,
                         child: Center(
                           child: Container(
-                            width: math.min(300.0, constraints.maxWidth * 0.8),
+                            width: math.max(300.0, constraints.maxWidth * 0.8),
                             padding: const EdgeInsets.all(12),
                             decoration: BoxDecoration(
                               color: Colors.white,
@@ -962,117 +967,183 @@ class _ServiceTrendChartState extends State<ServiceTrendChart> {
             ),
           ),
         ),
-
-        // Etiquetas de servicios más claras - SIN MODIFICAR SU POSICIÓN
-        Container(
-          height: 60,
-          decoration: BoxDecoration(
-            border: Border(
-              top: BorderSide(
-                color: Colors.grey.shade200,
-                width: 1,
-              ),
-            ),
-          ),
-          child: ListView.builder(
-            scrollDirection: Axis.horizontal,
-            itemCount: _servicesData.length,
-            itemBuilder: (context, index) {
-              final isSelected = _selectedIndex == index;
-              final serviceColor = _getColorForService(index);
-              final label = _servicesData[index].serviceName;
-
-              return GestureDetector(
-                onTap: () {
-                  setState(() {
-                    _selectedIndex = isSelected ? -1 : index;
-                  });
-                },
-                child: Container(
-                  width: 70,
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
-                  margin: const EdgeInsets.symmetric(horizontal: 4),
-                  decoration: BoxDecoration(
-                    border: Border(
-                      top: BorderSide(
-                        color: isSelected ? serviceColor : Colors.transparent,
-                        width: 2,
-                      ),
-                    ),
-                    color: isSelected
-                        ? serviceColor.withOpacity(0.05)
-                        : Colors.transparent,
-                  ),
-                  child: Column(
-                    children: [
-                      Container(
-                        width: 12,
-                        height: 12,
-                        decoration: BoxDecoration(
-                          color: serviceColor,
-                          shape: BoxShape.circle,
-                        ),
-                        margin: const EdgeInsets.only(bottom: 4),
-                      ),
-                      Text(
-                        label,
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          fontSize: 10,
-                          fontWeight:
-                              isSelected ? FontWeight.bold : FontWeight.normal,
-                          color: isSelected ? serviceColor : Colors.grey[600],
-                        ),
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ],
-                  ),
-                ),
-              );
-            },
-          ),
-        ),
       ],
     );
   }
 
-  // Método auxiliar para el chip de información
-  Widget _buildInfoChip(String label, String value, IconData icon) {
-    return Container(
-      padding: const EdgeInsets.all(8),
-      decoration: BoxDecoration(
-        color: Colors.grey[100],
-        borderRadius: BorderRadius.circular(8),
+  // Método auxiliar para el chip de información con detalle al hacer clic
+  Widget _buildInfoChip(String label, String value, IconData icon,
+      {bool isWorkersChip = false}) {
+    return GestureDetector(
+      onTap: () {
+        if (_selectedIndex >= 0) {
+          _showDetailDialog(
+            context: context,
+            isWorkers: isWorkersChip,
+            data: _servicesData[_selectedIndex],
+            title: isWorkersChip ? 'Trabajadores' : 'Operaciones',
+          );
+        }
+      },
+      child: Container(
+        padding: const EdgeInsets.all(8),
+        decoration: BoxDecoration(
+          color: Colors.grey[100],
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: Colors.grey.shade300, width: 1),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(icon, size: 12, color: Colors.grey[700]),
+                const SizedBox(width: 4),
+                Text(
+                  label,
+                  style: TextStyle(
+                    fontSize: 10,
+                    color: Colors.grey[700],
+                  ),
+                ),
+                const Spacer(),
+                Icon(
+                  Icons.chevron_right,
+                  size: 14,
+                  color: Colors.grey[500],
+                ),
+              ],
+            ),
+            const SizedBox(height: 2),
+            Text(
+              value,
+              style: const TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ],
+        ),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
+    );
+  }
+
+// Método para mostrar el diálogo con los detalles
+  void _showDetailDialog({
+    required BuildContext context,
+    required bool isWorkers,
+    required ServiceWorkerData data,
+    required String title,
+  }) {
+    debugPrint('Mostrando diálogo de detalles para $title');
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: Row(
             children: [
-              Icon(icon, size: 12, color: Colors.grey[700]),
-              const SizedBox(width: 4),
+              Icon(
+                isWorkers ? Icons.people : Icons.assignment,
+                size: 20,
+                color: _getColorForService(_selectedIndex),
+              ),
+              const SizedBox(width: 8),
               Text(
-                label,
+                '$title de ${data.serviceName}',
                 style: TextStyle(
-                  fontSize: 10,
-                  color: Colors.grey[700],
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: _getColorForService(_selectedIndex),
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 2),
-          Text(
-            value,
-            style: const TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.bold,
+          content: Container(
+            width: double.maxFinite,
+            height: 400,
+            child: isWorkers
+                ? _buildWorkersList(data)
+                : _buildAssignmentsList(data),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+              child: const Text('Cerrar'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+// Construye la lista de trabajadores
+  Widget _buildWorkersList(ServiceWorkerData data) {
+    return ListView.builder(
+      itemCount: data.workers.length,
+      itemBuilder: (context, index) {
+        final worker = data.workers[index];
+        return ListTile(
+          leading: CircleAvatar(
+            backgroundColor:
+                _getColorForService(_selectedIndex).withOpacity(0.2),
+            child: Text(
+              worker['name'].substring(0, 1),
+              style: TextStyle(
+                color: _getColorForService(_selectedIndex),
+                fontWeight: FontWeight.bold,
+              ),
             ),
           ),
-        ],
-      ),
+          title: Text(worker['name']),
+          subtitle: Text('Código: ${worker['code']} | Tel: ${worker['phone']}'),
+        );
+      },
     );
+  }
+
+// Construye la lista de asignaciones/operaciones
+  Widget _buildAssignmentsList(ServiceWorkerData data) {
+    return ListView.builder(
+      itemCount: data.assignmentList.length,
+      itemBuilder: (context, index) {
+        final assignment = data.assignmentList[index];
+        return ListTile(
+          leading: Icon(
+            Icons.assignment,
+            color: _getColorForService(_selectedIndex),
+          ),
+          title: Text('Operación #${assignment.id}'),
+          subtitle: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                  'Fecha: ${intl.DateFormat('dd/MM/yyyy').format(assignment.date)}'),
+              Text('Estado: ${_getStatusText(assignment.status)}'),
+              if (assignment.motorship != null)
+                Text('Motonave: ${assignment.motorship}'),
+            ],
+          ),
+          isThreeLine: true,
+        );
+      },
+    );
+  }
+
+  String _getStatusText(String status) {
+    switch (status.toUpperCase()) {
+      case 'COMPLETED':
+        return 'Completada';
+      case 'INPROGRESS':
+        return 'En progreso';
+      case 'PENDING':
+        return 'Pendiente';
+      case 'CANCELED':
+        return 'Cancelada';
+      default:
+        return status;
+    }
   }
 }
 
@@ -1101,7 +1172,7 @@ class GridPainter extends CustomPainter {
       canvas.drawLine(Offset(0, y), Offset(size.width, y), paint);
 
       // Mostrar valor en el eje Y
-      final value = (i * maxValue / steps).round();
+      final value = (i * (maxValue) / steps).round();
       textPainter.text = TextSpan(
         text: value.toString(),
         style: TextStyle(fontSize: 10, color: Colors.grey[600]),
@@ -1122,11 +1193,15 @@ class ServiceWorkerData {
   final int workerCount;
   final String dateRange;
   final int assignments;
+  final List<Map<String, dynamic>> workers; // Lista detallada de trabajadores
+  final List<Assignment> assignmentList;
 
   ServiceWorkerData({
     required this.serviceName,
     required this.workerCount,
     this.dateRange = '',
     this.assignments = 0,
+    this.workers = const [],
+    this.assignmentList = const [],
   });
 }

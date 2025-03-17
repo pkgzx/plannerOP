@@ -3,7 +3,6 @@ import 'package:plannerop/core/model/area.dart';
 import 'package:plannerop/core/model/worker.dart';
 import 'package:intl/intl.dart';
 import 'package:plannerop/store/areas.dart';
-import 'package:plannerop/store/workers.dart';
 
 // Import necesario para el método min
 import 'dart:math' as Math;
@@ -402,10 +401,13 @@ class _WorkerEditDialogState extends State<WorkerEditDialog> {
             color: Colors.white,
           ),
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-          child: DropdownButtonFormField<String>(
-            // Aseguramos que el valor sea nulo o exista en la lista
+          child: DropdownButtonFormField<int>(
+            // Use area ID as the value to ensure uniqueness
             value: _areas.any((area) => area.name == _areaController.text)
-                ? _areaController.text
+                ? _areas
+                    .firstWhere((area) => area.name == _areaController.text,
+                        orElse: () => _areas.first)
+                    .id
                 : null,
             isExpanded: true,
             decoration: const InputDecoration(
@@ -414,21 +416,23 @@ class _WorkerEditDialogState extends State<WorkerEditDialog> {
             ),
             hint: const Text('Seleccionar área'),
             validator: (value) {
-              if (value == null || value.isEmpty) {
+              if (value == null) {
                 return 'Por favor selecciona un área';
               }
               return null;
             },
             items: _areas.map((Area area) {
-              return DropdownMenuItem<String>(
-                value: area.name,
+              return DropdownMenuItem<int>(
+                value: area.id,
                 child: Text(area.name),
               );
             }).toList(),
-            onChanged: (String? newValue) {
+            onChanged: (int? newValue) {
               if (newValue != null) {
+                final selectedArea =
+                    _areas.firstWhere((area) => area.id == newValue);
                 setState(() {
-                  _areaController.text = newValue;
+                  _areaController.text = selectedArea.name;
                 });
               }
             },

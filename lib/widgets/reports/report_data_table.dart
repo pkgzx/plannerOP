@@ -38,14 +38,6 @@ class _ReportDataTableState extends State<ReportDataTable> {
   bool _sortAscending = true;
   int _sortColumnIndex = 0;
 
-  // Supervisor ficticio para cuando no hay uno asignado
-  final User _defaultSupervisor = User(
-    id: 0,
-    name: "Supervisor Genérico",
-    dni: "00000000",
-    phone: "000000000",
-  );
-
   @override
   void dispose() {
     _searchController.dispose();
@@ -140,9 +132,7 @@ class _ReportDataTableState extends State<ReportDataTable> {
           }
           break;
         case 8: // Supervisor
-          final aSupervisor = a.supervisor?.name ?? _defaultSupervisor.name;
-          final bSupervisor = b.supervisor?.name ?? _defaultSupervisor.name;
-          comparison = aSupervisor.compareTo(bSupervisor);
+
           break;
       }
       return _sortAscending ? comparison : -comparison;

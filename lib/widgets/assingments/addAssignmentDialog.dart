@@ -332,11 +332,6 @@ class _AddAssignmentDialogState extends State<AddAssignmentDialog> {
       return false;
     }
 
-    if (_zoneController.text.isEmpty) {
-      showAlertToast(context, 'Por favor, selecciona una zona');
-      return false;
-    }
-
     if (_clientController.text.isEmpty) {
       showAlertToast(context, 'Por favor, selecciona un cliente');
       return false;
@@ -408,11 +403,14 @@ class _AddAssignmentDialogState extends State<AddAssignmentDialog> {
         zoneNum = int.tryParse(zoneText.substring(5)) ?? 1;
       }
 
+      zoneNum = _zoneController.text.isEmpty == true ? 0 : zoneNum;
+
       final userProvider = Provider.of<UserProvider>(context, listen: false);
 
       // ID del usuario actual
       final userId = userProvider.user.id ?? 1;
 
+      debugPrint('Datos de la asignación: $zoneNum');
       // Si la validación es exitosa, guardar la asignación
       final success = await assignmentsProvider.addAssignment(
         workers: _selectedWorkers,

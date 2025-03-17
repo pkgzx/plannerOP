@@ -1,12 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_neumorphic_plus/flutter_neumorphic.dart';
+import 'package:plannerop/core/model/user.dart';
 import 'package:plannerop/pages/login.dart';
 import 'package:plannerop/pages/supervisor/tabs/dashboard.dart';
 import 'package:plannerop/pages/supervisor/tabs/asignaciones.dart';
 import 'package:plannerop/pages/supervisor/tabs/reports.dart';
 import 'package:plannerop/pages/supervisor/tabs/workers.dart';
 import 'package:plannerop/store/auth.dart';
+import 'package:plannerop/store/user.dart';
 import 'package:provider/provider.dart';
 import 'package:plannerop/store/assignments.dart';
 import 'package:plannerop/utils/toast.dart'; // Asegúrate de que exista este archivo
@@ -123,6 +125,14 @@ class _SupervisorHomeState extends State<SupervisorHome> {
     // Si es el mismo tab, no hacemos nada
     if (index == _selectedIndex) return;
 
+    // Verificar si el usuario es de GESTION HUMANA y está intentando acceder a tabs restringidos
+    final user = Provider.of<UserProvider>(context, listen: false).user;
+    if (user.cargo == "GESTION HUMANA" && (index == 1 || index == 2)) {
+      // Mostrar mensaje informando que no tiene permiso
+      showAlertToast(context, 'No tienes permiso para acceder a este tab');
+      return; // Prevenir navegación a los tabs restringidos
+    }
+
     setState(() {
       _previousIndex = _selectedIndex;
       _selectedIndex = index;
@@ -135,7 +145,6 @@ class _SupervisorHomeState extends State<SupervisorHome> {
     });
   }
 
-  // Método para refrescar los datos del tab seleccionado
   void _refreshTabData(int tabIndex) {
     // Calcular tiempo desde la última visita
     final previousVisit = _lastVisitTimes[tabIndex];

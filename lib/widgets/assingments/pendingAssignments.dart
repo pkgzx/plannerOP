@@ -446,6 +446,7 @@ class PendingAssignmentsView extends StatelessWidget {
                                           showSuccessToast(context,
                                               'Asignación actualizada');
                                           Navigator.pop(context);
+                                          Navigator.pop(context);
                                         },
                                         onCancel: () => Navigator.pop(context),
                                       ),

@@ -3,16 +3,19 @@ class User {
   String name;
   String dni;
   String phone;
+  String cargo;
 
   User({
     required this.id,
     required this.name,
     required this.dni,
     required this.phone,
+    required this.cargo,
   });
 
   static User fromJson(Map<String, dynamic> json) {
     return User(
+      cargo: json['accupation'],
       id: json['id'],
       name: json['name'],
       dni: json['dni'],

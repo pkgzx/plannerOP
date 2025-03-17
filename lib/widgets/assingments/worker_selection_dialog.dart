@@ -123,7 +123,7 @@ class _WorkerSelectionDialogState extends State<WorkerSelectionDialog> {
   // Verificar si un trabajador está disponible (menos de 8 horas)
   bool _isWorkerAvailable(int workerId) {
     final hours = _getWorkerHours(workerId);
-    return hours < 8.0;
+    return hours < 12.0;
   }
 
   @override

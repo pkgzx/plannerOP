@@ -59,6 +59,13 @@ class _SelectedWorkersListState extends State<SelectedWorkersList> {
 
     // Procesar todas las asignaciones completadas
     for (var assignment in completedAssignments) {
+      // Ignorar asignaciones futuras o de hace más de un día
+      if (assignment.date.isAfter(DateTime.now()) ||
+          assignment.date
+              .isBefore(DateTime.now().subtract(Duration(days: 1)))) {
+        continue;
+      }
+
       if (assignment.endDate != null && assignment.endTime != null) {
         // Calcular la duración de esta asignación
         final double assignmentHours = _calculateAssignmentDuration(assignment);
@@ -152,7 +159,7 @@ class _SelectedWorkersListState extends State<SelectedWorkersList> {
   // Verificar si un trabajador está disponible (menos de 8 horas)
   bool _isWorkerAvailable(int workerId) {
     final hours = _workerHours[workerId] ?? 0.0;
-    return hours < 8.0;
+    return hours < 12.0;
   }
 
   @override

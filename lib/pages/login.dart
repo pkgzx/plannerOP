@@ -123,6 +123,7 @@ class _LoginPageState extends State<LoginPage> {
             id: decodedToken['id'],
             dni: decodedToken['dni'],
             phone: decodedToken['phone'],
+            cargo: decodedToken['occupation'],
           ));
 
           Navigator.pushReplacement(

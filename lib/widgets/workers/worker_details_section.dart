@@ -146,6 +146,39 @@ class _WorkerDetailsSectionState extends State<WorkerDetailsSection> {
                   ],
                 ),
               ),
+
+              // Añadir espacio entre botones
+              const SizedBox(height: 12),
+
+              // Botón para marcar ausencia/abandono
+              NeumorphicButton(
+                style: NeumorphicStyle(
+                  depth: 2,
+                  intensity: 0.7,
+                  color: const Color(0xFFE53E3E),
+                  boxShape:
+                      NeumorphicBoxShape.roundRect(BorderRadius.circular(8)),
+                ),
+                onPressed: () => _showMarkAbsenceDialog(context),
+                padding:
+                    const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: const [
+                    Icon(Icons.assignment_late_outlined,
+                        color: Colors.white, size: 18),
+                    SizedBox(width: 8),
+                    Text(
+                      'Marcar Abandono de Trabajo',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w600,
+                        fontSize: 13,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             ],
           ),
         ),
@@ -356,6 +389,245 @@ class _WorkerDetailsSectionState extends State<WorkerDetailsSection> {
                                       showErrorToast(context,
                                           'Error al registrar la falta');
                                     }
+                                  } catch (e) {
+                                    setDialogState(() {
+                                      isProcessing = false;
+                                    });
+                                    showErrorToast(context, 'Error: $e');
+                                  }
+                                },
+                          child: Container(
+                            width: 100,
+                            height: 36,
+                            alignment: Alignment.center,
+                            child: isProcessing
+                                ? Row(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: const [
+                                      SizedBox(
+                                        width: 16,
+                                        height: 16,
+                                        child: CircularProgressIndicator(
+                                          valueColor:
+                                              AlwaysStoppedAnimation<Color>(
+                                                  Colors.white),
+                                          strokeWidth: 2,
+                                        ),
+                                      ),
+                                      SizedBox(width: 8),
+                                      Text(
+                                        'Registrando',
+                                        style: TextStyle(
+                                          color: Colors.white,
+                                          fontWeight: FontWeight.w600,
+                                          fontSize: 12,
+                                        ),
+                                      ),
+                                    ],
+                                  )
+                                : const Text(
+                                    'Registrar',
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+// Método para mostrar el diálogo de ausencia/abandono
+  void _showMarkAbsenceDialog(BuildContext context) {
+    bool isProcessing = false;
+    bool isAbandonment = false; // Para distinguir entre ausencia y abandono
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext dialogContext) {
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            return Dialog(
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: Container(
+                padding: const EdgeInsets.all(10),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Título con ícono
+                    Row(
+                      children: [
+                        Icon(Icons.assignment_late_outlined,
+                            color: Colors.red[700], size: 24),
+                        const SizedBox(width: 8),
+                        Text(
+                          'Registrar Abandono de Trabajo',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.grey[800],
+                          ),
+                        ),
+                        const Spacer(),
+                        if (!isProcessing)
+                          IconButton(
+                            icon: Icon(Icons.close, color: Colors.grey[500]),
+                            onPressed: () => Navigator.pop(dialogContext),
+                            padding: EdgeInsets.zero,
+                            constraints: const BoxConstraints(),
+                          ),
+                      ],
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      'Seleccione el tipo de incidente para ${widget.worker.name}:',
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: Colors.grey[600],
+                      ),
+                    ),
+                    const Divider(height: 24),
+
+                    // Opciones para seleccionar
+                    ListTile(
+                      title: const Text('Ausencia'),
+                      subtitle:
+                          const Text('El trabajador no se presentó a trabajar'),
+                      leading: Radio<bool>(
+                        value: false,
+                        groupValue: isAbandonment,
+                        onChanged: isProcessing
+                            ? null
+                            : (bool? value) {
+                                setDialogState(() {
+                                  isAbandonment = value!;
+                                });
+                              },
+                      ),
+                      contentPadding: EdgeInsets.zero,
+                    ),
+
+                    ListTile(
+                      title: const Text('Abandono'),
+                      subtitle: const Text(
+                          'El trabajador abandonó su puesto sin autorización'),
+                      leading: Radio<bool>(
+                        value: true,
+                        groupValue: isAbandonment,
+                        onChanged: isProcessing
+                            ? null
+                            : (bool? value) {
+                                setDialogState(() {
+                                  isAbandonment = value!;
+                                });
+                              },
+                      ),
+                      contentPadding: EdgeInsets.zero,
+                    ),
+
+                    const SizedBox(height: 12),
+
+                    // Información sobre consecuencias
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Colors.red[50],
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: Colors.red[100]!),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(Icons.warning_outlined,
+                              color: Colors.red[700], size: 20),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              'Esta acción es grave y quedará registrada en el historial del trabajador.',
+                              style: TextStyle(
+                                color: Colors.red[900],
+                                fontSize: 13,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+
+                    const SizedBox(height: 24),
+
+                    // Botones de acción
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        TextButton(
+                          onPressed: isProcessing
+                              ? null
+                              : () => Navigator.pop(dialogContext),
+                          style: TextButton.styleFrom(
+                            foregroundColor: isProcessing
+                                ? Colors.grey[400]
+                                : Colors.grey[700],
+                          ),
+                          child: const Text('Cancelar'),
+                        ),
+                        const SizedBox(width: 12),
+                        NeumorphicButton(
+                          style: NeumorphicStyle(
+                            depth: isProcessing ? 0 : 2,
+                            intensity: 0.7,
+                            color: isProcessing
+                                ? Colors.red.shade200
+                                : Colors.red.shade600,
+                            boxShape: NeumorphicBoxShape.roundRect(
+                                BorderRadius.circular(8)),
+                          ),
+                          onPressed: isProcessing
+                              ? null
+                              : () async {
+                                  setDialogState(() {
+                                    isProcessing = true;
+                                  });
+
+                                  try {
+                                    final workersProvider =
+                                        Provider.of<WorkersProvider>(context,
+                                            listen: false);
+
+                                    // Aquí llamaríamos a un método en WorkersProvider
+                                    // que maneje el registro de ausencias/abandonos
+                                    // final success = await workersProvider.registerAbsence(
+                                    //   widget.worker,
+                                    //   isAbandonment,
+                                    //   context,
+                                    // );
+
+                                    // if (success) {
+                                    //   Navigator.pop(dialogContext);
+                                    //   showSuccessToast(
+                                    //       context,
+                                    //       isAbandonment
+                                    //           ? 'Abandono registrado correctamente'
+                                    //           : 'Ausencia registrada correctamente');
+                                    // } else {
+                                    //   setDialogState(() {
+                                    //     isProcessing = false;
+                                    //   });
+                                    //   showErrorToast(context,
+                                    //       'Error al registrar el incidente');
+                                    // }
                                   } catch (e) {
                                     setDialogState(() {
                                       isProcessing = false;

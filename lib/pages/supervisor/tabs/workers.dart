@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_neumorphic_plus/flutter_neumorphic.dart';
+import 'package:plannerop/core/model/user.dart';
+import 'package:plannerop/store/user.dart';
 import 'package:plannerop/store/workers.dart';
 import 'package:plannerop/utils/toast.dart';
 import 'package:provider/provider.dart';
@@ -89,7 +91,7 @@ class _WorkersTabState extends State<WorkersTab> {
 
   @override
   Widget build(BuildContext context) {
-    // Simplemente consume el WorkersProvider que debe estar proporcionado desde un nivel superior
+    User user = Provider.of<UserProvider>(context).user;
 
     return Scaffold(
       backgroundColor: Colors.white,
@@ -258,26 +260,30 @@ class _WorkersTabState extends State<WorkersTab> {
           ],
         ),
       ),
-      floatingActionButton: NeumorphicFloatingActionButton(
-        style: NeumorphicStyle(
-          color: const Color(0xFF4299E1),
-          shape: NeumorphicShape.flat,
-          boxShape: NeumorphicBoxShape.roundRect(BorderRadius.circular(28)),
-          depth: 8,
-          intensity: 0.65,
-          lightSource: LightSource.topLeft,
-        ),
-        child: const Icon(
-          Icons.person_add,
-          color: Colors.white,
-        ),
-        onPressed: () {
-          WorkerAddDialog.show(
-            context,
-            _addWorker,
-          );
-        },
-      ),
+      floatingActionButton:
+          user.cargo == "GESTION HUMANA" || user.cargo == "ADMON PLATAFORMA"
+              ? NeumorphicFloatingActionButton(
+                  style: NeumorphicStyle(
+                    color: const Color(0xFF4299E1),
+                    shape: NeumorphicShape.flat,
+                    boxShape:
+                        NeumorphicBoxShape.roundRect(BorderRadius.circular(28)),
+                    depth: 8,
+                    intensity: 0.65,
+                    lightSource: LightSource.topLeft,
+                  ),
+                  child: const Icon(
+                    Icons.person_add,
+                    color: Colors.white,
+                  ),
+                  onPressed: () {
+                    WorkerAddDialog.show(
+                      context,
+                      _addWorker,
+                    );
+                  },
+                )
+              : null,
     );
   }
 
