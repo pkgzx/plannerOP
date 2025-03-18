@@ -239,7 +239,7 @@ class _ExportOptionsState extends State<ExportOptions> {
 
       sheet
           .cell(CellIndex.indexByColumnRow(columnIndex: 0, rowIndex: rowIndex))
-          .value = 'En progreso:';
+          .value = 'En curso:';
       sheet
           .cell(CellIndex.indexByColumnRow(columnIndex: 1, rowIndex: rowIndex))
           .value = inProgressCount;
@@ -598,13 +598,13 @@ class _ExportOptionsState extends State<ExportOptions> {
       case 'COMPLETED':
         return 'Completada';
       case 'INPROGRESS':
-        return 'En progreso';
+        return 'En curso';
       case 'PENDING':
         return 'Pendiente';
       case 'CANCELED':
         return 'Cancelada';
       default:
-        return status;
+        return "N/A";
     }
   }
 

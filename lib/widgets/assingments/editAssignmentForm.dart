@@ -198,9 +198,12 @@ class _EditAssignmentFormState extends State<EditAssignmentForm> {
                   WorkerSelectionWidget(
                     selectedWorkers: _selectedWorkers,
                     allWorkers: workersProvider.getWorkersAvailable(),
-                    onSelectionChanged: (workers) {
+                    deletedWorkers: widget.assignment.deletedWorkers,
+                    onSelectionChanged: (workers, deletedWorkers) {
                       setState(() {
                         _selectedWorkers = workers;
+                        // Store deleted workers in the assignment
+                        widget.assignment.deletedWorkers = deletedWorkers;
                       });
                     },
                   ),
@@ -508,6 +511,8 @@ class _EditAssignmentFormState extends State<EditAssignmentForm> {
         areaId: widget.assignment.areaId, // No editable
         taskId: widget.assignment.taskId, // No editable
         clientId: widget.assignment.clientId, // No editable
+        deletedWorkers:
+            widget.assignment.deletedWorkers, // Include deleted workers
       );
 
       // Mostrar indicador de carga

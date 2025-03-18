@@ -18,6 +18,7 @@ class Assignment {
   final int areaId;
   final int taskId;
   final int clientId;
+  List<Worker> deletedWorkers = [];
 
   set endTime(String? endTime) {
     this.endTime = endTime;
@@ -40,6 +41,7 @@ class Assignment {
     this.endDate,
     this.motorship,
     this.supervisor,
+    this.deletedWorkers = const [],
     required this.userId,
     required this.areaId,
     required this.taskId,

@@ -9,6 +9,7 @@ class DropdownField extends StatefulWidget {
   final List<String> options;
   final Function(String)? onSelected;
   final bool enabled;
+  final bool allowClear;
 
   const DropdownField({
     Key? key,
@@ -19,6 +20,7 @@ class DropdownField extends StatefulWidget {
     required this.options,
     this.onSelected,
     this.enabled = true,
+    this.allowClear = true,
   }) : super(key: key);
 
   @override
@@ -195,43 +197,75 @@ class _DropdownFieldState extends State<DropdownField> {
                 width: double.maxFinite,
                 height:
                     useSearch ? 300 : null, // Altura controlada si hay búsqueda
-                child: filteredOptions.isEmpty
-                    ? const Center(
-                        child: Padding(
-                          padding: EdgeInsets.all(16.0),
-                          child: Text('No se encontraron resultados',
-                              style: TextStyle(
-                                  color: Colors.grey,
-                                  fontStyle: FontStyle.italic)),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    // Añadir opción para borrar selección si allowClear es true y hay texto
+                    if (widget.allowClear && widget.controller.text.isNotEmpty)
+                      ListTile(
+                        title: const Text(
+                          'Borrar selección',
+                          style: TextStyle(color: Colors.red),
                         ),
-                      )
-                    : ListView.builder(
-                        shrinkWrap:
-                            !useSearch, // Ajustar tamaño solo si no hay búsqueda
-                        itemCount: filteredOptions.length,
-                        itemBuilder: (context, index) {
-                          final option = filteredOptions[index];
-                          return ListTile(
-                            title: Text(option),
-                            onTap: () {
-                              // Actualizar el controlador con la opción seleccionada
-                              widget.controller.text = option;
-                              // También actualizar el estado local
-                              setState(() {
-                                _displayText = option;
-                              });
+                        leading: const Icon(Icons.clear, color: Colors.red),
+                        onTap: () {
+                          widget.controller.clear();
+                          setState(() {
+                            _displayText = '';
+                          });
+                          Navigator.of(context).pop();
 
-                              debugPrint('Seleccionada opción: $option');
-                              Navigator.of(context).pop();
-
-                              // Si hay una función de callback, la llamamos
-                              if (widget.onSelected != null) {
-                                widget.onSelected!(option);
-                              }
-                            },
-                          );
+                          // Si hay una función de callback, llamarla con string vacío
+                          if (widget.onSelected != null) {
+                            widget.onSelected!('');
+                          }
                         },
                       ),
+                    if (widget.allowClear && widget.controller.text.isNotEmpty)
+                      const Divider(),
+
+                    // Lista de opciones filtradas
+                    Flexible(
+                      child: filteredOptions.isEmpty
+                          ? const Center(
+                              child: Padding(
+                                padding: EdgeInsets.all(16.0),
+                                child: Text('No se encontraron resultados',
+                                    style: TextStyle(
+                                        color: Colors.grey,
+                                        fontStyle: FontStyle.italic)),
+                              ),
+                            )
+                          : ListView.builder(
+                              shrinkWrap:
+                                  !useSearch, // Ajustar tamaño solo si no hay búsqueda
+                              itemCount: filteredOptions.length,
+                              itemBuilder: (context, index) {
+                                final option = filteredOptions[index];
+                                return ListTile(
+                                  title: Text(option),
+                                  onTap: () {
+                                    // Actualizar el controlador con la opción seleccionada
+                                    widget.controller.text = option;
+                                    // También actualizar el estado local
+                                    setState(() {
+                                      _displayText = option;
+                                    });
+
+                                    debugPrint('Seleccionada opción: $option');
+                                    Navigator.of(context).pop();
+
+                                    // Si hay una función de callback, la llamamos
+                                    if (widget.onSelected != null) {
+                                      widget.onSelected!(option);
+                                    }
+                                  },
+                                );
+                              },
+                            ),
+                    ),
+                  ],
+                ),
               ),
               actions: [
                 TextButton(

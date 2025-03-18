@@ -4,13 +4,15 @@ import 'package:plannerop/core/model/worker.dart';
 class WorkerSelectionWidget extends StatefulWidget {
   final List<Worker> selectedWorkers;
   final List<Worker> allWorkers;
-  final Function(List<Worker>) onSelectionChanged;
+  final Function(List<Worker>, List<Worker>) onSelectionChanged;
+  final List<Worker> deletedWorkers;
 
   const WorkerSelectionWidget({
     Key? key,
     required this.selectedWorkers,
     required this.allWorkers,
     required this.onSelectionChanged,
+    this.deletedWorkers = const [],
   }) : super(key: key);
 
   @override
@@ -20,6 +22,7 @@ class WorkerSelectionWidget extends StatefulWidget {
 class _WorkerSelectionWidgetState extends State<WorkerSelectionWidget> {
   late List<Worker> _availableWorkers;
   late List<Worker> _selectedWorkers;
+  late List<Worker> _deletedWorkers;
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
 
@@ -27,6 +30,8 @@ class _WorkerSelectionWidgetState extends State<WorkerSelectionWidget> {
   void initState() {
     super.initState();
     _selectedWorkers = List.from(widget.selectedWorkers);
+    _deletedWorkers =
+        List.from(widget.deletedWorkers); // Initialize deleted workers list
 
     // Asegurar que los trabajadores disponibles no incluyan a los ya seleccionados
     _updateAvailableWorkers();
@@ -36,8 +41,10 @@ class _WorkerSelectionWidgetState extends State<WorkerSelectionWidget> {
   void didUpdateWidget(WorkerSelectionWidget oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.selectedWorkers != widget.selectedWorkers ||
-        oldWidget.allWorkers != widget.allWorkers) {
+        oldWidget.allWorkers != widget.allWorkers ||
+        oldWidget.deletedWorkers != widget.deletedWorkers) {
       _selectedWorkers = List.from(widget.selectedWorkers);
+      _deletedWorkers = List.from(widget.deletedWorkers);
       _updateAvailableWorkers();
     }
   }
@@ -98,7 +105,15 @@ class _WorkerSelectionWidgetState extends State<WorkerSelectionWidget> {
                   setState(() {
                     _selectedWorkers.remove(worker);
                     _availableWorkers.add(worker);
-                    widget.onSelectionChanged(_selectedWorkers);
+
+                    // Add to deleted workers list if not already there
+                    if (!_deletedWorkers.any((w) => w.id == worker.id)) {
+                      _deletedWorkers.add(worker);
+                    }
+
+                    // Call onSelectionChanged with both updated lists
+                    widget.onSelectionChanged(
+                        _selectedWorkers, _deletedWorkers);
                   });
                 },
               );
@@ -199,8 +214,8 @@ class _WorkerSelectionWidgetState extends State<WorkerSelectionWidget> {
                                     this.setState(() {
                                       _selectedWorkers.add(worker);
                                       _availableWorkers.remove(worker);
-                                      widget
-                                          .onSelectionChanged(_selectedWorkers);
+                                      widget.onSelectionChanged(
+                                          _selectedWorkers, _deletedWorkers);
                                     });
                                     Navigator.pop(context);
                                   },

@@ -35,6 +35,9 @@ class WorkersProvider with ChangeNotifier {
         .toList();
   }
 
+  int get totalWorkerWithoutRetired =>
+      _workers.where((w) => w.status != WorkerStatus.deactivated).length;
+
   int get totalWorkers => _workers.length;
 
   List<Worker> getWorkersAvailable() {

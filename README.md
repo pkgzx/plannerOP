@@ -86,25 +86,135 @@ flutter run
 
 ```
 lib/
-├── core/
-│   ├── model/           # Modelos de datos (Area, Assignment, Worker, etc.)
-│   └── services/        # Servicios de la aplicación
-├── screens/             # Pantallas principales
-├── store/               # Providers para gestión de estado
-│   ├── areas.dart
-│   ├── assignments.dart
-│   ├── clients.dart
-│   ├── task.dart
-│   └── workers.dart
-├── utils/              # Utilidades y helpers
-│   └── toast.dart      # Mensajes tipo toast
-└── widgets/            # Widgets reutilizables
-    └── assignments/    # Widgets específicos para asignaciones
-        ├── assignment_form.dart
-        ├── date_time_fields.dart
-        ├── dropdown_field.dart
-        ├── editAssignmentForm.dart
-        └── workerSelection.dart
+│   main.dart
+│
+├───components
+├───core
+│   └───model
+│           area.dart
+│           assignment.dart
+│           client.dart
+│           task.dart
+│           user.dart
+│           worker.dart
+│
+├───dto
+│   ├───assignment
+│   │       createAssigment.dart
+│   │
+│   ├───auth
+│   │       signin.dart
+│   │
+│   ├───clients
+│   │       fetchClients.dart
+│   │
+│   ├───taks
+│   │       fetchTask.dart
+│   │
+│   └───workers
+│           fetchWorkers.dart
+│
+├───pages
+│   │   login.dart
+│   │
+│   ├───gestionHumana
+│   └───supervisor
+│       │   home.dart
+│       │
+│       └───tabs
+│               asignaciones.dart
+│               dashboard.dart
+│               profile.dart
+│               reports.dart
+│               workers.dart
+│               worker_filter.dart
+│
+├───services
+│   │   workerService.dart
+│   │
+│   ├───areas
+│   │       areas.dart
+│   │
+│   ├───assignments
+│   │       assignment.dart
+│   │
+│   ├───auth
+│   │       signin.dart
+│   │
+│   ├───clients
+│   │       clients.dart
+│   │
+│   ├───task
+│   │       task.dart
+│   │
+│   └───workers
+│           workers.dart
+│
+├───store
+│       areas.dart
+│       assignments.dart
+│       auth.dart
+│       clients.dart
+│       task.dart
+│       user.dart
+│       workers.dart
+│
+├───utils
+│       assignments.dart
+│       constants.dart
+│       toast.dart
+│       worker_utils.dart
+│
+└───widgets
+    │   cifras.dart
+    │   quickActions.dart
+    │   recentOps.dart
+    │
+    ├───assingments
+    │       activeAssignments.dart
+    │       addAssignmentDialog.dart
+    │       assignmentDetails.dart
+    │       assignment_form.dart
+    │       date_time_fields.dart
+    │       dropdown_field.dart
+    │       editAssignmentForm.dart
+    │       emptyState.dart
+    │       historyAssignments.dart
+    │       pendingAssignments.dart
+    │       predefined_tasks.dart
+    │       selected_worker_list.dart
+    │       success_dialog.dart
+    │       workerCard.dart
+    │       workerSelection.dart
+    │       worker_selection_dialog.dart
+    │
+    ├───reports
+    │   │   export_options.dart
+    │   │   report_data_table.dart
+    │   │   report_filter.dart
+    │   │   report_summary.dart
+    │   │
+    │   └───charts
+    │           area_chart.dart
+    │           service_trend_chart.dart
+    │           ship_personnel_chart.dart
+    │           worker_status_chart.dart
+    │           zone_distribution_chart.dart
+    │
+    └───workers
+            worker_actions_bar.dart
+            worker_add_dialog.dart
+            worker_assignments_section.dart
+            worker_code_badge.dart
+            worker_details_section.dart
+            worker_detail_dialog.dart
+            worker_edit_dialog.dart
+            worker_empty_state.dart
+            worker_incapacitation_dialog.dart
+            worker_list_item.dart
+            worker_retirement_dialog.dart
+            worker_stats.dart
+
 ```
 
 ## 🤝 Contribución

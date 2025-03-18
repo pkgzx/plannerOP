@@ -9,12 +9,18 @@ class ZoneDistributionChart extends StatefulWidget {
   final DateTime startDate;
   final DateTime endDate;
   final String area;
+  final int? zone;
+  final String? motorship;
+  final String? status;
 
   const ZoneDistributionChart({
     Key? key,
     required this.startDate,
     required this.endDate,
     required this.area,
+    required this.zone,
+    required this.motorship,
+    required this.status,
   }) : super(key: key);
 
   @override
@@ -36,9 +42,13 @@ class _ZoneDistributionChartState extends State<ZoneDistributionChart> {
   @override
   void didUpdateWidget(ZoneDistributionChart oldWidget) {
     super.didUpdateWidget(oldWidget);
+    // Update this to check ALL filter parameters
     if (oldWidget.startDate != widget.startDate ||
         oldWidget.endDate != widget.endDate ||
-        oldWidget.area != widget.area) {
+        oldWidget.area != widget.area ||
+        oldWidget.zone != widget.zone ||
+        oldWidget.motorship != widget.motorship ||
+        oldWidget.status != widget.status) {
       _loadData();
     }
   }
@@ -52,25 +62,70 @@ class _ZoneDistributionChartState extends State<ZoneDistributionChart> {
 
   List<ZoneData> processAssignmentData(List<Assignment> assignments) {
     try {
-      // Filtrar asignaciones por fecha y área
       final filteredAssignments = assignments.where((assignment) {
-        final matchesDateRange = assignment.date
-                .isAfter(widget.startDate.subtract(const Duration(days: 1))) &&
-            assignment.date
-                .isBefore(widget.endDate.add(const Duration(days: 1)));
+        // Filtrar por fecha
+        if (!assignment.date
+                .isAfter(widget.startDate.subtract(const Duration(days: 1))) ||
+            !assignment.date
+                .isBefore(widget.endDate.add(const Duration(days: 1)))) {
+          return false;
+        }
 
-        final matchesArea =
-            widget.area == 'Todas' || assignment.area == widget.area;
+        // Filtrar por área
+        if (widget.area != 'Todas' && assignment.area != widget.area) {
+          return false;
+        }
 
-        // Solo asignaciones activas
-        final isActive =
-            assignment.status == 'PENDING' || assignment.status == 'INPROGRESS';
+        // Filtrar por zona específica si se ha seleccionado
+        if (widget.zone != null) {
+          int? assignmentZone;
+          try {
+            assignmentZone = int.tryParse(assignment.zone.toString());
+          } catch (e) {
+            assignmentZone = null;
+          }
 
-        debugPrint('isActive: ${assignment.status}');
+          if (assignmentZone != widget.zone) {
+            return false;
+          }
+        }
 
-        return isActive;
+        // Filtrar por motonave
+        if (widget.motorship != null && widget.motorship!.isNotEmpty) {
+          if (assignment.motorship == null ||
+              assignment.motorship != widget.motorship) {
+            return false;
+          }
+        }
+
+        // Filtrar por estado
+        if (widget.status != null && widget.status!.isNotEmpty) {
+          // Normalizar el estado para comparación
+          String normalizedStatus;
+          switch (assignment.status.toUpperCase()) {
+            case 'COMPLETED':
+              normalizedStatus = 'Completada';
+              break;
+            case 'INPROGRESS':
+              normalizedStatus = 'En curso';
+              break;
+            case 'PENDING':
+              normalizedStatus = 'Pendiente';
+              break;
+            case 'CANCELED':
+              normalizedStatus = 'Cancelada';
+              break;
+            default:
+              normalizedStatus = assignment.status;
+          }
+
+          if (normalizedStatus != widget.status) {
+            return false;
+          }
+        }
+
+        return true;
       }).toList();
-
       // Agrupar por zona
       final Map<int, List<Assignment>> zoneAssignments = {};
       for (var assignment in filteredAssignments) {

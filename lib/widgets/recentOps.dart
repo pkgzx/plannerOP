@@ -89,7 +89,7 @@ class RecentOps extends StatelessWidget {
                                   colorTexto = const Color(0xFFB7791F);
                                   break;
                                 case 'INPROGRESS':
-                                  estado = 'En progreso';
+                                  estado = 'En curso';
                                   colorFondo = const Color(0xFFEBF4FF);
                                   colorTexto = const Color(0xFF2B6CB0);
                                   break;
@@ -192,7 +192,7 @@ class RecentOps extends StatelessWidget {
         stateIcon = Icons.pending_outlined;
         break;
       case 'INPROGRESS':
-        estado = 'En progreso';
+        estado = 'En curso';
         colorFondo = const Color(0xFFEBF4FF);
         colorTexto = const Color(0xFF2B6CB0);
         stateIcon = Icons.sync;

@@ -238,8 +238,8 @@ class _SupervisorHomeState extends State<SupervisorHome> {
               items: [
                 _buildNavigationItem(
                     Icons.dashboard_outlined, Icons.dashboard, 'Dashboard'),
-                _buildNavigationItem(Icons.assignment_outlined,
-                    Icons.assignment, 'Asignaciones'),
+                _buildNavigationItem(
+                    Icons.assignment_outlined, Icons.assignment, 'Operaciones'),
                 _buildNavigationItem(Icons.insert_chart_outlined,
                     Icons.insert_chart, 'Reportes'),
                 _buildNavigationItem(

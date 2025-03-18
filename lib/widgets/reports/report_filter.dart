@@ -24,6 +24,8 @@ class ReportFilter extends StatefulWidget {
     DateTime? startDate,
     DateTime? endDate,
   }) onApply;
+  final bool
+      isChartsView; // Add this parameter to determine which filters to show
 
   const ReportFilter({
     Key? key,
@@ -40,6 +42,7 @@ class ReportFilter extends StatefulWidget {
     required this.startDate,
     required this.endDate,
     required this.onApply,
+    required this.isChartsView, // Make it required
   }) : super(key: key);
 
   @override
@@ -98,7 +101,7 @@ class _ReportFilterState extends State<ReportFilter> {
           SingleChildScrollView(
             child: Column(
               children: [
-                // Primera fila de filtros
+                // Primera fila de filtros - Periodo y Estado siempre visible
                 Row(
                   children: [
                     // Periodo
@@ -121,14 +124,13 @@ class _ReportFilterState extends State<ReportFilter> {
                                 // Establecer fecha de fin al final del día actual
                                 _endDate = DateTime(
                                     now.year, now.month, now.day, 23, 59, 59);
-                              } else if (value == 'Semana') {
-                                _startDate = DateTime.now()
-                                    .subtract(const Duration(days: 7));
-                                _endDate = DateTime.now();
                               } else if (value == 'Mes') {
                                 _startDate = DateTime(DateTime.now().year,
                                     DateTime.now().month, 1);
                                 _endDate = DateTime.now();
+                              } else if (value == 'Personalizado') {
+                                _startDate = DateTime.now()
+                                    .subtract(const Duration(days: 1));
                               }
                             });
                           }
@@ -136,66 +138,6 @@ class _ReportFilterState extends State<ReportFilter> {
                       ),
                     ),
                     const SizedBox(width: 16),
-                    // Área
-                    Expanded(
-                      child: _buildDropdown(
-                        'Área',
-                        _area,
-                        widget.areas,
-                        (String? value) {
-                          if (value != null) {
-                            setState(() {
-                              _area = value;
-                              // Reset zona y motonave al cambiar área
-                              _zone = null;
-                              _motorship = null;
-                            });
-                          }
-                        },
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 16),
-
-                // Segunda fila de filtros
-                Row(
-                  children: [
-                    // Zona
-                    Expanded(
-                      child: _buildIntDropdown(
-                        'Zona',
-                        _zone,
-                        widget.zones,
-                        (int? value) {
-                          setState(() {
-                            _zone = value;
-                          });
-                        },
-                      ),
-                    ),
-                    const SizedBox(width: 16),
-                    // Motonave
-                    Expanded(
-                      child: _buildDropdown(
-                        'Motonave',
-                        _motorship,
-                        widget.motorships,
-                        (String? value) {
-                          setState(() {
-                            _motorship = value;
-                          });
-                        },
-                        nullOption: 'Todas',
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 16),
-
-                // Tercera fila - Estado y Fechas personalizadas
-                Row(
-                  children: [
                     // Estado
                     Expanded(
                       child: _buildDropdown(
@@ -210,54 +152,123 @@ class _ReportFilterState extends State<ReportFilter> {
                         nullOption: 'Todos',
                       ),
                     ),
-                    const SizedBox(width: 16),
-                    // Espacio para equilibrar o indicador visual
-                    Expanded(
-                      child: _period == 'Personalizado'
-                          ? const SizedBox.shrink()
-                          : Container(
-                              padding: const EdgeInsets.symmetric(vertical: 20),
-                              child: Text(
-                                _period == 'Personalizado'
-                                    ? ''
-                                    : 'Filtro de fecha: $_period',
-                                style: TextStyle(
-                                  color: Colors.grey[600],
-                                  fontStyle: FontStyle.italic,
-                                ),
-                              ),
-                            ),
-                    ),
                   ],
                 ),
                 const SizedBox(height: 16),
 
-                // Fechas personalizadas (mostrar solo si está seleccionado "Personalizado")
-                if (_period == 'Personalizado')
+                // Mostrar filtros adicionales solo para vista de tabla
+                if (!widget.isChartsView) ...[
+                  // Segunda fila de filtros - Solo para tabla
                   Row(
                     children: [
+                      // Área
                       Expanded(
-                        child: _buildDateField(
-                          'Fecha inicio',
-                          _startDate,
-                          (date) {
-                            setState(() {
-                              _startDate = date;
-                            });
+                        child: _buildDropdown(
+                          'Área',
+                          _area,
+                          widget.areas,
+                          (String? value) {
+                            if (value != null) {
+                              setState(() {
+                                _area = value;
+                                // Reset zona y motonave al cambiar área
+                                _zone = null;
+                                _motorship = null;
+                              });
+                            }
                           },
                         ),
                       ),
                       const SizedBox(width: 16),
+                      // Zona
                       Expanded(
-                        child: _buildDateField(
-                          'Fecha fin',
-                          _endDate,
-                          (date) {
+                        child: _buildIntDropdown(
+                          'Zona',
+                          _zone,
+                          widget.zones,
+                          (int? value) {
                             setState(() {
-                              _endDate = date;
+                              _zone = value;
+                              debugPrint('Zona seleccionada: $value');
                             });
                           },
                         ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+
+                  // Tercera fila - Solo para tabla
+                  Row(
+                    children: [
+                      // Motonave
+                      Expanded(
+                        child: _buildDropdown(
+                          'Motonave',
+                          _motorship,
+                          widget.motorships,
+                          (String? value) {
+                            setState(() {
+                              _motorship = value;
+                            });
+                          },
+                          nullOption: 'Todas',
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      // Espacio para equilibrar
+                      Expanded(
+                        child: _period == 'Personalizado'
+                            ? const SizedBox.shrink()
+                            : Container(
+                                padding:
+                                    const EdgeInsets.symmetric(vertical: 20),
+                                child: Text(
+                                  _period == 'Personalizado'
+                                      ? ''
+                                      : 'Filtro de fecha: $_period',
+                                  style: TextStyle(
+                                    color: Colors.grey[600],
+                                    fontStyle: FontStyle.italic,
+                                  ),
+                                ),
+                              ),
+                      ),
+                    ],
+                  ),
+                ],
+
+                // Fechas personalizadas para ambos modos
+                if (_period == 'Personalizado')
+                  Column(
+                    children: [
+                      const SizedBox(height: 16),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: _buildDateField(
+                              'Fecha inicio',
+                              _startDate,
+                              (date) {
+                                setState(() {
+                                  _startDate = date;
+                                });
+                              },
+                            ),
+                          ),
+                          const SizedBox(width: 16),
+                          Expanded(
+                            child: _buildDateField(
+                              'Fecha fin',
+                              _endDate,
+                              (date) {
+                                setState(() {
+                                  _endDate = date;
+                                });
+                              },
+                            ),
+                          ),
+                        ],
                       ),
                     ],
                   ),
@@ -280,15 +291,31 @@ class _ReportFilterState extends State<ReportFilter> {
                       NeumorphicBoxShape.roundRect(BorderRadius.circular(8)),
                 ),
                 onPressed: () {
-                  // Restaurar filtros por defecto
+                  // Reset all filters
+                  setState(() {
+                    _period = 'Hoy';
+                    _area = 'Todas';
+                    _zone = null;
+                    _motorship = null;
+                    _status = null;
+
+                    // Set today's date range
+                    final now = DateTime.now();
+                    _startDate = DateTime(now.year, now.month, now.day)
+                        .subtract(const Duration(days: 1));
+                    _endDate =
+                        DateTime(now.year, now.month, now.day, 23, 59, 59);
+                  });
+
+                  // Apply reset filters
                   widget.onApply(
-                    period: 'Semana',
+                    period: _period,
                     area: 'Todas',
                     zone: null,
                     motorship: null,
                     status: null,
-                    startDate: DateTime.now().subtract(const Duration(days: 7)),
-                    endDate: DateTime.now(),
+                    startDate: _startDate,
+                    endDate: _endDate,
                   );
                 },
                 child: const Text(
@@ -309,15 +336,29 @@ class _ReportFilterState extends State<ReportFilter> {
                       NeumorphicBoxShape.roundRect(BorderRadius.circular(8)),
                 ),
                 onPressed: () {
-                  widget.onApply(
-                    period: _period,
-                    area: _area,
-                    zone: _zone,
-                    motorship: _motorship,
-                    status: _status,
-                    startDate: _startDate,
-                    endDate: _endDate,
-                  );
+                  // For charts view, only use period, status, and date fields
+                  if (widget.isChartsView) {
+                    widget.onApply(
+                      period: _period,
+                      area: 'Todas', // Default to "Todas" for charts
+                      zone: null,
+                      motorship: null,
+                      status: _status,
+                      startDate: _startDate,
+                      endDate: _endDate,
+                    );
+                  } else {
+                    // For table view, use all filters
+                    widget.onApply(
+                      period: _period,
+                      area: _area,
+                      zone: _zone,
+                      motorship: _motorship,
+                      status: _status,
+                      startDate: _startDate,
+                      endDate: _endDate,
+                    );
+                  }
                 },
                 child: const Text(
                   'Aplicar',
@@ -467,7 +508,25 @@ class _ReportFilterState extends State<ReportFilter> {
               lastDate: DateTime.now().add(const Duration(days: 365)),
             );
             if (picked != null) {
-              onDateChanged(picked);
+              // Si es fecha de inicio, restar un día internamente pero mostrar la fecha seleccionada
+              if (label == 'Fecha inicio') {
+                // Crear una fecha con la hora ajustada a 00:00:00
+                final startOfDay =
+                    DateTime(picked.year, picked.month, picked.day);
+                // Restar un día para el filtro interno
+                onDateChanged(startOfDay.subtract(const Duration(days: 1)));
+              }
+              // Si es fecha de fin, asegurarse de que incluya todo el día
+              else if (label == 'Fecha fin') {
+                // Crear fecha con la hora ajustada a 23:59:59
+                final endOfDay =
+                    DateTime(picked.year, picked.month, picked.day, 23, 59, 59);
+                onDateChanged(endOfDay);
+              }
+              // Para cualquier otro campo de fecha
+              else {
+                onDateChanged(picked);
+              }
             }
           },
           child: Container(
@@ -481,7 +540,11 @@ class _ReportFilterState extends State<ReportFilter> {
               children: [
                 Expanded(
                   child: Text(
-                    DateFormat('dd/MM/yyyy').format(initialDate),
+                    // Mostrar la fecha real seleccionada, no la ajustada
+                    label == 'Fecha inicio'
+                        ? DateFormat('dd/MM/yyyy')
+                            .format(initialDate.add(const Duration(days: 1)))
+                        : DateFormat('dd/MM/yyyy').format(initialDate),
                     style: const TextStyle(
                       color: Color(0xFF2D3748),
                     ),

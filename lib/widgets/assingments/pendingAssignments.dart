@@ -390,6 +390,22 @@ class PendingAssignmentsView extends StatelessWidget {
                               return _buildWorkerItem(worker);
                             }).toList(),
                           ),
+                          const SizedBox(height: 20),
+                          assignment.deletedWorkers.map(
+                            (worker) {
+                              return _buildWorkerItem(worker);
+                            },
+                          ).isNotEmpty
+                              ? _buildDetailsSection(
+                                  title: 'Trabajadores eliminados',
+                                  children: assignment.deletedWorkers.map(
+                                    (worker) {
+                                      return _buildWorkerItem(worker,
+                                          isDeleted: true);
+                                    },
+                                  ).toList(),
+                                )
+                              : const SizedBox(),
                         ],
                       ),
                     ),
@@ -831,48 +847,92 @@ class PendingAssignmentsView extends StatelessWidget {
     );
   }
 
-  Widget _buildWorkerItem(Worker worker) {
+  Widget _buildWorkerItem(Worker worker, {bool isDeleted = false}) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
-      child: Row(
-        children: [
-          CircleAvatar(
-            backgroundColor: Colors
-                .primaries[worker.name.hashCode % Colors.primaries.length],
-            radius: 18,
-            child: Text(
-              worker.name.toString().substring(0, 1).toUpperCase(),
-              style: const TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.bold,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+        decoration: isDeleted
+            ? BoxDecoration(
+                color: Colors.red.shade50,
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: Colors.red.shade100),
+              )
+            : null,
+        child: Row(
+          children: [
+            CircleAvatar(
+              backgroundColor: isDeleted
+                  ? Colors.grey
+                  : Colors.primaries[
+                      worker.name.hashCode % Colors.primaries.length],
+              radius: 18,
+              child: isDeleted
+                  ? const Icon(Icons.person_off_outlined,
+                      color: Colors.white, size: 16)
+                  : Text(
+                      worker.name.toString().substring(0, 1).toUpperCase(),
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          worker.name.toString(),
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                            color: isDeleted
+                                ? Colors.red.shade700
+                                : const Color(0xFF2D3748),
+                            decoration:
+                                isDeleted ? TextDecoration.lineThrough : null,
+                          ),
+                        ),
+                      ),
+                      if (isDeleted)
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 6, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: Colors.red.shade100,
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                          child: Text(
+                            'Eliminado',
+                            style: TextStyle(
+                              fontSize: 10,
+                              color: Colors.red.shade800,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
+                  if (worker.area.isNotEmpty)
+                    Text(
+                      worker.area.toString(),
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: isDeleted
+                            ? Colors.red.shade300
+                            : const Color(0xFF718096),
+                      ),
+                    ),
+                ],
               ),
             ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  worker.name.toString(),
-                  style: const TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                    color: Color(0xFF2D3748),
-                  ),
-                ),
-                if (worker.area.isNotEmpty)
-                  Text(
-                    worker.area.toString(),
-                    style: const TextStyle(
-                      fontSize: 12,
-                      color: Color(0xFF718096),
-                    ),
-                  ),
-              ],
-            ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

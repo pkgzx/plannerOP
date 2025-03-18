@@ -57,12 +57,26 @@ class _ReportDataTableState extends State<ReportDataTable> {
         return false;
       }
 
-      // Filtrar por zona
-      if (widget.zone != null && data.zone != widget.zone.toString()) {
-        return false;
+      // Filtrar por zona - CORREGIDO PARA MANEJAR DIFERENTES TIPOS DE DATOS
+      if (widget.zone != null) {
+        // Convertir la zona de la asignación a int para una comparación consistente
+        int? assignmentZone;
+        if (data.zone != null) {
+          try {
+            // Intentar convertir la zona a int, ya que podría ser string
+            assignmentZone = int.tryParse(data.zone.toString());
+          } catch (e) {
+            assignmentZone = null;
+          }
+        }
+
+        // Si no se pudo convertir o es null, no coincide con el filtro
+        if (assignmentZone != widget.zone) {
+          return false;
+        }
       }
 
-      debugPrint('Zona: ${widget.zone} - ${data.zone}');
+      debugPrint('Zona}}: ${widget.zone} - ${data.zone}');
 
       // Filtrar por motonave
       if (widget.motorship != null && widget.motorship!.isNotEmpty) {
@@ -143,17 +157,19 @@ class _ReportDataTableState extends State<ReportDataTable> {
 
   // Método auxiliar para normalizar estados
   String _normalizeStatus(String status) {
+    debugPrint('Status: $status');
+
     switch (status.toUpperCase()) {
       case 'COMPLETED':
         return 'Completada';
       case 'INPROGRESS':
-        return 'En progreso';
+        return 'En curso';
       case 'PENDING':
         return 'Pendiente';
       case 'CANCELED':
         return 'Cancelada';
       default:
-        return status;
+        return "N/A";
     }
   }
 
@@ -307,7 +323,8 @@ class _ReportDataTableState extends State<ReportDataTable> {
               DataCell(const Text('Sin asignar')),
               DataCell(const Text('-')),
               DataCell(Text(assignment.area)),
-              DataCell(Text('${assignment.zone ?? 'N/A'}')),
+              DataCell(
+                  Text('${assignment.zone == 0 ? 'N/A' : assignment.zone}')),
               DataCell(Text(assignment.motorship ?? 'N/A')),
               DataCell(Text(assignment.task)),
               DataCell(assignment.endDate != null
@@ -343,7 +360,8 @@ class _ReportDataTableState extends State<ReportDataTable> {
                 DataCell(Text(workerName)),
                 DataCell(Text(workerDocument)),
                 DataCell(Text(assignment.area)),
-                DataCell(Text('${assignment.zone ?? 'N/A'}')),
+                DataCell(
+                    Text('${assignment.zone == 0 ? 'N/A' : assignment.zone}')),
                 DataCell(Text(assignment.motorship ?? 'N/A')),
                 DataCell(Text(assignment.task)),
                 DataCell(assignment.endDate != null
@@ -359,60 +377,6 @@ class _ReportDataTableState extends State<ReportDataTable> {
     }
 
     return rows;
-  }
-
-  // Nuevo método para mostrar todos los trabajadores
-  Widget _buildDetailedWorkersCell(List<Worker> workers) {
-    if (workers.isEmpty) {
-      return const Text('-');
-    }
-
-    // Creamos un widget que muestre todos los trabajadores, uno debajo del otro
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      mainAxisSize: MainAxisSize.min,
-      children: workers.map((worker) {
-        return Padding(
-          padding: const EdgeInsets.symmetric(vertical: 2.0),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                width: 8,
-                height: 8,
-                decoration: BoxDecoration(
-                  color: _getWorkerColor(worker.area),
-                  shape: BoxShape.circle,
-                ),
-              ),
-              const SizedBox(width: 4),
-              Text(
-                worker.name.toString(),
-                style: const TextStyle(fontSize: 12),
-              ),
-            ],
-          ),
-        );
-      }).toList(),
-    );
-  }
-
-  // Método para obtener un color según el área del trabajador
-  Color _getWorkerColor(String area) {
-    switch (area.toUpperCase()) {
-      case 'CAFE':
-        return const Color(0xFF805AD5);
-      case 'CARGA GENERAL':
-        return const Color(0xFF4299E1);
-      case 'CARGA REFRIGERADA':
-        return const Color(0xFF48BB78);
-      case 'CARGA PELIGROSA':
-        return const Color(0xFFED8936);
-      case 'OPERADORES MC':
-        return const Color(0xFF38B2AC);
-      default:
-        return const Color(0xFF718096);
-    }
   }
 
   DataColumn _buildDataColumn(String label, int columnIndex) {
@@ -432,15 +396,18 @@ class _ReportDataTableState extends State<ReportDataTable> {
 
   Widget _buildStatusWidget(String status) {
     Color color;
-    switch (status.toLowerCase()) {
-      case 'completada':
+    switch (status.toUpperCase()) {
+      case 'COMPLETED':
         color = const Color(0xFF38A169);
         break;
-      case 'en progreso':
+      case 'INPROGRESS':
         color = const Color(0xFF3182CE);
         break;
-      case 'pendiente':
+      case 'PENDING':
         color = const Color(0xFFDD6B20);
+        break;
+      case 'CANCELED':
+        color = const Color(0xFFE53E3E);
         break;
       default:
         color = const Color(0xFF718096);
@@ -454,7 +421,7 @@ class _ReportDataTableState extends State<ReportDataTable> {
         border: Border.all(color: color.withOpacity(0.2)),
       ),
       child: Text(
-        status,
+        _normalizeStatus(status),
         style: TextStyle(
           color: color,
           fontWeight: FontWeight.w500,

@@ -45,9 +45,13 @@ class _ServiceTrendChartState extends State<ServiceTrendChart> {
   @override
   void didUpdateWidget(ServiceTrendChart oldWidget) {
     super.didUpdateWidget(oldWidget);
+    // Update this to check ALL filter parameters
     if (oldWidget.startDate != widget.startDate ||
         oldWidget.endDate != widget.endDate ||
-        oldWidget.area != widget.area) {
+        oldWidget.area != widget.area ||
+        oldWidget.zone != widget.zone ||
+        oldWidget.motorship != widget.motorship ||
+        oldWidget.status != widget.status) {
       _loadData();
     }
   }
@@ -98,7 +102,7 @@ class _ServiceTrendChartState extends State<ServiceTrendChart> {
               normalizedStatus = 'Completada';
               break;
             case 'INPROGRESS':
-              normalizedStatus = 'En progreso';
+              normalizedStatus = 'En curso';
               break;
             case 'PENDING':
               normalizedStatus = 'Pendiente';
@@ -1136,7 +1140,7 @@ class _ServiceTrendChartState extends State<ServiceTrendChart> {
       case 'COMPLETED':
         return 'Completada';
       case 'INPROGRESS':
-        return 'En progreso';
+        return 'En curso';
       case 'PENDING':
         return 'Pendiente';
       case 'CANCELED':

@@ -773,13 +773,19 @@ class _WorkerEditDialogState extends State<WorkerEditDialog> {
 
     // Establecer fechas según sea primera o última
     if (isStartDate) {
+      // Para fecha de inicio de incapacidad mantener validaciones
       initialDate = _startDate ?? DateTime.now();
       firstDate = DateTime.now().subtract(const Duration(days: 30));
       lastDate = _endDate ?? DateTime.now().add(const Duration(days: 365));
-    } else {
-      // Si es fecha final, debe ser mayor o igual a la fecha inicial
+    } else if (_selectedStatus == WorkerStatus.incapacitated) {
+      // Para fecha fin de incapacidad mantener validaciones
       firstDate = _startDate ?? DateTime.now();
       initialDate = _endDate ?? firstDate;
+      lastDate = DateTime.now().add(const Duration(days: 365));
+    } else {
+      // Para fecha de retiro no aplicar validaciones
+      initialDate = _endDate ?? DateTime.now();
+      firstDate = DateTime(2000); // Permitir fechas muy anteriores
       lastDate = DateTime.now().add(const Duration(days: 365));
     }
 
@@ -808,8 +814,10 @@ class _WorkerEditDialogState extends State<WorkerEditDialog> {
         if (isStartDate) {
           _startDate = picked;
 
-          // Si la fecha inicial es mayor que la final, actualizar la final también
-          if (_endDate != null && picked.isAfter(_endDate!)) {
+          // Solo para incapacidad: Si la fecha inicial es mayor que la final, actualizar la final
+          if (_selectedStatus == WorkerStatus.incapacitated &&
+              _endDate != null &&
+              picked.isAfter(_endDate!)) {
             _endDate = picked.add(const Duration(days: 1));
           }
         } else {

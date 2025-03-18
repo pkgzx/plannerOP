@@ -97,7 +97,7 @@ class _ShipPersonnelChartState extends State<ShipPersonnelChart> {
               normalizedStatus = 'Completada';
               break;
             case 'INPROGRESS':
-              normalizedStatus = 'En progreso';
+              normalizedStatus = 'En curso';
               break;
             case 'PENDING':
               normalizedStatus = 'Pendiente';

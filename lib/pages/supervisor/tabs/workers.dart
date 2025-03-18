@@ -174,7 +174,7 @@ class _WorkersTabState extends State<WorkersTab> {
             Consumer<WorkersProvider>(
               builder: (context, workersProvider, _) {
                 return WorkerStatsCards(
-                  totalWorkers: workersProvider.totalWorkers,
+                  totalWorkers: workersProvider.totalWorkerWithoutRetired,
                   assignedWorkers: workersProvider.assignedWorkers,
                   currentFilter: _currentFilter,
                   disabledWorkers: workersProvider.disabledWorkers,
@@ -195,7 +195,10 @@ class _WorkersTabState extends State<WorkersTab> {
                   // Aplicar filtro de tipo de trabajador
                   switch (_currentFilter) {
                     case WorkerFilter.all:
-                      workers = workersProvider.workers.toList();
+                      workers = workersProvider.workers
+                          .where((worker) =>
+                              worker.status != WorkerStatus.deactivated)
+                          .toList();
                       break;
                     case WorkerFilter.available:
                       workers = workersProvider
@@ -212,6 +215,8 @@ class _WorkersTabState extends State<WorkersTab> {
                     case WorkerFilter.retired:
                       workers = workersProvider
                           .getWorkersByStatus(WorkerStatus.deactivated);
+                      workers.sort((a, b) =>
+                          b.deactivationDate!.compareTo(a.deactivationDate!));
                       break;
                     default:
                       workers = workersProvider.workers.toList();

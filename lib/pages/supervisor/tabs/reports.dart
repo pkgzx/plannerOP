@@ -5,6 +5,7 @@ import 'package:plannerop/core/model/assignment.dart';
 import 'package:plannerop/store/areas.dart';
 import 'package:plannerop/store/assignments.dart';
 import 'package:plannerop/utils/toast.dart';
+import 'package:plannerop/widgets/reports/charts/area_chart.dart';
 import 'package:plannerop/widgets/reports/report_filter.dart';
 import 'package:plannerop/widgets/reports/report_data_table.dart';
 import 'package:plannerop/widgets/reports/export_options.dart';
@@ -23,7 +24,7 @@ class ReportesTab extends StatefulWidget {
 
 class _ReportesTabState extends State<ReportesTab> {
   // Filtros actuales
-  String _selectedPeriod = "Semana";
+  String _selectedPeriod = "Hoy";
   String _selectedArea = "Todas";
   int? _selectedZone; // Filtro de zona
   String? _selectedMotorship; // Filtro de motonave
@@ -35,14 +36,14 @@ class _ReportesTabState extends State<ReportesTab> {
   bool _isExporting = false;
   bool _showCharts = true; // Estado para alternar entre gráficos y tabla
   String _selectedChart =
-      "Personal por Buque"; // Gráfico seleccionado por defecto
+      "Distribución por Áreas"; // Gráfico seleccionado por defecto
 
   // Opciones para los filtros
-  final List<String> _periods = ["Hoy", "Semana", "Mes", "Personalizado"];
+  final List<String> _periods = ["Hoy", "Mes", "Personalizado"];
 
   final List<String> _statuses = [
     "Completada",
-    "En progreso",
+    "En curso",
     "Pendiente",
     "Cancelada"
   ];
@@ -54,6 +55,10 @@ class _ReportesTabState extends State<ReportesTab> {
 
   // Opciones de gráficos
   final List<Map<String, dynamic>> _chartOptions = [
+    {
+      'title': 'Distribución por Áreas',
+      'icon': Icons.pie_chart,
+    },
     {
       'title': 'Personal por Buque',
       'icon': Icons.directions_boat_filled_outlined,
@@ -209,6 +214,7 @@ class _ReportesTabState extends State<ReportesTab> {
                 startDate: _startDate,
                 endDate: _endDate,
                 onApply: _applyFilter,
+                isChartsView: _showCharts,
               ),
 
             if (_isExporting)
@@ -380,6 +386,29 @@ class _ReportesTabState extends State<ReportesTab> {
             ),
           ),
         );
+      case 'Distribución por Áreas':
+        return Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Neumorphic(
+            style: NeumorphicStyle(
+              depth: 3,
+              intensity: 0.6,
+              boxShape: NeumorphicBoxShape.roundRect(BorderRadius.circular(16)),
+              color: Colors.white,
+            ),
+            child: Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: AreaDistributionChart(
+                startDate: _startDate,
+                endDate: _endDate,
+                area: _selectedArea,
+                zone: _selectedZone,
+                status: _selectedStatus,
+                motorship: _selectedMotorship,
+              ),
+            ),
+          ),
+        );
       case 'Distribución por Zonas':
         return Padding(
           padding: const EdgeInsets.all(16.0),
@@ -396,6 +425,9 @@ class _ReportesTabState extends State<ReportesTab> {
                 startDate: _startDate,
                 endDate: _endDate,
                 area: _selectedArea,
+                zone: _selectedZone,
+                motorship: _selectedMotorship,
+                status: _selectedStatus,
               ),
             ),
           ),
@@ -453,7 +485,7 @@ class _ReportesTabState extends State<ReportesTab> {
     String dateRange;
     if (_selectedPeriod == "Personalizado") {
       dateRange =
-          "${DateFormat('dd/MM/yyyy').format(_startDate)} - ${DateFormat('dd/MM/yyyy').format(_endDate)}";
+          "${DateFormat('dd/MM/yyyy').format(_startDate.add(Duration(days: 1)))} - ${DateFormat('dd/MM/yyyy').format(_endDate)}";
     } else {
       dateRange = _selectedPeriod;
     }
@@ -464,6 +496,7 @@ class _ReportesTabState extends State<ReportesTab> {
     activeFilters.add("Periodo: $dateRange");
     if (_selectedArea != 'Todas') activeFilters.add("Área: $_selectedArea");
     if (_selectedZone != null) activeFilters.add("Zona: $_selectedZone");
+    debugPrint('Zona++: $_selectedZone');
     if (_selectedMotorship != null)
       activeFilters.add("Motonave: $_selectedMotorship");
     if (_selectedStatus != null) activeFilters.add("Estado: $_selectedStatus");
