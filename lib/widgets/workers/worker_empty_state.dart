@@ -14,15 +14,11 @@ class WorkerEmptyState extends StatelessWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Image.asset(
-            'assets/images/empty_workers.png',
-            height: 150,
-            width: 150,
-            errorBuilder: (context, error, stackTrace) => const Icon(
-              Icons.person_search,
-              size: 100,
-              color: Color(0xFFCBD5E0),
-            ),
+          //icon
+          Icon(
+            searchQuery.isEmpty ? Icons.people : Icons.search,
+            size: 64,
+            color: const Color(0xFF4299E1),
           ),
           const SizedBox(height: 16),
           Text(

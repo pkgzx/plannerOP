@@ -167,6 +167,7 @@ class _ReportesTabState extends State<ReportesTab> {
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
+        automaticallyImplyLeading: false,
         elevation: 0,
         backgroundColor: const Color(0xFF4299E1),
         centerTitle: false,

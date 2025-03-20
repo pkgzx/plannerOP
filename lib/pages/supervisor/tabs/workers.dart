@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_neumorphic_plus/flutter_neumorphic.dart';
 import 'package:plannerop/core/model/user.dart';
+import 'package:plannerop/store/faults.dart';
 import 'package:plannerop/store/user.dart';
 import 'package:plannerop/store/workers.dart';
 import 'package:plannerop/utils/toast.dart';
@@ -92,6 +93,7 @@ class _WorkersTabState extends State<WorkersTab> {
   @override
   Widget build(BuildContext context) {
     User user = Provider.of<UserProvider>(context).user;
+    final faultsProvider = Provider.of<FaultsProvider>(context);
 
     return Scaffold(
       backgroundColor: Colors.white,
@@ -217,6 +219,10 @@ class _WorkersTabState extends State<WorkersTab> {
                           .getWorkersByStatus(WorkerStatus.deactivated);
                       workers.sort((a, b) =>
                           b.deactivationDate!.compareTo(a.deactivationDate!));
+                      break;
+                    case WorkerFilter.faults:
+                      workers =
+                          faultsProvider.getWorkersWithMostFaults(context);
                       break;
                     default:
                       workers = workersProvider.workers.toList();

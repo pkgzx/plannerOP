@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:plannerop/core/model/fault.dart';
 import 'package:plannerop/core/model/worker.dart';
 import 'package:plannerop/services/workers/workers.dart';
 import 'package:plannerop/dto/workers/fetchWorkers.dart';
+import 'package:plannerop/store/faults.dart';
+import 'package:provider/provider.dart';
 
 class WorkersProvider with ChangeNotifier {
   // Lista de trabajadores
@@ -56,13 +59,22 @@ class WorkersProvider with ChangeNotifier {
   int get availableWorkers =>
       _workers.where((w) => w.status == WorkerStatus.available).length;
 
+  Worker getWorkerById(int id) {
+    return _workers.firstWhere((w) => w.id == id);
+  }
+
+  // Registrar falta con descripción y actualizar el contador
   Future<bool> registerFault(
     Worker worker,
-    BuildContext context,
-  ) async {
+    BuildContext context, {
+    String? description,
+  }) async {
     try {
-      final success = await _workerService.registerFault(worker, context);
+      // Llamar al servicio para registrar la falta
+      final success = await _workerService.registerFault(worker, context,
+          description: description);
       if (success) {
+        // Actualizar el contador de faltas en la copia local del worker
         final index = _workers.indexWhere((w) => w.id == worker.id);
         if (index >= 0) {
           final updatedWorker = Worker(
@@ -78,10 +90,25 @@ class WorkersProvider with ChangeNotifier {
             incapacityStartDate: worker.incapacityStartDate,
             incapacityEndDate: worker.incapacityEndDate,
             failures: worker.failures + 1,
+            idArea: worker.idArea,
+            deactivationDate: worker.deactivationDate,
           );
           _workers[index] = updatedWorker;
           notifyListeners();
         }
+
+        // Además de actualizar el worker, crear un registro de falta para el FaultsProvider
+        if (description != null && description.isNotEmpty) {
+          final faultsProvider =
+              Provider.of<FaultsProvider>(context, listen: false);
+          faultsProvider.addFault(Fault(
+            description: description,
+            type: FaultType.INASSISTANCE,
+            id: 0, // El ID lo asignará la API
+            worker: worker,
+          ));
+        }
+
         return true;
       }
       return false;
@@ -91,14 +118,160 @@ class WorkersProvider with ChangeNotifier {
     }
   }
 
+  // Registrar abandono (solo registra el incidente, no incrementa el contador)
+  Future<bool> registerAbandonment(
+    Worker worker,
+    BuildContext context, {
+    String? description,
+  }) async {
+    try {
+      if (description == null || description.isEmpty) {
+        return false;
+      }
+
+      // Llamar al servicio para registrar el abandono
+      final success = await _workerService.registerAbandonment(worker, context,
+          description: description);
+
+      if (success) {
+        // Actualizar el contador de faltas en la copia local del worker
+        final index = _workers.indexWhere((w) => w.id == worker.id);
+        if (index >= 0) {
+          final updatedWorker = Worker(
+            id: worker.id,
+            name: worker.name,
+            area: worker.area,
+            phone: worker.phone,
+            document: worker.document,
+            status: worker.status,
+            startDate: worker.startDate,
+            endDate: worker.endDate,
+            code: worker.code,
+            incapacityStartDate: worker.incapacityStartDate,
+            incapacityEndDate: worker.incapacityEndDate,
+            failures: worker.failures + 1,
+            idArea: worker.idArea,
+            deactivationDate: worker.deactivationDate,
+          );
+          _workers[index] = updatedWorker;
+          notifyListeners();
+        }
+
+        // Además de actualizar el worker, crear un registro de falta para el FaultsProvider
+        if (description != null && description.isNotEmpty) {
+          final faultsProvider =
+              Provider.of<FaultsProvider>(context, listen: false);
+          faultsProvider.addFault(Fault(
+            description: description,
+            type: FaultType.INASSISTANCE,
+            id: 0, // El ID lo asignará la API
+            worker: worker,
+          ));
+        }
+
+        return true;
+      }
+      if (success) {
+        // Crear un registro de abandono en el FaultsProvider
+        final faultsProvider =
+            Provider.of<FaultsProvider>(context, listen: false);
+        faultsProvider.addFault(Fault(
+          description: description,
+          type: FaultType.ABANDONMENT,
+          id: 0, // El ID lo asignará la API
+          worker: worker,
+        ));
+
+        return true;
+      }
+      return false;
+    } catch (e) {
+      debugPrint('Error en registerAbandonment: $e');
+      return false;
+    }
+  }
+
+  // Registrar falta de respeto (solo registra el incidente, no incrementa el contador)
+  Future<bool> registerDisrespect(
+    Worker worker,
+    BuildContext context, {
+    String? description,
+  }) async {
+    try {
+      if (description == null || description.isEmpty) {
+        return false;
+      }
+
+      // Llamar al servicio para registrar la falta de respeto
+      final success = await _workerService.registerDisrespect(worker, context,
+          description: description);
+
+      if (success) {
+        // Actualizar el contador de faltas en la copia local del worker
+        final index = _workers.indexWhere((w) => w.id == worker.id);
+        if (index >= 0) {
+          final updatedWorker = Worker(
+            id: worker.id,
+            name: worker.name,
+            area: worker.area,
+            phone: worker.phone,
+            document: worker.document,
+            status: worker.status,
+            startDate: worker.startDate,
+            endDate: worker.endDate,
+            code: worker.code,
+            incapacityStartDate: worker.incapacityStartDate,
+            incapacityEndDate: worker.incapacityEndDate,
+            failures: worker.failures + 1,
+            idArea: worker.idArea,
+            deactivationDate: worker.deactivationDate,
+          );
+          _workers[index] = updatedWorker;
+          notifyListeners();
+        }
+
+        // Además de actualizar el worker, crear un registro de falta para el FaultsProvider
+        if (description != null && description.isNotEmpty) {
+          final faultsProvider =
+              Provider.of<FaultsProvider>(context, listen: false);
+          faultsProvider.addFault(Fault(
+            description: description,
+            type: FaultType.INASSISTANCE,
+            id: 0, // El ID lo asignará la API
+            worker: worker,
+          ));
+        }
+
+        return true;
+      }
+      if (success) {
+        // Crear un registro de falta de respeto en el FaultsProvider
+        final faultsProvider =
+            Provider.of<FaultsProvider>(context, listen: false);
+        faultsProvider.addFault(Fault(
+          description: description,
+          type: FaultType.IRRESPECTFUL,
+          id: 0, // El ID lo asignará la API
+          worker: worker,
+        ));
+
+        return true;
+      }
+      return false;
+    } catch (e) {
+      debugPrint('Error en registerDisrespect: $e');
+      return false;
+    }
+  }
+
   // Método modificado para cargar trabajadores solo la primera vez
   Future<void> fetchWorkersIfNeeded(BuildContext context) async {
-    // Si ya cargamos datos previamente, no hacemos nada
-    if (_hasLoadedInitialData) {
-      debugPrint(
-          'Omitiendo fetchWorkers: los datos ya fueron cargados anteriormente');
-      return;
-    }
+    // // Si ya cargamos datos previamente, no hacemos nada
+    // if (_hasLoadedInitialData) {
+    //   debugPrint(
+    //       'Omitiendo fetchWorkers: los datos ya fueron cargados anteriormente');
+    //   return;
+    // }
 
     _isLoading = true;
     _hasError = false;
@@ -212,18 +385,18 @@ class WorkersProvider with ChangeNotifier {
       DateTime endDate, BuildContext context) async {
     // Crear una copia del trabajador con los nuevos datos
     final updatedWorker = Worker(
-      id: worker.id,
-      name: worker.name,
-      area: worker.area,
-      phone: worker.phone,
-      document: worker.document,
-      status: WorkerStatus.incapacitated,
-      startDate: worker.startDate,
-      endDate: worker.endDate,
-      code: worker.code,
-      incapacityStartDate: startDate,
-      incapacityEndDate: endDate,
-    );
+        id: worker.id,
+        name: worker.name,
+        area: worker.area,
+        phone: worker.phone,
+        document: worker.document,
+        status: WorkerStatus.incapacitated,
+        startDate: worker.startDate,
+        endDate: worker.endDate,
+        code: worker.code,
+        incapacityStartDate: startDate,
+        incapacityEndDate: endDate,
+        failures: worker.failures);
 
     // Usar el método general
     return updateWorker(worker, updatedWorker, context);
@@ -234,17 +407,17 @@ class WorkersProvider with ChangeNotifier {
       Worker worker, DateTime retirementDate, BuildContext context) async {
     // Crear una copia del trabajador con los nuevos datos
     final updatedWorker = Worker(
-      id: worker.id,
-      name: worker.name,
-      area: worker.area,
-      phone: worker.phone,
-      document: worker.document,
-      status: WorkerStatus.deactivated,
-      startDate: worker.startDate,
-      endDate: worker.endDate,
-      code: worker.code,
-      deactivationDate: retirementDate,
-    );
+        id: worker.id,
+        name: worker.name,
+        area: worker.area,
+        phone: worker.phone,
+        document: worker.document,
+        status: WorkerStatus.deactivated,
+        startDate: worker.startDate,
+        endDate: worker.endDate,
+        code: worker.code,
+        deactivationDate: retirementDate,
+        failures: worker.failures);
 
     // Usar el método general
     return updateWorker(worker, updatedWorker, context);
@@ -259,18 +432,18 @@ class WorkersProvider with ChangeNotifier {
     final index = _workers.indexWhere((w) => w.name == worker.name);
     if (index >= 0) {
       final updatedWorker = Worker(
-        id: worker.id,
-        name: worker.name,
-        area: worker.area,
-        phone: worker.phone,
-        document: worker.document,
-        status: newStatus,
-        startDate: worker.startDate,
-        endDate: worker.endDate,
-        incapacityEndDate: worker.incapacityEndDate,
-        incapacityStartDate: worker.incapacityStartDate,
-        code: worker.code,
-      );
+          id: worker.id,
+          name: worker.name,
+          area: worker.area,
+          phone: worker.phone,
+          document: worker.document,
+          status: newStatus,
+          startDate: worker.startDate,
+          endDate: worker.endDate,
+          incapacityEndDate: worker.incapacityEndDate,
+          incapacityStartDate: worker.incapacityStartDate,
+          code: worker.code,
+          failures: worker.failures);
       _workers[index] = updatedWorker;
       notifyListeners();
     }
@@ -289,18 +462,18 @@ class WorkersProvider with ChangeNotifier {
     final index = _workers.indexWhere((w) => w.name == worker.name);
     if (index >= 0) {
       final updatedWorker = Worker(
-        id: worker.id,
-        name: worker.name,
-        area: worker.area,
-        phone: worker.phone,
-        document: worker.document,
-        status: WorkerStatus.assigned,
-        startDate: worker.startDate,
-        endDate: endDate,
-        code: worker.code,
-        incapacityEndDate: worker.incapacityEndDate,
-        incapacityStartDate: worker.incapacityStartDate,
-      );
+          id: worker.id,
+          name: worker.name,
+          area: worker.area,
+          phone: worker.phone,
+          document: worker.document,
+          status: WorkerStatus.assigned,
+          startDate: worker.startDate,
+          endDate: endDate,
+          code: worker.code,
+          incapacityEndDate: worker.incapacityEndDate,
+          incapacityStartDate: worker.incapacityStartDate,
+          failures: worker.failures);
       _workers[index] = updatedWorker;
       notifyListeners();
     }
@@ -312,18 +485,18 @@ class WorkersProvider with ChangeNotifier {
     final index = _workers.indexWhere((w) => w.name == worker.name);
     if (index >= 0) {
       final updatedWorker = Worker(
-        id: worker.id,
-        name: worker.name,
-        area: worker.area,
-        phone: worker.phone,
-        document: worker.document,
-        status: WorkerStatus.available,
-        startDate: worker.startDate,
-        endDate: null,
-        code: worker.code,
-        incapacityEndDate: worker.incapacityEndDate,
-        incapacityStartDate: worker.incapacityStartDate,
-      );
+          id: worker.id,
+          name: worker.name,
+          area: worker.area,
+          phone: worker.phone,
+          document: worker.document,
+          status: WorkerStatus.available,
+          startDate: worker.startDate,
+          endDate: null,
+          code: worker.code,
+          incapacityEndDate: worker.incapacityEndDate,
+          incapacityStartDate: worker.incapacityStartDate,
+          failures: worker.failures);
       _workers[index] = updatedWorker;
       notifyListeners();
     }
@@ -356,18 +529,18 @@ class WorkersProvider with ChangeNotifier {
         final index = _workers.indexWhere((w) => w.id == worker.id);
         if (index >= 0) {
           final updatedWorker = Worker(
-            id: worker.id,
-            name: worker.name,
-            area: worker.area,
-            phone: worker.phone,
-            document: worker.document,
-            status: WorkerStatus.assigned,
-            startDate: worker.startDate,
-            endDate: null,
-            code: worker.code,
-            incapacityEndDate: worker.incapacityEndDate,
-            incapacityStartDate: worker.incapacityStartDate,
-          );
+              id: worker.id,
+              name: worker.name,
+              area: worker.area,
+              phone: worker.phone,
+              document: worker.document,
+              status: WorkerStatus.assigned,
+              startDate: worker.startDate,
+              endDate: null,
+              code: worker.code,
+              incapacityEndDate: worker.incapacityEndDate,
+              incapacityStartDate: worker.incapacityStartDate,
+              failures: worker.failures);
           _workers[index] = updatedWorker;
           notifyListeners();
         }
@@ -392,18 +565,18 @@ class WorkersProvider with ChangeNotifier {
         final index = _workers.indexWhere((w) => w.id == worker.id);
         if (index >= 0) {
           final updatedWorker = Worker(
-            id: worker.id,
-            name: worker.name,
-            area: worker.area,
-            phone: worker.phone,
-            document: worker.document,
-            status: WorkerStatus.available,
-            startDate: worker.startDate,
-            endDate: null,
-            code: worker.code,
-            incapacityEndDate: worker.incapacityEndDate,
-            incapacityStartDate: worker.incapacityStartDate,
-          );
+              id: worker.id,
+              name: worker.name,
+              area: worker.area,
+              phone: worker.phone,
+              document: worker.document,
+              status: WorkerStatus.available,
+              startDate: worker.startDate,
+              endDate: null,
+              code: worker.code,
+              incapacityEndDate: worker.incapacityEndDate,
+              incapacityStartDate: worker.incapacityStartDate,
+              failures: worker.failures);
           _workers[index] = updatedWorker;
           notifyListeners();
         }

@@ -1,13 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:plannerop/core/model/worker.dart';
 
-enum WorkerFilter {
-  all,
-  available,
-  assigned,
-  disabled,
-  retired,
-}
+enum WorkerFilter { all, available, assigned, disabled, retired, faults }
 
 class WorkerStats extends StatelessWidget {
   final int totalWorkers;
@@ -83,7 +77,7 @@ class WorkerStats extends StatelessWidget {
             lightColor: const Color(0xFFE2E8F0),
             isSelected: currentFilter == WorkerFilter.retired,
             onTap: () => onFilterChanged(WorkerFilter.retired),
-          )
+          ),
         ],
       ),
     );

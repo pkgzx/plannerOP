@@ -3,6 +3,7 @@ import 'package:flutter_neumorphic_plus/flutter_neumorphic.dart';
 import 'package:plannerop/store/areas.dart';
 import 'package:plannerop/store/assignments.dart';
 import 'package:plannerop/store/clients.dart';
+import 'package:plannerop/store/faults.dart';
 import 'package:plannerop/store/task.dart';
 import 'package:plannerop/utils/toast.dart';
 import 'package:plannerop/widgets/quickActions.dart';
@@ -23,6 +24,7 @@ class _DashboardTabState extends State<DashboardTab> {
   bool _isLoadingTasks = false;
   bool _isLoadingClients = false;
   bool _isLoadingAssignments = false;
+  bool _isLoadingFaults = false;
 
   @override
   void initState() {
@@ -34,14 +36,50 @@ class _DashboardTabState extends State<DashboardTab> {
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       if (!isLoading) {
         isLoading = true;
-        await _checkAndLoadWorkersIfNeeded();
-        await _loadAreas();
-        await _loadTask();
-        await _loadClients();
-        await _loadAssignments();
-        isLoading = false;
+        await Future.wait([
+          _checkAndLoadWorkersIfNeeded(),
+          _loadAreas(),
+          _loadTask(),
+          _loadClients(),
+          _loadAssignments(),
+          _loadFaults(),
+        ]).catchError((error) {
+          debugPrint('Error durante la carga en paralelo: $error');
+          // Continuar aunque haya errores
+        });
       }
     });
+  }
+
+// Método para cargar faltas (similar a los otros métodos de carga)
+  Future<void> _loadFaults() async {
+    if (!mounted) return;
+
+    setState(() {
+      _isLoadingFaults = true; // Añade esta variable de estado
+    });
+
+    try {
+      final faultsProvider =
+          Provider.of<FaultsProvider>(context, listen: false);
+
+      // Solo cargar si no se han cargado antes
+      if (!faultsProvider.hasLoadedInitialData) {
+        await faultsProvider.fetchFaults(context);
+      }
+    } catch (e) {
+      debugPrint('Error al cargar faltas: $e');
+
+      if (mounted) {
+        showErrorToast(context, "Error al cargar faltas.");
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoadingFaults = false;
+        });
+      }
+    }
   }
 
   // Método para verificar si necesitamos cargar trabajadores
@@ -372,6 +410,11 @@ class _DashboardTabState extends State<DashboardTab> {
                                   _isLoadingAssignments
                               ? null
                               : () async {
+                                  setState(() {
+                                    _isLoadingWorkers = true;
+                                    _isLoadingAreas = true;
+                                    _isLoadingAssignments = true;
+                                  });
                                   // Al refrescar manualmente, forzamos la recarga de todo
                                   await _loadWorkers();
                                   await _loadAreas();
@@ -438,6 +481,10 @@ class _DashboardTabState extends State<DashboardTab> {
                           'Finalizadas',
                           Provider.of<AssignmentsProvider>(context)
                               .completedAssignments
+                              .where((a) =>
+                                  a.endDate?.month == DateTime.now().month &&
+                                  a.endDate?.day == DateTime.now().day &&
+                                  a.endDate?.year == DateTime.now().year)
                               .length
                               .toString()),
                     ],

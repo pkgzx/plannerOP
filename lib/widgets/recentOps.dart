@@ -284,12 +284,12 @@ class RecentOps extends StatelessWidget {
                             ),
                           ],
                         ),
-                        IconButton(
-                          icon: const Icon(Icons.close, color: Colors.black54),
-                          onPressed: () => Navigator.of(context).pop(),
-                          padding: EdgeInsets.zero,
-                          constraints: const BoxConstraints(),
-                        ),
+                        // IconButton(
+                        //   icon: const Icon(Icons.close, color: Colors.black54),
+                        //   onPressed: () => Navigator.of(context).pop(),
+                        //   padding: EdgeInsets.zero,
+                        //   constraints: const BoxConstraints(),
+                        // ),
                       ],
                     ),
                     const SizedBox(height: 12),
@@ -337,7 +337,9 @@ class RecentOps extends StatelessWidget {
                               _buildDetailRow(
                                 icon: Icons.grid_view_outlined,
                                 label: 'Zona',
-                                value: 'Zona ${assignment.zone}',
+                                value: assignment.zone == 0
+                                    ? 'N/A'
+                                    : 'Zona ${assignment.zone}',
                               ),
                               if (assignment.motorship != null &&
                                   assignment.motorship!.isNotEmpty) ...[

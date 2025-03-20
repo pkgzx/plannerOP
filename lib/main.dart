@@ -4,6 +4,7 @@ import 'package:plannerop/store/areas.dart';
 import 'package:plannerop/store/assignments.dart';
 import 'package:plannerop/store/auth.dart';
 import 'package:plannerop/store/clients.dart';
+import 'package:plannerop/store/faults.dart';
 import 'package:plannerop/store/task.dart';
 import 'package:plannerop/store/user.dart';
 import 'pages/login.dart';
@@ -26,6 +27,7 @@ Future<void> main() async {
         ChangeNotifierProvider(create: (context) => AreasProvider()),
         ChangeNotifierProvider(create: (context) => TasksProvider()),
         ChangeNotifierProvider(create: (context) => ClientsProvider()),
+        ChangeNotifierProvider(create: (context) => FaultsProvider()),
       ],
       child: const App(),
     ),

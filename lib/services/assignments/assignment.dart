@@ -336,10 +336,17 @@ class AssignmentService {
     }
   }
 
-// Añadir a la clase AssignmentService
+// Modifica el método fetchAssignmentsByStatus para manejar el contexto de forma segura
   Future<List<Assignment>> fetchAssignmentsByStatus(
       BuildContext context, List<String> statusList) async {
     try {
+      // Verificar si el contexto sigue montado antes de usarlo
+      if (!context.mounted) {
+        debugPrint(
+            'Context no está montado, abortando fetchAssignmentsByStatus');
+        return [];
+      }
+
       final token =
           Provider.of<AuthProvider>(context, listen: false).accessToken;
 
@@ -350,6 +357,13 @@ class AssignmentService {
 
       var response =
           await http.get(url, headers: {'Authorization': 'Bearer $token'});
+
+      // Verificar nuevamente si el contexto sigue montado después de la operación asíncrona
+      if (!context.mounted) {
+        debugPrint(
+            'Context ya no está montado después de la llamada HTTP, abortando');
+        return [];
+      }
 
       final workersProvider =
           Provider.of<WorkersProvider>(context, listen: false);
@@ -366,7 +380,12 @@ class AssignmentService {
           for (var worker in mapWorkers) {
             try {
               var workerId = worker['id_worker'];
+              if (workers.length == 0) {
+                return [];
+              }
+
               var workerObj = workers.firstWhere((w) => w.id == workerId);
+
               workersAssignment.add(workerObj);
             } catch (e) {
               debugPrint('Trabajador no encontrado: ${worker['id_worker']}');

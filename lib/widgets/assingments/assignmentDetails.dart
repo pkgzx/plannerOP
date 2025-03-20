@@ -102,7 +102,7 @@ class AssignmentDetailsBottomSheet extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   buildDetailsSection(
-                    title: 'Detalles de la asignación',
+                    title: 'Detalles de la operación',
                     children: [
                       buildDetailRow('Fecha',
                           DateFormat('dd/MM/yyyy').format(assignment.date)),
@@ -117,7 +117,8 @@ class AssignmentDetailsBottomSheet extends StatelessWidget {
                             'Fecha de finalización',
                             DateFormat('dd/MM/yyyy')
                                 .format(assignment.endDate!)),
-                      buildDetailRow('Zona', 'Zona ${assignment.zone}'),
+                      buildDetailRow('Zona',
+                          ' ${assignment.zone == 0 ? 'N/A' : 'Zona ' + assignment.zone.toString()}'),
                       if (assignment.motorship != null &&
                           assignment.motorship!.isNotEmpty)
                         buildDetailRow('Motonave', assignment.motorship!),

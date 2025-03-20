@@ -356,10 +356,10 @@ class _ActiveAssignmentsViewState extends State<ActiveAssignmentsView> {
                                 overflow: TextOverflow.ellipsis,
                               ),
                             ),
-                            IconButton(
-                              icon: const Icon(Icons.close),
-                              onPressed: () => Navigator.pop(context),
-                            ),
+                            // IconButton(
+                            //   icon: const Icon(Icons.close),
+                            //   onPressed: () => Navigator.pop(context),
+                            // ),
                           ],
                         ),
 
@@ -397,7 +397,7 @@ class _ActiveAssignmentsViewState extends State<ActiveAssignmentsView> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           _buildDetailsSection(
-                            title: 'Detalles de la asignación',
+                            title: 'Detalles de la operación',
                             children: [
                               _buildDetailRow(
                                   'Fecha',
@@ -413,8 +413,8 @@ class _ActiveAssignmentsViewState extends State<ActiveAssignmentsView> {
                                     'Fecha de finalización',
                                     DateFormat('dd/MM/yyyy')
                                         .format(assignment.endDate!)),
-                              _buildDetailRow(
-                                  'Zona', 'Zona ${assignment.zone}'),
+                              _buildDetailRow('Zona',
+                                  ' ${assignment.zone == 0 ? 'N/A' : 'Zona ' + assignment.zone.toString()}'),
                               _buildDetailRow(
                                   'Motonave', assignment.motorship ?? ''),
                             ],

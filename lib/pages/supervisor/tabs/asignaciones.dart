@@ -54,6 +54,7 @@ class _AsignacionesTabState extends State<AsignacionesTab>
     return Scaffold(
       backgroundColor: Colors.white, // Cambio a fondo blanco para consistencia
       appBar: AppBar(
+        automaticallyImplyLeading: false,
         elevation: 0,
         backgroundColor:
             const Color(0xFF4299E1), // Cambio a azul como en otros componentes
@@ -84,7 +85,7 @@ class _AsignacionesTabState extends State<AsignacionesTab>
                 style: TextStyle(
                   color: Colors.white, // Texto blanco
                   fontWeight: FontWeight.bold,
-                  fontSize: 20,
+                  fontSize: 25,
                 ),
               ),
         actions: [

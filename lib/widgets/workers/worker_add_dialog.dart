@@ -503,19 +503,20 @@ class _WorkerAddDialogState extends State<WorkerAddDialog> {
                           if (_validateForm() && selectedArea != null) {
                             debugPrint('Selected area: $selectedArea');
                             final newWorker = Worker(
-                              id: 0,
-                              name: nameController.text.trim(),
-                              area: areas
-                                  .firstWhere((area) => area.id == selectedArea)
-                                  .name,
-                              idArea: selectedArea ?? 0,
-                              phone: phoneController.text.trim(),
-                              document: documentController.text.trim(),
-                              status: WorkerStatus.available,
-                              startDate: DateTime.now(),
-                              endDate: null,
-                              code: codeController.text.trim(),
-                            );
+                                id: 0,
+                                name: nameController.text.trim(),
+                                area: areas
+                                    .firstWhere(
+                                        (area) => area.id == selectedArea)
+                                    .name,
+                                idArea: selectedArea ?? 0,
+                                phone: phoneController.text.trim(),
+                                document: documentController.text.trim(),
+                                status: WorkerStatus.available,
+                                startDate: DateTime.now(),
+                                endDate: null,
+                                code: codeController.text.trim(),
+                                failures: 0);
 
                             widget.onWorkerAdded(newWorker);
                             Navigator.pop(context);

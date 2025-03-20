@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:plannerop/pages/supervisor/tabs/worker_filter.dart';
+import 'package:plannerop/store/faults.dart';
+import 'package:provider/provider.dart';
 
 class WorkerStatsCards extends StatelessWidget {
   final int totalWorkers;
@@ -23,6 +25,8 @@ class WorkerStatsCards extends StatelessWidget {
   Widget build(BuildContext context) {
     final availableWorkers =
         totalWorkers - assignedWorkers - disabledWorkers - retiredWorkers;
+
+    final faultsProvider = Provider.of<FaultsProvider>(context);
 
     return Column(
       children: [
@@ -73,6 +77,15 @@ class WorkerStatsCards extends StatelessWidget {
                   isSelected: currentFilter == WorkerFilter.retired,
                   onTap: () => onFilterChanged(WorkerFilter.retired),
                 ),
+                _buildStatCard(
+                  title: 'Novedades',
+                  value:
+                      '${faultsProvider.getWorkersWithMostFaults(context).length}',
+                  icon: Icons.warning_amber_rounded,
+                  color: const Color(0xFFF56565),
+                  isSelected: currentFilter == WorkerFilter.faults,
+                  onTap: () => onFilterChanged(WorkerFilter.faults),
+                ),
               ],
             ),
           ),
@@ -89,50 +102,55 @@ class WorkerStatsCards extends StatelessWidget {
     required bool isSelected,
     required VoidCallback onTap,
   }) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 6),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: onTap,
-          borderRadius: BorderRadius.circular(12),
-          child: Container(
-            width: 120,
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
-            decoration: BoxDecoration(
-              color: isSelected ? color.withOpacity(0.15) : Colors.white,
-              borderRadius: BorderRadius.circular(12),
-              border: isSelected
-                  ? Border.all(color: color, width: 2)
-                  : Border.all(color: Colors.grey.shade200),
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(icon, color: color, size: 24),
-                const SizedBox(height: 8),
-                Text(
-                  value,
-                  style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                    color: color,
+    try {
+      return Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 6),
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: onTap,
+            borderRadius: BorderRadius.circular(12),
+            child: Container(
+              width: 120,
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
+              decoration: BoxDecoration(
+                color: isSelected ? color.withOpacity(0.15) : Colors.white,
+                borderRadius: BorderRadius.circular(12),
+                border: isSelected
+                    ? Border.all(color: color, width: 2)
+                    : Border.all(color: Colors.grey.shade200),
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(icon, color: color, size: 24),
+                  const SizedBox(height: 8),
+                  Text(
+                    value,
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: color,
+                    ),
                   ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  title,
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: Colors.grey.shade700,
+                  const SizedBox(height: 4),
+                  Text(
+                    title,
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Colors.grey.shade700,
+                    ),
+                    textAlign: TextAlign.center,
                   ),
-                  textAlign: TextAlign.center,
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ),
-      ),
-    );
+      );
+    } catch (e) {
+      debugPrint('Erorsisimo: $e');
+      return Container();
+    }
   }
 }
