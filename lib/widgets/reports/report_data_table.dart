@@ -46,6 +46,8 @@ class _ReportDataTableState extends State<ReportDataTable> {
 
   List<Assignment> _getFilteredData(List<Assignment> allAssignments) {
     final filtered = allAssignments.where((data) {
+      // Primero verificamos si hay datos en la consola para depuración
+
       // Filtrar por área
       if (widget.area != 'Todas' && data.area != widget.area) {
         return false;
@@ -75,8 +77,6 @@ class _ReportDataTableState extends State<ReportDataTable> {
           return false;
         }
       }
-
-      debugPrint('Zona}}: ${widget.zone} - ${data.zone}');
 
       // Filtrar por motonave
       if (widget.motorship != null && widget.motorship!.isNotEmpty) {
@@ -157,8 +157,6 @@ class _ReportDataTableState extends State<ReportDataTable> {
 
   // Método auxiliar para normalizar estados
   String _normalizeStatus(String status) {
-    debugPrint('Status: $status');
-
     switch (status.toUpperCase()) {
       case 'COMPLETED':
         return 'Completada';
@@ -341,14 +339,8 @@ class _ReportDataTableState extends State<ReportDataTable> {
           String workerName = '';
           String workerDocument = '';
 
-          // Obtener nombre y documento según el tipo de datos
-          if (worker is Map<String, dynamic>) {
-            workerName = worker.name ?? '';
-            workerDocument = worker.document ?? '';
-          } else if (worker is Worker) {
-            workerName = worker.name;
-            workerDocument = worker.document;
-          }
+          workerName = worker.name;
+          workerDocument = worker.document;
 
           rows.add(
             DataRow(

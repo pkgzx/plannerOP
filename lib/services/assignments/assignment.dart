@@ -32,6 +32,7 @@ class AssignmentService {
         "id_task": assignment.taskId,
         "id_client": assignment.clientId,
         "workerIds": assignment.workers.map((worker) => worker.id).toList(),
+        'inChargedIds': assignment.inChagers,
       };
 
       if (assignment.endDate != null) {
@@ -100,29 +101,38 @@ class AssignmentService {
 
           for (var worker in mapWorkers) {
             var workerId = worker['id_worker'];
-            var workerObj = workers.firstWhere((w) => w.id == workerId);
+            var workerObj = workers.firstWhere((w) => w.id == workerId,
+                orElse: () => Worker(
+                    name: "",
+                    area: "",
+                    phone: "",
+                    document: "",
+                    status: WorkerStatus.available,
+                    startDate: DateTime.now(),
+                    code: "",
+                    id: 0));
             workersAssignment.add(workerObj);
           }
 
           var assignmentObj = Assignment(
-            id: assignment['id'],
-            workers: workersAssignment,
-            area: assignment['jobArea']['name'],
-            task: assignment['task']['name'],
-            date: DateTime.parse(assignment['dateStart']),
-            time: assignment['timeStrat'],
-            status: assignment['status'],
-            endTime: assignment['timeEnd'],
-            endDate: assignment['dateEnd'] != null
-                ? DateTime.parse(assignment['dateEnd'])
-                : null,
-            zone: assignment['zone'],
-            motorship: assignment['motorShip'],
-            userId: assignment['id_user'],
-            areaId: assignment['jobArea']['id'],
-            taskId: assignment['task']['id'],
-            clientId: assignment['id_client'],
-          );
+              id: assignment['id'],
+              workers: workersAssignment,
+              area: assignment['jobArea']['name'],
+              task: assignment['task']['name'],
+              date: DateTime.parse(assignment['dateStart']),
+              time: assignment['timeStrat'],
+              status: assignment['status'],
+              endTime: assignment['timeEnd'],
+              endDate: assignment['dateEnd'] != null
+                  ? DateTime.parse(assignment['dateEnd'])
+                  : null,
+              zone: assignment['zone'],
+              motorship: assignment['motorShip'],
+              userId: assignment['id_user'],
+              areaId: assignment['jobArea']['id'],
+              taskId: assignment['task']['id'],
+              clientId: assignment['id_client'],
+              inChagers: assignment['inChargedIds'] ?? []);
 
           debugPrint('Asignación creada: $assignmentObj');
 
@@ -384,7 +394,16 @@ class AssignmentService {
                 return [];
               }
 
-              var workerObj = workers.firstWhere((w) => w.id == workerId);
+              var workerObj = workers.firstWhere((w) => w.id == workerId,
+                  orElse: () => Worker(
+                      name: "",
+                      area: "",
+                      phone: "",
+                      document: "",
+                      status: WorkerStatus.available,
+                      startDate: DateTime.now(),
+                      code: "",
+                      id: 0));
 
               workersAssignment.add(workerObj);
             } catch (e) {
@@ -393,25 +412,35 @@ class AssignmentService {
             }
           }
 
+          List<int> inChargers = [];
+
+          if (assignment['inChargeOperation'].length == 0) {
+            inChargers = [];
+          } else {
+            inChargers = List<int>.from(assignment['inChargeOperation'].map(
+                (item) =>
+                    item is int ? item : int.tryParse(item.toString()) ?? 0));
+          }
+
           var assignmentObj = Assignment(
-            id: assignment['id'],
-            workers: workersAssignment,
-            area: assignment['jobArea']['name'],
-            task: assignment['task']['name'],
-            date: DateTime.parse(assignment['dateStart']),
-            time: assignment['timeStrat'],
-            status: assignment['status'],
-            endTime: assignment['timeEnd'],
-            endDate: assignment['dateEnd'] != null
-                ? DateTime.parse(assignment['dateEnd'])
-                : null,
-            zone: assignment['zone'],
-            motorship: assignment['motorShip'],
-            userId: assignment['id_user'],
-            areaId: assignment['jobArea']['id'],
-            taskId: assignment['task']['id'],
-            clientId: assignment['id_client'],
-          );
+              id: assignment['id'],
+              workers: workersAssignment,
+              area: assignment['jobArea']['name'],
+              task: assignment['task']['name'],
+              date: DateTime.parse(assignment['dateStart']),
+              time: assignment['timeStrat'],
+              status: assignment['status'],
+              endTime: assignment['timeEnd'],
+              endDate: assignment['dateEnd'] != null
+                  ? DateTime.parse(assignment['dateEnd'])
+                  : null,
+              zone: assignment['zone'],
+              motorship: assignment['motorShip'],
+              userId: assignment['id_user'],
+              areaId: assignment['jobArea']['id'],
+              taskId: assignment['task']['id'],
+              clientId: assignment['id_client'],
+              inChagers: inChargers);
 
           assignments.add(assignmentObj);
         }

@@ -86,7 +86,7 @@ class WorkerAssignmentsSection extends StatelessWidget {
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Text(
-                  assignment.status,
+                  getStatusFormatted(assignment.status),
                   style: TextStyle(
                     fontSize: 12,
                     color: _getStatusColor(assignment.status),
@@ -136,17 +136,32 @@ class WorkerAssignmentsSection extends StatelessWidget {
   }
 
   Color _getStatusColor(String status) {
-    switch (status.toLowerCase()) {
-      case 'pendiente':
+    switch (status.toUpperCase()) {
+      case 'PENDING':
         return Colors.orange;
-      case 'programada':
+      case 'INPROGRESS':
         return Colors.blue;
-      case 'completada':
+      case 'COMPLETED':
         return Colors.green;
-      case 'cancelada':
+      case 'CANCELLED':
         return Colors.red;
       default:
         return Colors.grey;
     }
+  }
+}
+
+String getStatusFormatted(String status) {
+  switch (status.toUpperCase()) {
+    case 'PENDING':
+      return 'Pendiente';
+    case 'INPROGRESS':
+      return 'En Curso';
+    case 'COMPLETED':
+      return 'Completada';
+    case 'CANCELLED':
+      return 'Cancelada';
+    default:
+      return 'Desconocido';
   }
 }

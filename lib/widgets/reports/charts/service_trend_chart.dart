@@ -33,6 +33,7 @@ class ServiceTrendChart extends StatefulWidget {
 class _ServiceTrendChartState extends State<ServiceTrendChart> {
   late List<ServiceWorkerData> _servicesData;
   int _selectedIndex = -1;
+  int _selectedServiceIndex = -1;
   bool _isLoading = true;
   String? _errorMessage;
 
@@ -273,121 +274,712 @@ class _ServiceTrendChartState extends State<ServiceTrendChart> {
   }
 
   Widget _buildChart() {
-    // Determinar si necesitamos una visualización horizontal o vertical
     return Column(
       children: [
-        // Nueva sección: Leyenda de servicios en la parte superior
-        Container(
-          margin: const EdgeInsets.only(bottom: 16),
-          padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 8),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(12),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.05),
-                blurRadius: 8,
-                offset: const Offset(0, 2),
-              ),
-            ],
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+        // Selector de servicios con filtro de búsqueda integrado
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          child: _buildServiceSelector(),
+        ),
+
+        // Leyenda para indicar escala de tamaños
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.end,
             children: [
-              Wrap(
-                spacing: 12,
-                runSpacing: 8,
-                children: _servicesData.map((data) {
-                  final isSelected =
-                      _servicesData.indexOf(data) == _selectedIndex;
-
-                  // Elegir color basado en índice para diferenciar servicios
-                  final Color serviceColor =
-                      _getColorForService(_servicesData.indexOf(data));
-
-                  return GestureDetector(
-                    onTap: () {
-                      setState(() {
-                        _selectedIndex =
-                            isSelected ? -1 : _servicesData.indexOf(data);
-                      });
-                    },
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 10, vertical: 6),
-                      decoration: BoxDecoration(
-                        color: isSelected
-                            ? serviceColor.withOpacity(0.1)
-                            : Colors.transparent,
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(
-                          color: serviceColor,
-                          width: isSelected ? 2 : 1,
-                        ),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Container(
-                            width: 12,
-                            height: 12,
-                            decoration: BoxDecoration(
-                              color: serviceColor,
-                              shape: BoxShape.circle,
-                            ),
-                          ),
-                          const SizedBox(width: 6),
-                          Text(
-                            data.serviceName.length > 20
-                                ? '${data.serviceName.substring(0, 18)}...'
-                                : data.serviceName,
-                            style: TextStyle(
-                              fontSize: 12,
-                              fontWeight: isSelected
-                                  ? FontWeight.bold
-                                  : FontWeight.normal,
-                              color:
-                                  isSelected ? serviceColor : Colors.grey[800],
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 6, vertical: 2),
-                            decoration: BoxDecoration(
-                              color: serviceColor.withOpacity(0.2),
-                              borderRadius: BorderRadius.circular(10),
-                            ),
-                            child: Text(
-                              '${data.workerCount}',
-                              style: TextStyle(
-                                fontSize: 11,
-                                fontWeight: FontWeight.bold,
-                                color: serviceColor,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  );
-                }).toList(),
+              const Text(
+                'Tamaño: cantidad de trabajadores',
+                style: TextStyle(
+                  fontSize: 12,
+                  color: Colors.grey,
+                  fontStyle: FontStyle.italic,
+                ),
+              ),
+              const SizedBox(width: 8),
+              Container(
+                width: 8,
+                height: 8,
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade300,
+                  shape: BoxShape.circle,
+                ),
+              ),
+              const Text(' < ',
+                  style: TextStyle(fontSize: 12, color: Colors.grey)),
+              Container(
+                width: 16,
+                height: 16,
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade300,
+                  shape: BoxShape.circle,
+                ),
+              ),
+              const Text(' < ',
+                  style: TextStyle(fontSize: 12, color: Colors.grey)),
+              Container(
+                width: 24,
+                height: 24,
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade300,
+                  shape: BoxShape.circle,
+                ),
               ),
             ],
           ),
         ),
 
-        // Gráfico existente
+        // Gráfico de burbujas - Ocupa el resto del espacio disponible
         Expanded(
-          child: _servicesData.length <= 5
-              ? _buildHorizontalBarChart()
-              : _buildVerticalBarChart(),
+          child: _buildBubbleChart(),
         ),
       ],
     );
   }
 
-  // Añadir método para obtener color por servicio
+  Widget _buildServiceSelector() {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.grey.shade300),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 6,
+            offset: const Offset(0, 3),
+          ),
+        ],
+      ),
+      child: DropdownButtonHideUnderline(
+        child: ButtonTheme(
+          alignedDropdown: true,
+          child: DropdownButton<int>(
+            isExpanded: true,
+            value: _selectedServiceIndex,
+            icon: const Icon(Icons.keyboard_arrow_down),
+            hint: const Text('Seleccionar servicio...'),
+            iconSize: 24,
+            elevation: 16,
+            style: const TextStyle(
+              color: Color(0xFF2D3748),
+              fontWeight: FontWeight.w500,
+              fontSize: 15,
+            ),
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            borderRadius: BorderRadius.circular(12),
+            items: _buildServiceDropdownItems(),
+            onChanged: (int? index) {
+              setState(() {
+                _selectedServiceIndex = index ?? -1;
+                // Actualizar índice para detalle de servicio
+                if (index != null &&
+                    index >= 0 &&
+                    index < _servicesData.length) {
+                  _selectedIndex = index;
+                } else {
+                  _selectedIndex = -1; // Mostrar todos
+                }
+              });
+            },
+          ),
+        ),
+      ),
+    );
+  }
+
+// Método para construir los elementos del dropdown
+  List<DropdownMenuItem<int>> _buildServiceDropdownItems() {
+    // Empezar con la opción "Todos los servicios"
+    final items = <DropdownMenuItem<int>>[
+      const DropdownMenuItem<int>(
+        value: -1,
+        child: Row(
+          children: [
+            Icon(Icons.view_module_outlined,
+                size: 18, color: Color(0xFF4299E1)),
+            SizedBox(width: 8),
+            Text(
+              'Todos los servicios',
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                color: Color(0xFF4299E1),
+              ),
+            ),
+          ],
+        ),
+      ),
+      // Separador
+      DropdownMenuItem<int>(
+        enabled: false,
+        child: Divider(color: Colors.grey.shade300, height: 1),
+      ),
+    ];
+
+    // Si hay datos, agregar cada servicio
+    if (_servicesData.isNotEmpty) {
+      for (int i = 0; i < _servicesData.length; i++) {
+        final data = _servicesData[i];
+        final color = _getColorForService(i);
+
+        items.add(
+          DropdownMenuItem<int>(
+            value: i,
+            child: Row(
+              children: [
+                // Indicador circular con color
+                Container(
+                  width: 12,
+                  height: 12,
+                  decoration: BoxDecoration(
+                    color: color.withOpacity(0.7),
+                    shape: BoxShape.circle,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                // Nombre del servicio y contador
+                Expanded(
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Flexible(
+                        child: Text(
+                          data.serviceName,
+                          style: const TextStyle(
+                            fontSize: 14,
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 6, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: color.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Text(
+                          '${data.workerCount}',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                            color: color,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      }
+    }
+
+    return items;
+  }
+
+// Modificar el método _buildBubbleChart para usar el índice de servicio seleccionado
+  // Reemplazar el método _buildBubbleChart con este nuevo método de gráfico de barras
+  Widget _buildBubbleChart() {
+    // Filtrar servicios según la selección del dropdown
+    List<ServiceWorkerData> filteredServices;
+
+    if (_selectedServiceIndex == -1) {
+      // Si está seleccionado "Todos los servicios", mostrar todos
+      filteredServices = _servicesData;
+    } else if (_selectedServiceIndex >= 0 &&
+        _selectedServiceIndex < _servicesData.length) {
+      // Si hay un servicio específico seleccionado, mostrar solo ese
+      filteredServices = [_servicesData[_selectedServiceIndex]];
+    } else {
+      // Fallback a todos los servicios si hay algún error
+      filteredServices = _servicesData;
+    }
+
+    if (filteredServices.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.business_center_outlined,
+                size: 48, color: Colors.grey[400]),
+            const SizedBox(height: 16),
+            Text(
+              'No hay servicios disponibles para mostrar',
+              style: TextStyle(color: Colors.grey[600]),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+      );
+    }
+
+    // Calcular el valor máximo para escalar las barras correctamente
+    final maxValue = math.max(
+        1,
+        filteredServices.fold<int>(
+            0, (max, data) => math.max(max, data.workerCount)));
+
+    return LayoutBuilder(builder: (context, constraints) {
+      final double availableWidth = constraints.maxWidth;
+
+      // Calcular el valor máximo para escalar las barras correctamente
+      final maxValue = math.max(
+          1,
+          filteredServices.fold<int>(
+              0, (max, data) => math.max(max, data.workerCount)));
+
+      return Stack(
+        children: [
+          // El gráfico principal en un contenedor de desplazamiento
+          _buildHorizontalBarChart(filteredServices, maxValue),
+
+          // Popup de detalles (visible solo cuando hay selección)
+          if (_selectedIndex != -1 && _selectedIndex < _servicesData.length)
+            Positioned(
+              top: 10,
+              left: 16,
+              right: 16,
+              child: _buildServiceDetailPopup(_servicesData[_selectedIndex]),
+            ),
+        ],
+      );
+    });
+  }
+
+  // Nuevo método para construir el gráfico de barras horizontales
+  Widget _buildHorizontalBarChart(
+      List<ServiceWorkerData> services, int maxValue) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(8),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 6,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      margin: const EdgeInsets.symmetric(horizontal: 8),
+      padding: EdgeInsets.only(
+        // Añadir espacio en la parte superior si hay un popup visible
+        top: _selectedIndex != -1 ? 160 : 0,
+      ),
+      child: SingleChildScrollView(
+        physics: const BouncingScrollPhysics(),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 8),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: List.generate(services.length, (index) {
+              final data = services[index];
+              final originalIndex = _servicesData.indexOf(data);
+              final isSelected = originalIndex == _selectedIndex;
+              final serviceColor = _getColorForService(originalIndex);
+
+              // Calcular el ancho de la barra según el valor
+              final double barWidthPercentage = data.workerCount / maxValue;
+
+              return GestureDetector(
+                onTap: () {
+                  setState(() {
+                    _selectedIndex = isSelected ? -1 : originalIndex;
+                  });
+                },
+                child: Container(
+                  margin: const EdgeInsets.only(bottom: 16),
+                  decoration: BoxDecoration(
+                    color:
+                        isSelected ? Colors.grey.shade50 : Colors.transparent,
+                    borderRadius: BorderRadius.circular(8),
+                    border: isSelected
+                        ? Border.all(color: serviceColor.withOpacity(0.3))
+                        : null,
+                  ),
+                  padding: const EdgeInsets.all(12),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Nombre del servicio y contador
+                      Row(
+                        children: [
+                          Container(
+                            width: 4,
+                            height: 16,
+                            decoration: BoxDecoration(
+                              color: serviceColor,
+                              borderRadius: BorderRadius.circular(2),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              data.serviceName,
+                              style: TextStyle(
+                                fontWeight: isSelected
+                                    ? FontWeight.bold
+                                    : FontWeight.w500,
+                                fontSize: 14,
+                                color: isSelected
+                                    ? serviceColor
+                                    : Colors.grey[800],
+                              ),
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 8, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: serviceColor.withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(16),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  Icons.person,
+                                  size: 14,
+                                  color: serviceColor,
+                                ),
+                                const SizedBox(width: 4),
+                                Text(
+                                  '${data.workerCount}',
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    color: serviceColor,
+                                    fontSize: 13,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+
+                      const SizedBox(height: 8),
+
+                      // Barra animada
+                      LayoutBuilder(builder: (context, constraints) {
+                        final maxBarWidth = constraints.maxWidth;
+                        return Stack(
+                          children: [
+                            // Barra de fondo
+                            Container(
+                              height: 24,
+                              width: maxBarWidth,
+                              decoration: BoxDecoration(
+                                color: Colors.grey.shade100,
+                                borderRadius: BorderRadius.circular(4),
+                              ),
+                            ),
+
+                            // Barra de valor con animación
+                            AnimatedContainer(
+                              duration: const Duration(milliseconds: 800),
+                              curve: Curves.easeOutCubic,
+                              height: 24,
+                              width: maxBarWidth * barWidthPercentage,
+                              decoration: BoxDecoration(
+                                color: serviceColor.withOpacity(0.7),
+                                borderRadius: BorderRadius.circular(4),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: serviceColor.withOpacity(0.3),
+                                    blurRadius: 4,
+                                    offset: const Offset(0, 2),
+                                  ),
+                                ],
+                              ),
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.end,
+                                children: [
+                                  if (maxBarWidth * barWidthPercentage > 50)
+                                    Padding(
+                                      padding: const EdgeInsets.only(right: 8),
+                                      child: Text(
+                                        '${data.workerCount}',
+                                        style: const TextStyle(
+                                          color: Colors.white,
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 12,
+                                        ),
+                                      ),
+                                    ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        );
+                      }),
+
+                      // Mini información (visible si está seleccionado)
+                      if (isSelected)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 8),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.end,
+                            children: [
+                              Text(
+                                'Operaciones: ${data.assignments}',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: Colors.grey[600],
+                                  fontStyle: FontStyle.italic,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+              );
+            }),
+          ),
+        ),
+      ),
+    );
+  }
+
+// Reemplaza el método _buildServiceDetailPopup con esta versión mejorada
+  Widget _buildServiceDetailPopup(ServiceWorkerData data) {
+    final Color serviceColor = _getColorForService(_selectedIndex);
+
+    return Card(
+      elevation: 10,
+      margin: EdgeInsets.zero, // Eliminar márgenes internos de la Card
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: BorderSide(color: serviceColor, width: 2),
+      ),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 300),
+        height: 200, // Reducir la altura para hacerla más compacta
+        width: double.infinity, // Asegurar que ocupe todo el ancho disponible
+        padding: const EdgeInsets.all(12), // Reducir el padding
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Icono del servicio
+                Container(
+                  padding: const EdgeInsets.all(8), // Reducir tamaño
+                  decoration: BoxDecoration(
+                    color: serviceColor.withOpacity(0.2),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    Icons.business_center_rounded,
+                    color: serviceColor,
+                    size: 16, // Reducir tamaño
+                  ),
+                ),
+                const SizedBox(width: 8), // Reducir spacing
+                // Información del servicio
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        data.serviceName,
+                        style: TextStyle(
+                          fontSize: 14, // Reducir tamaño
+                          fontWeight: FontWeight.bold,
+                          color: serviceColor,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      Text(
+                        'Periodo: ${data.dateRange}',
+                        style: TextStyle(
+                          fontSize: 10, // Reducir tamaño
+                          color: Colors.grey[600],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                // Botón de cerrar
+                Material(
+                  color: Colors.transparent,
+                  shape: const CircleBorder(),
+                  clipBehavior: Clip.hardEdge,
+                  child: InkWell(
+                    onTap: () {
+                      setState(() {
+                        _selectedIndex = -1;
+                      });
+                    },
+                    child: Padding(
+                      padding: const EdgeInsets.all(4.0),
+                      child: Icon(
+                        Icons.close,
+                        size: 16,
+                        color: Colors.grey[600],
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const Divider(height: 12, thickness: 1), // Divisor más delgado
+            // Área de información con layout mejorado
+            Expanded(
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  // Información del servicio - ocupando más espacio
+                  Expanded(
+                    flex: 3,
+                    child: Row(
+                      children: [
+                        // Trabajadores
+                        Expanded(
+                          child: _buildInfoItemCard(
+                            '',
+                            '${data.workerCount}',
+                            Icons.people_outline_rounded,
+                            const Color(0xFFE6FFFA),
+                            const Color(0xFF319795),
+                            isSmall: true,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        // Operaciones
+                        Expanded(
+                          child: _buildInfoItemCard(
+                            '',
+                            '${data.assignments}',
+                            Icons.assignment_outlined,
+                            const Color(0xFFFEF5ED),
+                            const Color(0xFFDD6B20),
+                            isSmall: true,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  // Botones - ocupando menos espacio
+                  Expanded(
+                    flex: 2,
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        // Botón más compacto
+                        SizedBox(
+                          height: 26, // Reducir altura
+                          child: ElevatedButton.icon(
+                            icon: const Icon(Icons.people, size: 12),
+                            label: const Text('Ver trabajadores'),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFF319795),
+                              padding: EdgeInsets.zero, // Eliminar padding
+                              textStyle: const TextStyle(fontSize: 10),
+                            ),
+                            onPressed: () {
+                              _showDetailDialog(
+                                context: context,
+                                isWorkers: true,
+                                data: data,
+                                title: 'Trabajadores',
+                              );
+                            },
+                          ),
+                        ),
+                        const SizedBox(height: 6),
+                        // Botón más compacto
+                        SizedBox(
+                          height: 26, // Reducir altura
+                          child: OutlinedButton.icon(
+                            icon: const Icon(Icons.assignment, size: 12),
+                            label: const Text('Ver operaciones'),
+                            style: OutlinedButton.styleFrom(
+                              foregroundColor: const Color(0xFFDD6B20),
+                              side: const BorderSide(color: Color(0xFFDD6B20)),
+                              padding: EdgeInsets.zero, // Eliminar padding
+                              textStyle: const TextStyle(fontSize: 10),
+                            ),
+                            onPressed: () {
+                              _showDetailDialog(
+                                context: context,
+                                isWorkers: false,
+                                data: data,
+                                title: 'Operaciones',
+                              );
+                            },
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // Versión modificada de InfoItemCard para usar en el gráfico de barras
+  Widget _buildInfoItemCard(
+      String label, String value, IconData icon, Color bgColor, Color iconColor,
+      {bool isWide = false, bool isSmall = false}) {
+    return Container(
+      padding: EdgeInsets.all(isSmall ? 6 : 10),
+      decoration: BoxDecoration(
+        color: bgColor.withOpacity(0.3),
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: EdgeInsets.all(isSmall ? 4 : 6),
+            decoration: BoxDecoration(
+              color: bgColor,
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Icon(
+              icon,
+              size: isSmall ? 14 : 16,
+              color: iconColor,
+            ),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(
+                  value,
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: iconColor,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Color _getColorForService(int index) {
     // Lista de colores diferenciables
     final colors = [
@@ -405,631 +997,6 @@ class _ServiceTrendChartState extends State<ServiceTrendChart> {
 
     // Retornar color según índice (se repiten si hay más servicios que colores)
     return colors[index % colors.length];
-  }
-
-  Widget _buildVerticalBarChart() {
-    // Calcular el máximo para escalar correctamente
-    final maxValue = math.max(
-        1,
-        _servicesData.fold<int>(
-            0, (max, data) => math.max(max, data.workerCount)));
-
-    return ListView.builder(
-      physics: const BouncingScrollPhysics(),
-      padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 12),
-      itemCount: _servicesData.length,
-      itemBuilder: (context, index) {
-        final data = _servicesData[index];
-        final isSelected = _selectedIndex == index;
-        final percentage = data.workerCount / maxValue;
-        // Usar el color específico del servicio para cada barra
-        final serviceColor = _getColorForService(index);
-
-        return AnimatedContainer(
-          duration: const Duration(milliseconds: 300),
-          curve: Curves.easeOutCubic, // Curva más suave
-          margin: const EdgeInsets.symmetric(vertical: 10, horizontal: 4),
-          decoration: BoxDecoration(
-            color: isSelected ? Colors.white : Colors.transparent,
-            borderRadius: BorderRadius.circular(16),
-            boxShadow: isSelected
-                ? [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.05),
-                      blurRadius: 8,
-                      spreadRadius: 1,
-                      offset: const Offset(0, 2),
-                    ),
-                  ]
-                : null,
-          ),
-          padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
-          child: Column(
-            children: [
-              LayoutBuilder(builder: (context, constraints) {
-                final availableWidth = constraints.maxWidth -
-                    140; // Reservar espacio para el nombre del servicio
-
-                return Row(
-                  children: [
-                    // Nombre del servicio con color específico
-                    Container(
-                      width: 120,
-                      padding: const EdgeInsets.symmetric(vertical: 4),
-                      child: Row(
-                        children: [
-                          Container(
-                            width: 4,
-                            height: isSelected ? 24 : 18,
-                            decoration: BoxDecoration(
-                              color: serviceColor,
-                              borderRadius: BorderRadius.circular(2),
-                            ),
-                            margin: const EdgeInsets.only(right: 8),
-                          ),
-                          Expanded(
-                            child: Text(
-                              data.serviceName,
-                              style: TextStyle(
-                                fontSize: isSelected ? 14 : 13,
-                                fontWeight: isSelected
-                                    ? FontWeight.bold
-                                    : FontWeight.w500,
-                                color: isSelected
-                                    ? serviceColor.withOpacity(0.8)
-                                    : const Color(0xFF4A5568),
-                              ),
-                              maxLines: 2,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-
-                    // Barra con un tamaño fijo y bien controlado
-                    Expanded(
-                      child: Container(
-                        height: 32,
-                        clipBehavior: Clip.antiAlias,
-                        decoration: BoxDecoration(
-                          color: Colors.grey.shade100,
-                          borderRadius: BorderRadius.circular(16),
-                        ),
-                        child: Stack(
-                          children: [
-                            // Barra de progreso con animación más suave
-                            AnimatedContainer(
-                              duration: const Duration(milliseconds: 500),
-                              curve: Curves.easeInOutCubic,
-                              width: availableWidth * percentage,
-                              height: 32,
-                              decoration: BoxDecoration(
-                                gradient: LinearGradient(
-                                  colors: [
-                                    serviceColor,
-                                    serviceColor.withOpacity(0.7),
-                                  ],
-                                  begin: Alignment.centerLeft,
-                                  end: Alignment.centerRight,
-                                ),
-                              ),
-                              child: percentage > 0.25
-                                  ? Center(
-                                      child: Text(
-                                        data.serviceName,
-                                        style: const TextStyle(
-                                          color: Colors.white,
-                                          fontSize: 11,
-                                          fontWeight: FontWeight.bold,
-                                          shadows: [
-                                            Shadow(
-                                              color: Colors.black26,
-                                              blurRadius: 2,
-                                              offset: Offset(0, 1),
-                                            ),
-                                          ],
-                                        ),
-                                        maxLines: 1,
-                                        overflow: TextOverflow.ellipsis,
-                                      ),
-                                    )
-                                  : null,
-                            ),
-
-                            // Contador de trabajadores
-                            Positioned(
-                              right: 12,
-                              top: 0,
-                              bottom: 0,
-                              child: Center(
-                                child: Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 8,
-                                    vertical: 2,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: Colors.white,
-                                    borderRadius: BorderRadius.circular(12),
-                                    boxShadow: [
-                                      BoxShadow(
-                                        color: Colors.black.withOpacity(0.1),
-                                        blurRadius: 2,
-                                        offset: const Offset(0, 1),
-                                      ),
-                                    ],
-                                  ),
-                                  child: Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      Icon(
-                                        Icons.people_alt_rounded,
-                                        size: 12,
-                                        color: serviceColor,
-                                      ),
-                                      const SizedBox(width: 4),
-                                      Text(
-                                        data.workerCount.toString(),
-                                        style: TextStyle(
-                                          fontSize: 12,
-                                          fontWeight: FontWeight.bold,
-                                          color: serviceColor,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ],
-                );
-              }),
-
-              // Información detallada si está seleccionado
-              if (isSelected)
-                AnimatedContainer(
-                  duration: const Duration(milliseconds: 350),
-                  curve: Curves.easeOutCubic,
-                  margin: const EdgeInsets.only(top: 16, bottom: 4),
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFF7FAFC),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                        color: serviceColor.withOpacity(0.3), width: 1),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.all(8),
-                            decoration: BoxDecoration(
-                              color: serviceColor.withOpacity(0.1),
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: Icon(
-                              Icons.business_center_rounded,
-                              size: 18,
-                              color: serviceColor,
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                const Text(
-                                  "Servicio",
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    color: Color(0xFF718096),
-                                  ),
-                                ),
-                                Text(
-                                  data.serviceName,
-                                  style: TextStyle(
-                                    fontSize: 15,
-                                    fontWeight: FontWeight.bold,
-                                    color: serviceColor.withOpacity(0.8),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                      const Padding(
-                        padding: EdgeInsets.symmetric(vertical: 12),
-                        child: Divider(height: 1),
-                      ),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: _buildInfoItemCard(
-                              'Trabajadores',
-                              '${data.workerCount}',
-                              Icons.people_outline_rounded,
-                              const Color(0xFFE6FFFA),
-                              const Color(0xFF319795),
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: _buildInfoItemCard(
-                              'Operaciones',
-                              '${data.assignments}',
-                              Icons.assignment_outlined,
-                              const Color(0xFFFEF5ED),
-                              const Color(0xFFDD6B20),
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 12),
-                      _buildInfoItemCard(
-                        'Periodo',
-                        data.dateRange,
-                        Icons.date_range_outlined,
-                        const Color(0xFFF0F5FF),
-                        const Color(0xFF4C51BF),
-                        isWide: true,
-                      ),
-                    ],
-                  ),
-                ),
-            ],
-          ),
-        );
-      },
-    );
-  }
-
-  Widget _buildInfoItemCard(
-      String label, String value, IconData icon, Color bgColor, Color iconColor,
-      {bool isWide = false}) {
-    return Container(
-      padding: const EdgeInsets.all(10),
-      decoration: BoxDecoration(
-        color: bgColor.withOpacity(0.3),
-        borderRadius: BorderRadius.circular(10),
-      ),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(6),
-            decoration: BoxDecoration(
-              color: bgColor,
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Icon(
-              icon,
-              size: 16,
-              color: iconColor,
-            ),
-          ),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  label,
-                  style: TextStyle(
-                    fontSize: 11,
-                    color: iconColor.withOpacity(0.8),
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-                Text(
-                  value,
-                  style: TextStyle(
-                    fontSize: isWide ? 12 : 14,
-                    fontWeight: FontWeight.w600,
-                    color: iconColor,
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildHorizontalBarChart() {
-    final maxValue = math.max(
-        1,
-        _servicesData.fold<int>(
-            0, (max, data) => math.max(max, data.workerCount)));
-
-    return Column(
-      children: [
-        // Gráfica principal
-        Expanded(
-          child: Padding(
-            padding:
-                const EdgeInsets.only(top: 0, left: 45, right: 16, bottom: 8),
-            child: CustomPaint(
-              size: Size.infinite,
-              painter: GridPainter(maxValue),
-              child: LayoutBuilder(builder: (context, constraints) {
-                // Calcular el ancho exacto para cada barra
-                final barWidth = math.min(
-                    45.0, (constraints.maxWidth - 20) / _servicesData.length);
-                final spacing =
-                    (constraints.maxWidth - (barWidth * _servicesData.length)) /
-                        (_servicesData.length + 1);
-                // Dejar un pequeño margen en la parte superior para evitar desbordamiento
-                final availableHeight = constraints.maxHeight * 0.90;
-
-                return Stack(
-                  children: [
-                    // Líneas de cuadrícula verticales para cada barra
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: List.generate(_servicesData.length, (index) {
-                        return SizedBox(width: barWidth + spacing);
-                      }),
-                    ),
-
-                    // Las barras con sus elementos - POSICIÓN FIJA
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                      crossAxisAlignment: CrossAxisAlignment.end,
-                      children: List.generate(_servicesData.length, (index) {
-                        final isSelected = _selectedIndex == index;
-                        final data = _servicesData[index];
-                        final serviceColor = _getColorForService(index);
-
-                        // Cálculo mejorado de altura
-                        final barHeightPercentage = data.workerCount / maxValue;
-                        final double barHeight = math.max(
-                            constraints.maxHeight * 0.05,
-                            availableHeight * barHeightPercentage);
-
-                        return SizedBox(
-                          width: barWidth,
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            mainAxisAlignment: MainAxisAlignment.end,
-                            crossAxisAlignment: CrossAxisAlignment.center,
-                            children: [
-                              // Número sobre la barra
-                              Text(
-                                data.workerCount.toString(),
-                                style: TextStyle(
-                                  fontSize: isSelected ? 14 : 12,
-                                  fontWeight: isSelected
-                                      ? FontWeight.bold
-                                      : FontWeight.normal,
-                                  color: serviceColor,
-                                ),
-                              ),
-                              const SizedBox(height: 4),
-
-                              // Barra con altura animada - SIN CAMBIAR SU ANCHO AL SELECCIONAR
-                              GestureDetector(
-                                onTap: () {
-                                  setState(() {
-                                    _selectedIndex = isSelected ? -1 : index;
-                                  });
-                                },
-                                child: AnimatedContainer(
-                                  duration: const Duration(milliseconds: 300),
-                                  curve: Curves.easeOutQuad,
-                                  height: barHeight,
-                                  width: barWidth * 0.75,
-                                  decoration: BoxDecoration(
-                                    gradient: LinearGradient(
-                                      begin: Alignment.topCenter,
-                                      end: Alignment.bottomCenter,
-                                      colors: [
-                                        serviceColor,
-                                        serviceColor.withOpacity(0.7),
-                                      ],
-                                    ),
-                                    borderRadius: const BorderRadius.only(
-                                      topLeft: Radius.circular(6),
-                                      topRight: Radius.circular(6),
-                                    ),
-                                    boxShadow: [
-                                      BoxShadow(
-                                        color: serviceColor.withOpacity(
-                                            isSelected ? 0.4 : 0.2),
-                                        blurRadius: isSelected ? 8 : 3,
-                                        offset: const Offset(0, 2),
-                                        spreadRadius: isSelected ? 1 : 0,
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        );
-                      }),
-                    ),
-
-                    // INFORMACIÓN DETALLADA EN OVERLAY - No afecta al layout
-                    if (_selectedIndex != -1)
-                      Positioned(
-                        top: 10,
-                        left: 0,
-                        right: 0,
-                        child: Center(
-                          child: Container(
-                            width: math.max(300.0, constraints.maxWidth * 0.8),
-                            padding: const EdgeInsets.all(12),
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                              borderRadius: BorderRadius.circular(12),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.black.withOpacity(0.15),
-                                  blurRadius: 10,
-                                  offset: const Offset(0, 3),
-                                ),
-                              ],
-                              border: Border.all(
-                                color: _getColorForService(_selectedIndex)
-                                    .withOpacity(0.3),
-                                width: 1.5,
-                              ),
-                            ),
-                            child: Column(
-                              mainAxisSize: MainAxisSize.min,
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Row(
-                                  children: [
-                                    Container(
-                                      padding: const EdgeInsets.all(8),
-                                      decoration: BoxDecoration(
-                                        color:
-                                            _getColorForService(_selectedIndex)
-                                                .withOpacity(0.1),
-                                        borderRadius: BorderRadius.circular(8),
-                                      ),
-                                      child: Icon(
-                                        Icons.business_center_rounded,
-                                        size: 16,
-                                        color:
-                                            _getColorForService(_selectedIndex),
-                                      ),
-                                    ),
-                                    const SizedBox(width: 12),
-                                    Expanded(
-                                      child: Text(
-                                        _servicesData[_selectedIndex]
-                                            .serviceName,
-                                        style: TextStyle(
-                                          fontSize: 14,
-                                          fontWeight: FontWeight.bold,
-                                          color: _getColorForService(
-                                              _selectedIndex),
-                                        ),
-                                      ),
-                                    ),
-                                    GestureDetector(
-                                      onTap: () {
-                                        setState(() {
-                                          _selectedIndex = -1;
-                                        });
-                                      },
-                                      child: Container(
-                                        padding: const EdgeInsets.all(4),
-                                        decoration: BoxDecoration(
-                                          color: Colors.grey[100],
-                                          shape: BoxShape.circle,
-                                        ),
-                                        child: Icon(
-                                          Icons.close,
-                                          size: 16,
-                                          color: Colors.grey[600],
-                                        ),
-                                      ),
-                                    )
-                                  ],
-                                ),
-                                const SizedBox(height: 12),
-                                Row(
-                                  children: [
-                                    Expanded(
-                                      child: _buildInfoChip(
-                                        'Trabajadores',
-                                        '${_servicesData[_selectedIndex].workerCount}',
-                                        Icons.people_outline_rounded,
-                                      ),
-                                    ),
-                                    const SizedBox(width: 12),
-                                    Expanded(
-                                      child: _buildInfoChip(
-                                        'Operaciones',
-                                        '${_servicesData[_selectedIndex].assignments}',
-                                        Icons.assignment_outlined,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ),
-                  ],
-                );
-              }),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  // Método auxiliar para el chip de información con detalle al hacer clic
-  Widget _buildInfoChip(String label, String value, IconData icon,
-      {bool isWorkersChip = false}) {
-    return GestureDetector(
-      onTap: () {
-        if (_selectedIndex >= 0) {
-          _showDetailDialog(
-            context: context,
-            isWorkers: isWorkersChip,
-            data: _servicesData[_selectedIndex],
-            title: isWorkersChip ? 'Trabajadores' : 'Operaciones',
-          );
-        }
-      },
-      child: Container(
-        padding: const EdgeInsets.all(8),
-        decoration: BoxDecoration(
-          color: Colors.grey[100],
-          borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: Colors.grey.shade300, width: 1),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Icon(icon, size: 12, color: Colors.grey[700]),
-                const SizedBox(width: 4),
-                Text(
-                  label,
-                  style: TextStyle(
-                    fontSize: 10,
-                    color: Colors.grey[700],
-                  ),
-                ),
-                const Spacer(),
-                Icon(
-                  Icons.chevron_right,
-                  size: 14,
-                  color: Colors.grey[500],
-                ),
-              ],
-            ),
-            const SizedBox(height: 2),
-            Text(
-              value,
-              style: const TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
   }
 
 // Método para mostrar el diálogo con los detalles
@@ -1151,47 +1118,6 @@ class _ServiceTrendChartState extends State<ServiceTrendChart> {
   }
 }
 
-class GridPainter extends CustomPainter {
-  final int maxValue;
-
-  GridPainter(this.maxValue);
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = Colors.grey.shade200
-      ..strokeWidth = 1;
-
-    // Corregir el TextPainter añadiendo textDirection
-    final textPainter = TextPainter(
-        textDirection: TextDirection.ltr // Esta es la línea clave que falta
-        );
-
-    // Dibujar líneas horizontales y valores del eje Y
-    final steps = 5;
-    for (int i = 0; i <= steps; i++) {
-      final y = size.height - (i / steps * size.height);
-
-      // Dibujar línea horizontal
-      canvas.drawLine(Offset(0, y), Offset(size.width, y), paint);
-
-      // Mostrar valor en el eje Y
-      final value = (i * (maxValue) / steps).round();
-      textPainter.text = TextSpan(
-        text: value.toString(),
-        style: TextStyle(fontSize: 10, color: Colors.grey[600]),
-      );
-
-      textPainter.layout();
-      textPainter.paint(canvas, Offset(-25, y - textPainter.height / 2));
-    }
-  }
-
-  @override
-  bool shouldRepaint(GridPainter oldDelegate) =>
-      oldDelegate.maxValue != maxValue;
-}
-
 class ServiceWorkerData {
   final String serviceName;
   final int workerCount;
@@ -1208,4 +1134,30 @@ class ServiceWorkerData {
     this.workers = const [],
     this.assignmentList = const [],
   });
+}
+
+class BubbleChartGridPainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = Colors.grey.shade100
+      ..strokeWidth = 1;
+
+    // Dibujar líneas horizontales
+    const int hLines = 6;
+    for (int i = 1; i < hLines; i++) {
+      final y = i * (size.height / hLines);
+      canvas.drawLine(Offset(0, y), Offset(size.width, y), paint);
+    }
+
+    // Dibujar líneas verticales
+    const int vLines = 6;
+    for (int i = 1; i < vLines; i++) {
+      final x = i * (size.width / vLines);
+      canvas.drawLine(Offset(x, 0), Offset(x, size.height), paint);
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }

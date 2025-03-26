@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_neumorphic_plus/flutter_neumorphic.dart';
+import 'package:intl/intl.dart';
 import 'package:plannerop/core/model/user.dart';
 import 'package:plannerop/store/faults.dart';
 import 'package:plannerop/store/user.dart';
@@ -14,6 +15,7 @@ import 'package:plannerop/widgets/workers/worker_detail_dialog.dart';
 import 'package:plannerop/widgets/workers/worker_empty_state.dart';
 import 'package:plannerop/pages/supervisor/tabs/worker_filter.dart'; // Importa el WorkerFilter
 import 'package:plannerop/widgets/workers/worker_stats.dart';
+import 'package:plannerop/core/model/fault.dart';
 
 class WorkersTab extends StatefulWidget {
   const WorkersTab({Key? key}) : super(key: key);
@@ -27,6 +29,7 @@ class _WorkersTabState extends State<WorkersTab> {
   String _searchQuery = '';
   WorkerFilter _currentFilter =
       WorkerFilter.all; // Añade la variable para el filtro
+  FaultType? _selectedFaultType;
 
   @override
   void initState() {
@@ -187,6 +190,50 @@ class _WorkersTabState extends State<WorkersTab> {
               },
             ),
 
+// NUEVO: Si estamos en modo faltas, mostrar filtros específicos
+            if (_currentFilter == WorkerFilter.faults)
+              Padding(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                child: SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: Row(
+                    children: [
+                      _buildFaultTypeChip(
+                        'Todas',
+                        null,
+                        _selectedFaultType,
+                        (type) => setState(() => _selectedFaultType = type),
+                      ),
+                      _buildFaultTypeChip(
+                        'Inasistencia',
+                        FaultType.INASSISTANCE,
+                        _selectedFaultType,
+                        (type) => setState(() => _selectedFaultType = type),
+                        color: const Color(0xFFE53E3E),
+                        icon: Icons.event_busy,
+                      ),
+                      _buildFaultTypeChip(
+                        'Abandono',
+                        FaultType.ABANDONMENT,
+                        _selectedFaultType,
+                        (type) => setState(() => _selectedFaultType = type),
+                        color: const Color(0xFFED8936),
+                        icon: Icons.exit_to_app,
+                      ),
+                      _buildFaultTypeChip(
+                        'Falta de Respeto',
+                        FaultType.IRRESPECTFUL,
+                        _selectedFaultType,
+                        (type) => setState(() => _selectedFaultType = type),
+                        color: const Color(0xFF805AD5),
+                        icon: Icons.sentiment_very_dissatisfied,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+
             // Lista de trabajadores con filtro aplicado
             Expanded(
               child: Consumer<WorkersProvider>(
@@ -223,6 +270,15 @@ class _WorkersTabState extends State<WorkersTab> {
                     case WorkerFilter.faults:
                       workers =
                           faultsProvider.getWorkersWithMostFaults(context);
+                      // NUEVO: Filtrar por tipo de falta si se ha seleccionado uno
+                      if (_selectedFaultType != null) {
+                        workers = workers.where((worker) {
+                          final workerFaults = faultsProvider
+                              .fetchFaultsByWorker(context, worker.id);
+                          return workerFaults
+                              .any((fault) => fault.type == _selectedFaultType);
+                        }).toList();
+                      }
                       break;
                     default:
                       workers = workersProvider.workers.toList();
@@ -307,13 +363,384 @@ class _WorkersTabState extends State<WorkersTab> {
 
   void _showWorkerDetails(
       BuildContext context, Worker worker, Color specialtyColor) {
+    // Si estamos en el filtro de faltas, mostrar un diálogo especializado con información de faltas
+    if (_currentFilter == WorkerFilter.faults) {
+      _showWorkerFaultsDetails(context, worker, specialtyColor);
+    } else {
+      // Mostrar el diálogo normal
+      showDialog(
+        context: context,
+        builder: (context) => WorkerDetailDialog(
+          worker: worker,
+          isAssigned: worker.status == WorkerStatus.assigned,
+          specialtyColor: specialtyColor,
+          onUpdateWorker: _updateWorker,
+        ),
+      );
+    }
+  }
+
+  // Método para mostrar detalles de faltas de un trabajador
+  void _showWorkerFaultsDetails(
+      BuildContext context, Worker worker, Color specialtyColor) {
+    final faultsProvider = Provider.of<FaultsProvider>(context, listen: false);
+
+    // Mostrar indicador de carga
     showDialog(
       context: context,
-      builder: (context) => WorkerDetailDialog(
-        worker: worker,
-        isAssigned: worker.status == WorkerStatus.assigned,
-        specialtyColor: specialtyColor,
-        onUpdateWorker: _updateWorker,
+      barrierDismissible: false,
+      builder: (BuildContext context) => const Center(
+        child: CircularProgressIndicator(),
+      ),
+    );
+
+    // Cargar las faltas del trabajador
+    List<Fault> faults = faultsProvider.fetchFaultsByWorker(context, worker.id);
+    debugPrint('Faltas cargadas: ${faults.length}');
+
+    // Quitar indicador de carga
+    Navigator.of(context).pop();
+
+    // Variable para el tipo de falta seleccionado
+    FaultType? selectedFaultType;
+
+    // Mostrar diálogo con faltas
+    showDialog(
+      context: context,
+      builder: (dialogContext) => StatefulBuilder(
+        builder: (context, setState) {
+          // Filtrar faltas según el tipo seleccionado
+          final filteredFaults = selectedFaultType == null
+              ? faults
+              : faults.where((f) => f.type == selectedFaultType).toList();
+
+          return Dialog(
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: Container(
+              width: double.maxFinite,
+              constraints: BoxConstraints(
+                maxHeight: MediaQuery.of(context).size.height * 0.8,
+              ),
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Cabecera con información del trabajador (código existente)
+                  Row(
+                    children: [
+                      Container(
+                        width: 40,
+                        height: 40,
+                        decoration: BoxDecoration(
+                          color: specialtyColor.withOpacity(0.2),
+                          shape: BoxShape.circle,
+                        ),
+                        child: Center(
+                          child: Text(
+                            worker.name.substring(0, 1).toUpperCase(),
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              color: specialtyColor,
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              worker.name,
+                              style: const TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            Text(
+                              worker.document,
+                              style: TextStyle(
+                                fontSize: 14,
+                                color: Colors.grey[600],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.close),
+                        onPressed: () => Navigator.pop(dialogContext),
+                      ),
+                    ],
+                  ),
+
+                  const Divider(height: 24),
+
+                  // NUEVO: Añadir filtros por tipo de falta
+                  SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: Row(
+                      children: [
+                        _buildFaultTypeChip(
+                          'Todas',
+                          null,
+                          selectedFaultType,
+                          (type) => setState(() => selectedFaultType = type),
+                        ),
+                        _buildFaultTypeChip(
+                          'Inasistencia',
+                          FaultType.INASSISTANCE,
+                          selectedFaultType,
+                          (type) => setState(() => selectedFaultType = type),
+                          color: const Color(0xFFE53E3E),
+                          icon: Icons.event_busy,
+                        ),
+                        _buildFaultTypeChip(
+                          'Abandono',
+                          FaultType.ABANDONMENT,
+                          selectedFaultType,
+                          (type) => setState(() => selectedFaultType = type),
+                          color: const Color(0xFFED8936),
+                          icon: Icons.exit_to_app,
+                        ),
+                        _buildFaultTypeChip(
+                          'Falta de Respeto',
+                          FaultType.IRRESPECTFUL,
+                          selectedFaultType,
+                          (type) => setState(() => selectedFaultType = type),
+                          color: const Color(0xFF805AD5),
+                          icon: Icons.sentiment_very_dissatisfied,
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  const SizedBox(height: 12),
+
+                  // Estadísticas de faltas (actualizado para mostrar tipo filtrado)
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Colors.red.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          selectedFaultType == null
+                              ? 'Faltas acumuladas:'
+                              : 'Faltas de este tipo:',
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: Colors.grey[700],
+                          ),
+                        ),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 6,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.red,
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: Text(
+                            '${filteredFaults.length}',
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  const SizedBox(height: 16),
+
+                  // Lista de faltas filtradas
+                  Expanded(
+                    child: filteredFaults.isEmpty
+                        ? Center(
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  Icons.info_outline,
+                                  size: 48,
+                                  color: Colors.grey[400],
+                                ),
+                                const SizedBox(height: 16),
+                                Text(
+                                  selectedFaultType == null
+                                      ? 'No hay faltas registradas'
+                                      : 'No hay faltas de este tipo',
+                                  style: TextStyle(
+                                    color: Colors.grey[600],
+                                  ),
+                                ),
+                              ],
+                            ),
+                          )
+                        : ListView.builder(
+                            itemCount: filteredFaults.length,
+                            itemBuilder: (context, index) {
+                              final fault = filteredFaults[index];
+
+                              // Determinar el tipo de falta
+                              IconData icon;
+                              Color color;
+                              String typeText;
+
+                              switch (fault.type) {
+                                case FaultType.INASSISTANCE:
+                                  icon = Icons.event_busy;
+                                  color = const Color(0xFFE53E3E);
+                                  typeText = 'Inasistencia';
+                                  break;
+                                case FaultType.ABANDONMENT:
+                                  icon = Icons.exit_to_app;
+                                  color = const Color(0xFFED8936);
+                                  typeText = 'Abandono';
+                                  break;
+                                case FaultType.IRRESPECTFUL:
+                                  icon = Icons.sentiment_very_dissatisfied;
+                                  color = const Color(0xFF805AD5);
+                                  typeText = 'Falta de Respeto';
+                                  break;
+                              }
+
+                              // Obtener fecha
+                              final date = fault.createdAt;
+                              final formattedDate =
+                                  DateFormat('dd/MM/yyyy').format(date);
+
+                              return Container(
+                                margin: const EdgeInsets.only(bottom: 12),
+                                padding: const EdgeInsets.all(16),
+                                decoration: BoxDecoration(
+                                  color: Colors.white,
+                                  borderRadius: BorderRadius.circular(8),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Colors.black.withOpacity(0.05),
+                                      blurRadius: 6,
+                                      offset: const Offset(0, 2),
+                                    ),
+                                  ],
+                                  border: Border.all(
+                                    color: color.withOpacity(0.3),
+                                  ),
+                                ),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Row(
+                                      children: [
+                                        Icon(icon, color: color, size: 20),
+                                        const SizedBox(width: 8),
+                                        Expanded(
+                                          child: Text(
+                                            typeText,
+                                            style: TextStyle(
+                                              fontWeight: FontWeight.bold,
+                                              color: color,
+                                              fontSize: 16,
+                                            ),
+                                          ),
+                                        ),
+                                        Container(
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 8,
+                                            vertical: 4,
+                                          ),
+                                          decoration: BoxDecoration(
+                                            color: Colors.grey[100],
+                                            borderRadius:
+                                                BorderRadius.circular(4),
+                                          ),
+                                          child: Text(
+                                            formattedDate,
+                                            style: TextStyle(
+                                              fontSize: 12,
+                                              color: Colors.grey[600],
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                    const SizedBox(height: 12),
+                                    Text(
+                                      fault.description,
+                                      style: const TextStyle(fontSize: 14),
+                                    ),
+                                  ],
+                                ),
+                              );
+                            },
+                          ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  // Método para crear chips de filtro por tipo de falta
+  Widget _buildFaultTypeChip(
+    String label,
+    FaultType? type,
+    FaultType? selectedType,
+    Function(FaultType?) onSelected, {
+    Color? color,
+    IconData? icon,
+  }) {
+    final isSelected = selectedType == type;
+
+    return GestureDetector(
+      onTap: () => onSelected(type),
+      child: Container(
+        margin: const EdgeInsets.only(right: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        decoration: BoxDecoration(
+          color: isSelected
+              ? (color ?? Colors.blue).withOpacity(0.2)
+              : Colors.grey[200],
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: isSelected ? (color ?? Colors.blue) : Colors.grey[300]!,
+            width: 1.5,
+          ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (icon != null) ...[
+              Icon(
+                icon,
+                size: 16,
+                color: isSelected ? (color ?? Colors.blue) : Colors.grey[600],
+              ),
+              const SizedBox(width: 4),
+            ],
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                color: isSelected ? (color ?? Colors.blue) : Colors.grey[800],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

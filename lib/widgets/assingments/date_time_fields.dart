@@ -46,9 +46,15 @@ class DateField extends StatelessWidget {
               // Intentar usar la fecha actual del campo o usar hoy
               DateTime initialDate;
               try {
-                initialDate = DateFormat('dd/MM/yyyy').parse(controller.text);
-                // Si la fecha es anterior a hoy, usar hoy
-                if (initialDate.isBefore(firstDate)) {
+                // Verificar que el texto no esté vacío antes de intentar parsearlo
+                if (controller.text.isNotEmpty) {
+                  initialDate = DateFormat('dd/MM/yyyy').parse(controller.text);
+                  // Si la fecha es anterior a hoy, usar hoy
+                  if (initialDate.isBefore(firstDate)) {
+                    initialDate = firstDate;
+                  }
+                } else {
+                  // Si el campo está vacío, usar la fecha actual
                   initialDate = firstDate;
                 }
               } catch (_) {

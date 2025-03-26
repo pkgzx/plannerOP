@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_neumorphic_plus/flutter_neumorphic.dart';
 import 'package:plannerop/store/areas.dart';
 import 'package:plannerop/store/assignments.dart';
+import 'package:plannerop/store/chargersOp.dart';
 import 'package:plannerop/store/clients.dart';
 import 'package:plannerop/store/faults.dart';
 import 'package:plannerop/store/task.dart';
@@ -25,6 +26,7 @@ class _DashboardTabState extends State<DashboardTab> {
   bool _isLoadingClients = false;
   bool _isLoadingAssignments = false;
   bool _isLoadingFaults = false;
+  bool _isLoadingChargers = false;
 
   @override
   void initState() {
@@ -43,12 +45,42 @@ class _DashboardTabState extends State<DashboardTab> {
           _loadClients(),
           _loadAssignments(),
           _loadFaults(),
+          _loadChargersOp(),
         ]).catchError((error) {
           debugPrint('Error durante la carga en paralelo: $error');
           // Continuar aunque haya errores
         });
       }
     });
+  }
+
+  Future<void> _loadChargersOp() async {
+    if (!mounted) return;
+
+    setState(() {
+      _isLoadingChargers = true;
+    });
+
+    try {
+      final chargersOpProvider =
+          Provider.of<ChargersOpProvider>(context, listen: false);
+
+      await chargersOpProvider.fetchChargers(context);
+      debugPrint(
+          'Cargadores cargados con éxito: ${chargersOpProvider.chargers.length}');
+    } catch (e) {
+      debugPrint('Error al cargar cargadores: $e');
+
+      if (mounted) {
+        showErrorToast(context, "Error al cargar cargadores.");
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoadingChargers = false;
+        });
+      }
+    }
   }
 
 // Método para cargar faltas (similar a los otros métodos de carga)
@@ -63,10 +95,7 @@ class _DashboardTabState extends State<DashboardTab> {
       final faultsProvider =
           Provider.of<FaultsProvider>(context, listen: false);
 
-      // Solo cargar si no se han cargado antes
-      if (!faultsProvider.hasLoadedInitialData) {
-        await faultsProvider.fetchFaults(context);
-      }
+      await faultsProvider.fetchFaults(context);
     } catch (e) {
       debugPrint('Error al cargar faltas: $e');
 
@@ -339,7 +368,6 @@ class _DashboardTabState extends State<DashboardTab> {
     }
   }
 
-  @override
   @override
   Widget build(BuildContext context) {
     // Obtener la altura de la barra de estado

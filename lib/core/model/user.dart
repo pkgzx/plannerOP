@@ -15,7 +15,7 @@ class User {
 
   static User fromJson(Map<String, dynamic> json) {
     return User(
-      cargo: json['accupation'],
+      cargo: json['occupation'],
       id: json['id'],
       name: json['name'],
       dni: json['dni'],

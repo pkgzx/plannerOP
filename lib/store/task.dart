@@ -82,6 +82,7 @@ class TasksProvider extends ChangeNotifier {
   List<String> get taskNames => _tasks.map((task) => task.name).toList();
 
   Task getTaskByName(String name) {
-    return _tasks.firstWhere((task) => task.name == name);
+    return _tasks.firstWhere((task) => task.name == name,
+        orElse: () => Task(id: 0, name: ''));
   }
 }

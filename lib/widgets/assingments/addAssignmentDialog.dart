@@ -12,6 +12,7 @@ import 'package:plannerop/store/task.dart';
 import 'package:plannerop/store/user.dart';
 import 'package:plannerop/store/workers.dart';
 import 'package:plannerop/utils/toast.dart';
+import 'package:plannerop/widgets/assingments/inChargerSelection.dart';
 import 'package:provider/provider.dart';
 import './selected_worker_list.dart';
 import './assignment_form.dart';
@@ -35,6 +36,7 @@ class _AddAssignmentDialogState extends State<AddAssignmentDialog> {
   final _endDateController = TextEditingController();
   final _endTimeController = TextEditingController();
   final _motorshipController = TextEditingController();
+  final _chargerController = TextEditingController();
 
   // Lista de trabajadores seleccionados
   List<Worker> _selectedWorkers = [];
@@ -67,6 +69,7 @@ class _AddAssignmentDialogState extends State<AddAssignmentDialog> {
     final _endTimeController = TextEditingController();
     // Nuevo controlador para el nombre de la motonave
     final _motorshipController = TextEditingController();
+    final _chargerController = TextEditingController();
     super.dispose();
   }
 
@@ -197,6 +200,15 @@ class _AddAssignmentDialogState extends State<AddAssignmentDialog> {
                 endTimeController: _endTimeController,
                 showEndDateTime: true,
                 motorshipController: _motorshipController,
+              ),
+
+              const SizedBox(height: 24),
+
+              Container(
+                margin: const EdgeInsets.only(bottom: 16),
+                child: MultiChargerSelectionField(
+                  controller: _chargerController,
+                ),
               ),
 
               const SizedBox(height: 24),
@@ -408,7 +420,32 @@ class _AddAssignmentDialogState extends State<AddAssignmentDialog> {
       final userProvider = Provider.of<UserProvider>(context, listen: false);
 
       // ID del usuario actual
-      final userId = userProvider.user.id ?? 1;
+      final userId = userProvider.user.id;
+// Dentro del método _validateFields, modifica cómo se procesan los chargerIds:
+
+// Obtener los IDs de encargados del controlador
+      List<int> chargerIds = [];
+      if (_chargerController.text.isNotEmpty) {
+        try {
+          // El controlador contiene IDs separados por coma
+          final chargerIdStrings = _chargerController.text.split(',');
+          for (String idStr in chargerIdStrings) {
+            if (idStr.trim().isNotEmpty) {
+              final parsedId = int.parse(idStr.trim());
+              if (parsedId > 0) {
+                chargerIds.add(parsedId);
+              }
+            }
+          }
+
+          // Asegurarse de que los IDs estén impresos para debug
+          debugPrint('Encargados seleccionados IDs: $chargerIds');
+        } catch (e) {
+          // En caso de error, ignorar pero imprimir
+          debugPrint('Error al procesar IDs de encargados: $e');
+          debugPrint('Texto en controller: ${_chargerController.text}');
+        }
+      }
 
       debugPrint('Datos de la asignación: $zoneNum');
       // Si la validación es exitosa, guardar la asignación
@@ -430,6 +467,7 @@ class _AddAssignmentDialogState extends State<AddAssignmentDialog> {
         motorship: _areaController.text.toUpperCase() == 'BUQUE'
             ? _motorshipController.text
             : null,
+        chargerIds: chargerIds,
         context: context, // Pasar el contexto para el token
       );
 

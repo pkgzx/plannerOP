@@ -37,6 +37,7 @@ class AreasProvider extends ChangeNotifier {
   }
 
   Area getAreaByName(String name) {
-    return _areas.firstWhere((area) => area.name == name);
+    return _areas.firstWhere((area) => area.name == name,
+        orElse: () => Area(id: 0, name: ""));
   }
 }

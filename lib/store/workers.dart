@@ -60,7 +60,19 @@ class WorkersProvider with ChangeNotifier {
       _workers.where((w) => w.status == WorkerStatus.available).length;
 
   Worker getWorkerById(int id) {
-    return _workers.firstWhere((w) => w.id == id);
+    return _workers.firstWhere((w) => w.id == id,
+        orElse: () => Worker(
+              id: 0,
+              name: '',
+              area: '',
+              phone: '',
+              document: '',
+              status: WorkerStatus.available,
+              startDate: DateTime.now(),
+              code: '',
+              failures: 0,
+              idArea: 0,
+            ));
   }
 
   // Registrar falta con descripción y actualizar el contador
@@ -106,6 +118,7 @@ class WorkersProvider with ChangeNotifier {
             type: FaultType.INASSISTANCE,
             id: 0, // El ID lo asignará la API
             worker: worker,
+            createdAt: DateTime.now(),
           ));
         }
 
@@ -166,6 +179,7 @@ class WorkersProvider with ChangeNotifier {
             type: FaultType.INASSISTANCE,
             id: 0, // El ID lo asignará la API
             worker: worker,
+            createdAt: DateTime.now(),
           ));
         }
 
@@ -180,6 +194,7 @@ class WorkersProvider with ChangeNotifier {
           type: FaultType.ABANDONMENT,
           id: 0, // El ID lo asignará la API
           worker: worker,
+          createdAt: DateTime.now(),
         ));
 
         return true;
@@ -239,6 +254,7 @@ class WorkersProvider with ChangeNotifier {
             type: FaultType.INASSISTANCE,
             id: 0, // El ID lo asignará la API
             worker: worker,
+            createdAt: DateTime.now(),
           ));
         }
 
@@ -253,6 +269,7 @@ class WorkersProvider with ChangeNotifier {
           type: FaultType.IRRESPECTFUL,
           id: 0, // El ID lo asignará la API
           worker: worker,
+          createdAt: DateTime.now(),
         ));
 
         return true;

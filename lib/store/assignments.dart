@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:plannerop/core/model/assignment.dart';
+import 'package:plannerop/core/model/user.dart';
 import 'package:plannerop/core/model/worker.dart';
 import 'package:plannerop/dto/assignment/createAssigment.dart';
 import 'package:plannerop/services/assignments/assignment.dart';
@@ -130,6 +131,7 @@ class AssignmentsProvider extends ChangeNotifier {
     required int zoneId,
     required int userId,
     required int clientId,
+    required List<int> chargerIds,
     String? clientName,
     DateTime? endDate,
     String? endTime,
@@ -156,6 +158,7 @@ class AssignmentsProvider extends ChangeNotifier {
         areaId: areaId,
         taskId: taskId,
         clientId: clientId,
+        inChagers: chargerIds,
       );
 
       // Si tenemos contexto, intentamos enviar al backend
@@ -207,6 +210,7 @@ class AssignmentsProvider extends ChangeNotifier {
         areaId: currentAssignment.areaId,
         taskId: currentAssignment.taskId,
         clientId: currentAssignment.clientId,
+        inChagers: currentAssignment.inChagers,
       );
 
       debugPrint('Actualizando estado de la asignación en el backend...');
@@ -238,6 +242,7 @@ class AssignmentsProvider extends ChangeNotifier {
         areaId: currentAssignment.areaId,
         taskId: currentAssignment.taskId,
         clientId: currentAssignment.clientId,
+        inChagers: currentAssignment.inChagers,
       );
       await _saveAssignments();
       notifyListeners();
@@ -252,7 +257,20 @@ class AssignmentsProvider extends ChangeNotifier {
 
   Assignment? getAssignmentById(String id) {
     try {
-      return _assignments.firstWhere((a) => a.id == id);
+      return _assignments.firstWhere(
+        (a) => a.id == id,
+        orElse: () => Assignment(
+            workers: [],
+            area: "",
+            task: "",
+            date: DateTime.now(),
+            time: "",
+            zone: 0,
+            userId: 0,
+            areaId: 0,
+            taskId: 0,
+            clientId: 0),
+      );
     } catch (e) {
       return null;
     }
@@ -392,6 +410,7 @@ class AssignmentsProvider extends ChangeNotifier {
         areaId: currentAssignment.areaId,
         taskId: currentAssignment.taskId,
         clientId: currentAssignment.clientId,
+        inChagers: currentAssignment.inChagers,
       );
       notifyListeners();
     }

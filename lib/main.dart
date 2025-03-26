@@ -3,6 +3,7 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:plannerop/store/areas.dart';
 import 'package:plannerop/store/assignments.dart';
 import 'package:plannerop/store/auth.dart';
+import 'package:plannerop/store/chargersOp.dart';
 import 'package:plannerop/store/clients.dart';
 import 'package:plannerop/store/faults.dart';
 import 'package:plannerop/store/task.dart';
@@ -28,6 +29,7 @@ Future<void> main() async {
         ChangeNotifierProvider(create: (context) => TasksProvider()),
         ChangeNotifierProvider(create: (context) => ClientsProvider()),
         ChangeNotifierProvider(create: (context) => FaultsProvider()),
+        ChangeNotifierProvider(create: (context) => ChargersOpProvider()),
       ],
       child: const App(),
     ),

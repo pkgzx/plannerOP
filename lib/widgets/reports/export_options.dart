@@ -141,8 +141,9 @@ class _ExportOptionsState extends State<ExportOptions> {
     });
   }
 
-  // Método para obtener información formateada de los assignments
+// Método para obtener información formateada de los assignments
   Future<void> _exportToExcel() async {
+    debugPrint("Exportando a Excel1...");
     try {
       // Notificar que estamos generando el Excel
       widget.onExport('Generando Excel...');
@@ -155,21 +156,18 @@ class _ExportOptionsState extends State<ExportOptions> {
 
       // Crear un archivo Excel
       final excel = Excel.createExcel();
-      if (excel.sheets.containsKey('Sheet1')) {
-        excel.delete('Sheet1');
-      }
+      final sheetName = 'Reporte de Operaciones';
 
-      // Crear nuestra hoja personalizada
-      final Sheet sheet = excel['Reporte de Operaciones'];
+      final Sheet sheet = excel[sheetName];
 
       // Añadir título con formato
       final titleCell =
           sheet.cell(CellIndex.indexByColumnRow(columnIndex: 0, rowIndex: 0));
-      titleCell.value = _getReportTitle();
+      titleCell.value = TextCellValue(_getReportTitle());
       titleCell.cellStyle = CellStyle(
         bold: true,
         fontSize: 14,
-        fontColorHex: '#1A365D',
+        fontColorHex: ExcelColor.fromHexString('#2D3748'),
       );
 
       // Determinar número total de columnas (ahora son 11)
@@ -185,22 +183,24 @@ class _ExportOptionsState extends State<ExportOptions> {
       int rowIndex = 1;
       sheet
           .cell(CellIndex.indexByColumnRow(columnIndex: 0, rowIndex: rowIndex))
-          .value = 'Fecha:';
+          .value = TextCellValue('Fecha:');
       sheet
           .cell(CellIndex.indexByColumnRow(columnIndex: 1, rowIndex: rowIndex))
-          .value = DateFormat('dd/MM/yyyy').format(DateTime.now());
+          .value = TextCellValue(DateFormat(
+              'dd/MM/yyyy')
+          .format(DateTime.now()));
       rowIndex++;
 
       // RESUMEN
       rowIndex++;
       final summaryTitleCell = sheet
           .cell(CellIndex.indexByColumnRow(columnIndex: 0, rowIndex: rowIndex));
-      summaryTitleCell.value = 'RESUMEN';
+      summaryTitleCell.value = TextCellValue('RESUMEN');
       summaryTitleCell.cellStyle = CellStyle(
         bold: true,
         fontSize: 12,
-        fontColorHex: '#1A365D',
-        backgroundColorHex: '#EDF2F7',
+        fontColorHex: ExcelColor.fromHexString('#2D3748'),
+        backgroundColorHex: ExcelColor.fromHexString('#E2E8F0'),
       );
       sheet.merge(
           CellIndex.indexByColumnRow(columnIndex: 0, rowIndex: rowIndex),
@@ -223,42 +223,42 @@ class _ExportOptionsState extends State<ExportOptions> {
 
       sheet
           .cell(CellIndex.indexByColumnRow(columnIndex: 0, rowIndex: rowIndex))
-          .value = 'Total de operaciones:';
+          .value = TextCellValue('Total de operaciones:');
       sheet
           .cell(CellIndex.indexByColumnRow(columnIndex: 1, rowIndex: rowIndex))
-          .value = filteredAssignments.length;
+          .value = IntCellValue(filteredAssignments.length);
       rowIndex++;
 
       sheet
           .cell(CellIndex.indexByColumnRow(columnIndex: 0, rowIndex: rowIndex))
-          .value = 'Completadas:';
+          .value = TextCellValue('Completadas:');
       sheet
           .cell(CellIndex.indexByColumnRow(columnIndex: 1, rowIndex: rowIndex))
-          .value = completedCount;
+          .value = IntCellValue(completedCount);
       rowIndex++;
 
       sheet
           .cell(CellIndex.indexByColumnRow(columnIndex: 0, rowIndex: rowIndex))
-          .value = 'En curso:';
+          .value = TextCellValue('En curso:');
       sheet
           .cell(CellIndex.indexByColumnRow(columnIndex: 1, rowIndex: rowIndex))
-          .value = inProgressCount;
+          .value = IntCellValue(inProgressCount);
       rowIndex++;
 
       sheet
           .cell(CellIndex.indexByColumnRow(columnIndex: 0, rowIndex: rowIndex))
-          .value = 'Pendientes:';
+          .value = TextCellValue('Pendientes:');
       sheet
           .cell(CellIndex.indexByColumnRow(columnIndex: 1, rowIndex: rowIndex))
-          .value = pendingCount;
+          .value = IntCellValue(pendingCount);
       rowIndex++;
 
       sheet
           .cell(CellIndex.indexByColumnRow(columnIndex: 0, rowIndex: rowIndex))
-          .value = 'Canceladas:';
+          .value = TextCellValue('Canceladas:');
       sheet
           .cell(CellIndex.indexByColumnRow(columnIndex: 1, rowIndex: rowIndex))
-          .value = canceledCount;
+          .value = IntCellValue(canceledCount);
       rowIndex++;
 
       // Añadir metadatos adicionales después del resumen
@@ -267,11 +267,11 @@ class _ExportOptionsState extends State<ExportOptions> {
         sheet
             .cell(
                 CellIndex.indexByColumnRow(columnIndex: 0, rowIndex: rowIndex))
-            .value = 'Área:';
+            .value = TextCellValue('Área:');
         sheet
             .cell(
                 CellIndex.indexByColumnRow(columnIndex: 1, rowIndex: rowIndex))
-            .value = widget.area;
+            .value = TextCellValue(widget.area);
         rowIndex++;
       }
 
@@ -280,11 +280,11 @@ class _ExportOptionsState extends State<ExportOptions> {
         sheet
             .cell(
                 CellIndex.indexByColumnRow(columnIndex: 0, rowIndex: rowIndex))
-            .value = 'Zona:';
+            .value = TextCellValue('Zona:');
         sheet
             .cell(
                 CellIndex.indexByColumnRow(columnIndex: 1, rowIndex: rowIndex))
-            .value = widget.zone.toString();
+            .value = TextCellValue(widget.zone.toString());
         rowIndex++;
       }
 
@@ -292,11 +292,11 @@ class _ExportOptionsState extends State<ExportOptions> {
         sheet
             .cell(
                 CellIndex.indexByColumnRow(columnIndex: 0, rowIndex: rowIndex))
-            .value = 'Motonave:';
+            .value = TextCellValue('Motonave:');
         sheet
             .cell(
                 CellIndex.indexByColumnRow(columnIndex: 1, rowIndex: rowIndex))
-            .value = widget.motorship;
+            .value = TextCellValue(widget.motorship!);
         rowIndex++;
       }
 
@@ -304,28 +304,30 @@ class _ExportOptionsState extends State<ExportOptions> {
         sheet
             .cell(
                 CellIndex.indexByColumnRow(columnIndex: 0, rowIndex: rowIndex))
-            .value = 'Estado:';
+            .value = TextCellValue('Estado:');
         sheet
             .cell(
                 CellIndex.indexByColumnRow(columnIndex: 1, rowIndex: rowIndex))
-            .value = widget.status;
+            .value = TextCellValue(widget.status!);
         rowIndex++;
       }
 
       sheet
           .cell(CellIndex.indexByColumnRow(columnIndex: 0, rowIndex: rowIndex))
-          .value = 'Período:';
+          .value = TextCellValue('Período:');
       sheet
           .cell(CellIndex.indexByColumnRow(columnIndex: 1, rowIndex: rowIndex))
-          .value = _getDateRange();
+          .value = TextCellValue(_getDateRange());
       rowIndex++;
 
       sheet
           .cell(CellIndex.indexByColumnRow(columnIndex: 0, rowIndex: rowIndex))
-          .value = 'Generado:';
+          .value = TextCellValue('Generado:');
       sheet
           .cell(CellIndex.indexByColumnRow(columnIndex: 1, rowIndex: rowIndex))
-          .value = DateFormat('dd/MM/yyyy HH:mm').format(DateTime.now());
+          .value = TextCellValue(DateFormat(
+              'dd/MM/yyyy HH:mm')
+          .format(DateTime.now()));
       rowIndex++;
 
       // Fila vacía antes de los datos
@@ -354,11 +356,11 @@ class _ExportOptionsState extends State<ExportOptions> {
       for (int i = 0; i < headers.length; i++) {
         final cell = sheet.cell(
             CellIndex.indexByColumnRow(columnIndex: i, rowIndex: headerRow));
-        cell.value = headers[i];
+        cell.value = TextCellValue(headers[i]);
         cell.cellStyle = CellStyle(
           bold: true,
-          backgroundColorHex: '#2C5282',
-          fontColorHex: '#FFFFFF',
+          backgroundColorHex: ExcelColor.fromHexString('#2D3748'),
+          fontColorHex: ExcelColor.fromHexString('#FFFFFF'),
           horizontalAlign: HorizontalAlign.Center,
         );
       }
@@ -391,7 +393,6 @@ class _ExportOptionsState extends State<ExportOptions> {
             data: data,
             workerName: 'Sin asignar',
             workerDocument: '-',
-            headers: headers,
             backgroundColor: backgroundColor,
           );
           rowIndex++;
@@ -403,8 +404,6 @@ class _ExportOptionsState extends State<ExportOptions> {
 
             // Obtener nombre y documento según el tipo de datos
             if (worker is Map<String, dynamic>) {
-              workerName = worker.name ?? '';
-              workerDocument = worker.document ?? '';
             } else if (worker is Worker) {
               workerName = worker.name;
               workerDocument = worker.document;
@@ -417,7 +416,6 @@ class _ExportOptionsState extends State<ExportOptions> {
               data: data,
               workerName: workerName,
               workerDocument: workerDocument,
-              headers: headers,
               backgroundColor: backgroundColor,
             );
 
@@ -427,47 +425,53 @@ class _ExportOptionsState extends State<ExportOptions> {
       }
 
       // Ajustar ancho de columnas para mejor visualización
-      sheet.setColWidth(0, 15); // Fecha Inicial
-      sheet.setColWidth(1, 12); // Hora Inicial
-      sheet.setColWidth(2, 25); // Nombre Completo
-      sheet.setColWidth(3, 15); // Documento
-      sheet.setColWidth(4, 15); // Área
-      sheet.setColWidth(5, 15); // Zona
-      sheet.setColWidth(6, 20); // Motonave
-      sheet.setColWidth(7, 30); // Tarea
-      sheet.setColWidth(8, 15); // Fecha Finalización
-      sheet.setColWidth(9, 12); // Hora Finalización
-      sheet.setColWidth(10, 15); // Estado
+      sheet.setColumnWidth(0, 15); // Fecha Inicial
+      sheet.setColumnWidth(1, 12); // Hora Inicial
+      sheet.setColumnWidth(2, 25); // Nombre Completo
+      sheet.setColumnWidth(3, 15); // Documento
+      sheet.setColumnWidth(4, 15); // Área
+      sheet.setColumnWidth(5, 15); // Zona
+      sheet.setColumnWidth(6, 20); // Motonave
+      sheet.setColumnWidth(7, 30); // Tarea
+      sheet.setColumnWidth(8, 15); // Fecha Finalización
+      sheet.setColumnWidth(9, 12); // Hora Finalización
+      sheet.setColumnWidth(10, 15); // Estado
 
       // Guardar el archivo Excel
       final output = await getTemporaryDirectory();
       final String fileName =
           'reporte_${DateFormat('yyyyMMdd_HHmmss').format(DateTime.now())}.xlsx';
       final file = File('${output.path}/$fileName');
-      await file.writeAsBytes(excel.encode()!);
 
-      // Compartir el archivo
-      await Share.shareXFiles(
-        [XFile(file.path)],
-        subject: _getReportTitle(),
-        text: 'Adjunto el reporte de operaciones en formato Excel.',
-      );
+      // Guardar con la forma correcta para Excel 4.0.6
+      List<int>? bytes = excel.save();
+      if (bytes != null) {
+        await file.writeAsBytes(bytes);
 
-      widget.onExport('Excel exportado correctamente');
+        // Compartir el archivo
+        await Share.shareXFiles(
+          [XFile(file.path)],
+          subject: _getReportTitle(),
+          text: 'Adjunto el reporte de operaciones en formato Excel.',
+        );
+
+        widget.onExport('Excel exportado correctamente');
+      } else {
+        throw Exception('No se pudo generar el archivo Excel');
+      }
     } catch (e) {
       _showErrorSnackbar(e);
       widget.onExport('Error al exportar Excel');
     }
   }
 
-  // Método auxiliar para agregar una fila de datos al Excel
+// Método auxiliar para agregar una fila de datos al Excel
   void _addRowWithData({
     required Sheet sheet,
     required int rowIndex,
     required Assignment data,
     required String workerName,
     required String workerDocument,
-    required List<String> headers,
     required String backgroundColor,
   }) {
     int colIndex = 0;
@@ -475,82 +479,89 @@ class _ExportOptionsState extends State<ExportOptions> {
     // Fecha Inicial
     sheet.cell(
         CellIndex.indexByColumnRow(columnIndex: colIndex++, rowIndex: rowIndex))
-      ..value = DateFormat('dd/MM/yyyy').format(data.date)
-      ..cellStyle = CellStyle(backgroundColorHex: backgroundColor);
+      ..value = TextCellValue(DateFormat('dd/MM/yyyy').format(data.date))
+      ..cellStyle = CellStyle(
+          backgroundColorHex: ExcelColor.fromHexString(backgroundColor));
 
     // Hora Inicial
     sheet.cell(
         CellIndex.indexByColumnRow(columnIndex: colIndex++, rowIndex: rowIndex))
-      ..value = data.time
-      ..cellStyle = CellStyle(backgroundColorHex: backgroundColor);
+      ..value = TextCellValue(data.time)
+      ..cellStyle = CellStyle(
+          backgroundColorHex: ExcelColor.fromHexString(backgroundColor));
 
     // Nombre Completo
     sheet.cell(
         CellIndex.indexByColumnRow(columnIndex: colIndex++, rowIndex: rowIndex))
-      ..value = workerName
+      ..value = TextCellValue(workerName)
       ..cellStyle = CellStyle(
         textWrapping: TextWrapping.WrapText,
-        backgroundColorHex: backgroundColor,
+        backgroundColorHex: ExcelColor.fromHexString(backgroundColor),
       );
 
     // Documento
     sheet.cell(
         CellIndex.indexByColumnRow(columnIndex: colIndex++, rowIndex: rowIndex))
-      ..value = workerDocument
-      ..cellStyle = CellStyle(backgroundColorHex: backgroundColor);
+      ..value = TextCellValue(workerDocument)
+      ..cellStyle = CellStyle(
+          backgroundColorHex: ExcelColor.fromHexString(backgroundColor));
 
     // Área
     sheet.cell(
         CellIndex.indexByColumnRow(columnIndex: colIndex++, rowIndex: rowIndex))
-      ..value = data.area
-      ..cellStyle = CellStyle(backgroundColorHex: backgroundColor);
+      ..value = TextCellValue(data.area)
+      ..cellStyle = CellStyle(
+          backgroundColorHex: ExcelColor.fromHexString(backgroundColor));
 
     // Zona
     sheet.cell(
         CellIndex.indexByColumnRow(columnIndex: colIndex++, rowIndex: rowIndex))
-      ..value = data.zone ?? 'N/A'
+      ..value = TextCellValue('${data.zone}' ?? 'N/A')
       ..cellStyle = CellStyle(
         textWrapping: TextWrapping.WrapText,
-        backgroundColorHex: backgroundColor,
+        backgroundColorHex: ExcelColor.fromHexString(backgroundColor),
       );
 
     // Motonave
     sheet.cell(
         CellIndex.indexByColumnRow(columnIndex: colIndex++, rowIndex: rowIndex))
-      ..value = data.motorship ?? 'N/A'
+      ..value = TextCellValue(data.motorship ?? 'N/A')
       ..cellStyle = CellStyle(
         textWrapping: TextWrapping.WrapText,
-        backgroundColorHex: backgroundColor,
+        backgroundColorHex: ExcelColor.fromHexString(backgroundColor),
       );
 
     // Tarea
     sheet.cell(
         CellIndex.indexByColumnRow(columnIndex: colIndex++, rowIndex: rowIndex))
-      ..value = data.task
+      ..value = TextCellValue(data.task)
       ..cellStyle = CellStyle(
         textWrapping: TextWrapping.WrapText,
-        backgroundColorHex: backgroundColor,
+        backgroundColorHex: ExcelColor.fromHexString(backgroundColor),
       );
 
     // Fecha Finalización
     sheet.cell(
         CellIndex.indexByColumnRow(columnIndex: colIndex++, rowIndex: rowIndex))
-      ..value = data.endDate != null
+      ..value = TextCellValue(data.endDate != null
           ? DateFormat('dd/MM/yyyy').format(data.endDate!)
-          : ''
-      ..cellStyle = CellStyle(backgroundColorHex: backgroundColor);
+          : '')
+      ..cellStyle = CellStyle(
+          backgroundColorHex: ExcelColor.fromHexString(backgroundColor));
 
     // Hora Finalización
     sheet.cell(
         CellIndex.indexByColumnRow(columnIndex: colIndex++, rowIndex: rowIndex))
-      ..value = data.endTime ?? ''
-      ..cellStyle = CellStyle(backgroundColorHex: backgroundColor);
+      ..value = TextCellValue(data.endTime ?? '')
+      ..cellStyle = CellStyle(
+          backgroundColorHex: ExcelColor.fromHexString(backgroundColor));
 
     // Estado
     sheet.cell(
         CellIndex.indexByColumnRow(columnIndex: colIndex++, rowIndex: rowIndex))
-      ..value = _getHumanReadableStatus(data.status)
-      ..cellStyle = CellStyle(backgroundColorHex: backgroundColor);
+      ..value = TextCellValue(_getHumanReadableStatus(data.status))
+      ..cellStyle = CellStyle(
+          backgroundColorHex: ExcelColor.fromHexString(backgroundColor));
   }
 
   // Método auxiliar para generar el título del reporte con todos los filtros

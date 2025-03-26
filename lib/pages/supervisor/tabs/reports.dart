@@ -29,12 +29,19 @@ class _ReportesTabState extends State<ReportesTab> {
   int? _selectedZone; // Filtro de zona
   String? _selectedMotorship; // Filtro de motonave
   String? _selectedStatus; // Filtro de estado
-  DateTime _startDate = DateTime.now().subtract(const Duration(days: 7));
-  DateTime _endDate = DateTime.now();
+  DateTime _startDate = DateTime.now() // llevar a las 00:00
+      .subtract(Duration(hours: DateTime.now().hour))
+      .subtract(Duration(minutes: DateTime.now().minute));
+  DateTime _endDate = DateTime.now()
+      .add(Duration(days: 1))
+      .subtract(Duration(hours: DateTime.now().hour))
+      .subtract(Duration(minutes: DateTime.now().minute))
+      .subtract(Duration(seconds: DateTime.now().second));
+  // llevar a las 23:59
 
   bool _isFiltering = false;
   bool _isExporting = false;
-  bool _showCharts = true; // Estado para alternar entre gráficos y tabla
+  bool _showCharts = false; // Estado para alternar entre gráficos y tabla
   String _selectedChart =
       "Distribución por Áreas"; // Gráfico seleccionado por defecto
 
@@ -53,29 +60,29 @@ class _ReportesTabState extends State<ReportesTab> {
       List.generate(10, (index) => index + 1); // Zonas del 1 al 10
   List<String> _motorships = [];
 
-  // Opciones de gráficos
-  final List<Map<String, dynamic>> _chartOptions = [
-    {
-      'title': 'Distribución por Áreas',
-      'icon': Icons.pie_chart,
-    },
-    {
-      'title': 'Personal por Buque',
-      'icon': Icons.directions_boat_filled_outlined,
-    },
-    {
-      'title': 'Distribución por Zonas',
-      'icon': Icons.pie_chart_outline_rounded,
-    },
-    {
-      'title': 'Estado de Trabajadores',
-      'icon': Icons.people_outline_rounded,
-    },
-    {
-      'title': 'Tendencia de Servicios',
-      'icon': Icons.trending_up_rounded,
-    },
-  ];
+  // // Opciones de gráficos
+  // final List<Map<String, dynamic>> _chartOptions = [
+  //   {
+  //     'title': 'Distribución por Áreas',
+  //     'icon': Icons.pie_chart,
+  //   },
+  //   {
+  //     'title': 'Personal por Buque',
+  //     'icon': Icons.directions_boat_filled_outlined,
+  //   },
+  //   {
+  //     'title': 'Distribución por Zonas',
+  //     'icon': Icons.pie_chart_outline_rounded,
+  //   },
+  //   {
+  //     'title': 'Estado de Trabajadores',
+  //     'icon': Icons.people_outline_rounded,
+  //   },
+  //   {
+  //     'title': 'Tendencia de Servicios',
+  //     'icon': Icons.trending_up_rounded,
+  //   },
+  // ];
 
   @override
   void initState() {
@@ -147,20 +154,20 @@ class _ReportesTabState extends State<ReportesTab> {
     });
   }
 
-  // Alternar entre vista de gráficos y tabla
-  void _toggleView() {
-    setState(() {
-      _showCharts = !_showCharts;
-    });
-  }
+  // // Alternar entre vista de gráficos y tabla
+  // void _toggleView() {
+  //   setState(() {
+  //     _showCharts = !_showCharts;
+  //   });
+  // }
 
-  // Obtener el ícono para el gráfico seleccionado
-  IconData _getSelectedChartIcon() {
-    final selectedOption = _chartOptions.firstWhere(
-        (option) => option['title'] == _selectedChart,
-        orElse: () => _chartOptions[0]);
-    return selectedOption['icon'];
-  }
+  // // Obtener el ícono para el gráfico seleccionado
+  // IconData _getSelectedChartIcon() {
+  //   final selectedOption = _chartOptions.firstWhere(
+  //       (option) => option['title'] == _selectedChart,
+  //       orElse: () => _chartOptions[0]);
+  //   return selectedOption['icon'];
+  // }
 
   @override
   Widget build(BuildContext context) {
@@ -179,14 +186,14 @@ class _ReportesTabState extends State<ReportesTab> {
           ),
         ),
         actions: [
-          IconButton(
-            icon: Icon(
-              _showCharts ? Icons.table_chart : Icons.bar_chart,
-              color: Colors.white,
-            ),
-            onPressed: _toggleView,
-            tooltip: _showCharts ? 'Ver tabla de datos' : 'Ver gráficos',
-          ),
+          // IconButton(
+          //   icon: Icon(
+          //     _showCharts ? Icons.table_chart : Icons.bar_chart,
+          //     color: Colors.white,
+          //   ),
+          //   onPressed: _toggleView,
+          //   tooltip: _showCharts ? 'Ver tabla de datos' : 'Ver gráficos',
+          // ),
           IconButton(
             icon: Icon(
               _isFiltering ? Icons.filter_list_off : Icons.filter_list,
@@ -221,7 +228,7 @@ class _ReportesTabState extends State<ReportesTab> {
             if (_isExporting)
               ExportOptions(
                 periodName: _selectedPeriod,
-                startDate: _startDate,
+                startDate: _startDate.subtract(Duration(days: 1)),
                 endDate: _endDate,
                 area: _selectedArea,
                 zone: _selectedZone,
@@ -249,8 +256,11 @@ class _ReportesTabState extends State<ReportesTab> {
                   ? _buildSelectedChart()
                   : ReportDataTable(
                       periodName: _selectedPeriod,
-                      startDate: _startDate,
-                      endDate: _endDate,
+                      startDate: DateTime(_startDate.year, _startDate.month,
+                              _startDate.day, 0, 0, 0)
+                          .subtract(Duration(days: 1)),
+                      endDate: DateTime(_endDate.year, _endDate.month,
+                          _endDate.day, 23, 59, 59),
                       area: _selectedArea,
                       zone: _selectedZone,
                       motorship: _selectedMotorship,
@@ -290,73 +300,73 @@ class _ReportesTabState extends State<ReportesTab> {
             ),
           ],
         ),
-        child: DropdownButtonHideUnderline(
-          child: ButtonTheme(
-            alignedDropdown: true,
-            child: DropdownButton<String>(
-              value: _selectedChart,
-              isExpanded: true,
-              icon: const Icon(Icons.keyboard_arrow_down,
-                  color: Color(0xFF4299E1)),
-              elevation: 2,
-              style: const TextStyle(
-                color: Color(0xFF2D3748),
-                fontSize: 16,
-                fontWeight: FontWeight.w500,
-              ),
-              selectedItemBuilder: (context) {
-                return _chartOptions.map((item) {
-                  return Row(
-                    children: [
-                      Icon(_getSelectedChartIcon(),
-                          color: const Color(0xFF4299E1), size: 20),
-                      const SizedBox(width: 12),
-                      Text(_selectedChart),
-                    ],
-                  );
-                }).toList();
-              },
-              onChanged: (String? newValue) {
-                if (newValue != null) {
-                  setState(() {
-                    _selectedChart = newValue;
-                  });
-                }
-              },
-              items: _chartOptions
-                  .map<DropdownMenuItem<String>>((Map<String, dynamic> item) {
-                return DropdownMenuItem<String>(
-                  value: item['title'],
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 8.0),
-                    child: Row(
-                      children: [
-                        Icon(item['icon'],
-                            color: const Color(0xFF4299E1), size: 20),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Text(
-                                item['title'],
-                                style: const TextStyle(
-                                  fontSize: 15,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                );
-              }).toList(),
-            ),
-          ),
-        ),
+        // child: DropdownButtonHideUnderline(
+        //   child: ButtonTheme(
+        //     alignedDropdown: true,
+        //     child: DropdownButton<String>(
+        //       value: _selectedChart,
+        //       isExpanded: true,
+        //       icon: const Icon(Icons.keyboard_arrow_down,
+        //           color: Color(0xFF4299E1)),
+        //       elevation: 2,
+        //       style: const TextStyle(
+        //         color: Color(0xFF2D3748),
+        //         fontSize: 16,
+        //         fontWeight: FontWeight.w500,
+        //       ),
+        //       // selectedItemBuilder: (context) {
+        //       //   return _chartOptions.map((item) {
+        //       //     return Row(
+        //       //       children: [
+        //       //         Icon(_getSelectedChartIcon(),
+        //       //             color: const Color(0xFF4299E1), size: 20),
+        //       //         const SizedBox(width: 12),
+        //       //         Text(_selectedChart),
+        //       //       ],
+        //       //     );
+        //       //   }).toList();
+        //       // },
+        //       onChanged: (String? newValue) {
+        //         if (newValue != null) {
+        //           setState(() {
+        //             _selectedChart = newValue;
+        //           });
+        //         }
+        //       },
+        //       // items: _chartOptions
+        //       //     .map<DropdownMenuItem<String>>((Map<String, dynamic> item) {
+        //       //   return DropdownMenuItem<String>(
+        //       //     value: item['title'],
+        //       //     child: Padding(
+        //       //       padding: const EdgeInsets.symmetric(vertical: 8.0),
+        //       //       child: Row(
+        //       //         children: [
+        //       //           Icon(item['icon'],
+        //       //               color: const Color(0xFF4299E1), size: 20),
+        //       //           const SizedBox(width: 12),
+        //       //           Expanded(
+        //       //             child: Column(
+        //       //               crossAxisAlignment: CrossAxisAlignment.start,
+        //       //               mainAxisSize: MainAxisSize.min,
+        //       //               children: [
+        //       //                 Text(
+        //       //                   item['title'],
+        //       //                   style: const TextStyle(
+        //       //                     fontSize: 15,
+        //       //                     fontWeight: FontWeight.w600,
+        //       //                   ),
+        //       //                 ),
+        //       //               ],
+        //       //             ),
+        //       //           ),
+        //       //         ],
+        //       //       ),
+        //       //     ),
+        //       //   );
+        //       // }).toList(),
+        //     ),
+        //   ),
+        // ),
       ),
     );
   }
@@ -486,7 +496,7 @@ class _ReportesTabState extends State<ReportesTab> {
     String dateRange;
     if (_selectedPeriod == "Personalizado") {
       dateRange =
-          "${DateFormat('dd/MM/yyyy').format(_startDate.add(Duration(days: 1)))} - ${DateFormat('dd/MM/yyyy').format(_endDate)}";
+          "${DateFormat('dd/MM/yyyy').format(_startDate)} - ${DateFormat('dd/MM/yyyy').format(_endDate)}";
     } else {
       dateRange = _selectedPeriod;
     }
@@ -497,7 +507,6 @@ class _ReportesTabState extends State<ReportesTab> {
     activeFilters.add("Periodo: $dateRange");
     if (_selectedArea != 'Todas') activeFilters.add("Área: $_selectedArea");
     if (_selectedZone != null) activeFilters.add("Zona: $_selectedZone");
-    debugPrint('Zona++: $_selectedZone');
     if (_selectedMotorship != null)
       activeFilters.add("Motonave: $_selectedMotorship");
     if (_selectedStatus != null) activeFilters.add("Estado: $_selectedStatus");
