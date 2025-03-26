@@ -513,6 +513,7 @@ class _EditAssignmentFormState extends State<EditAssignmentForm> {
         clientId: widget.assignment.clientId, // No editable
         deletedWorkers:
             widget.assignment.deletedWorkers, // Include deleted workers
+        inChagers: widget.assignment.inChagers,
       );
 
       // Mostrar indicador de carga

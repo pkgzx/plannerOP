@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="es" class="scroll-smooth">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Política de Privacidad | CargoPlanner</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+
+        [x-cloak] {
+            display: none !important;
+        }
+    </style>
+</head>
+
+<body class="bg-gray-50 text-gray-800">
+
+    <div x-data="{ language: 'es' }" class="relative">
+        <!-- Navbar -->
+        <header class="bg-blue-600 text-white shadow-md">
+            <div class="container mx-auto px-4 py-4 flex justify-between items-center">
+                <div class="flex items-center space-x-2">
+                    <img src="../assets/cargoban.png" alt="Cargoban Logo" class="h-12 w-12">
+                    <span class="font-bold text-xl">CargoPlanner</span>
+                </div>
+
+                <div class="flex items-center">
+                    <button @click="language = 'es'" class="px-3 py-1 rounded-l-md"
+                        :class="language === 'es' ? 'bg-blue-800' : 'bg-blue-700 hover:bg-blue-800'">
+                        ES
+                    </button>
+                    <button @click="language = 'en'" class="px-3 py-1 rounded-r-md"
+                        :class="language === 'en' ? 'bg-blue-800' : 'bg-blue-700 hover:bg-blue-800'">
+                        EN
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <!-- Content -->
+        <main class="container mx-auto px-4 py-8 max-w-4xl">
+            <!-- Spanish Content -->
+            <div x-show="language === 'es'" x-cloak>
+                <h1 class="text-3xl font-bold mb-6 text-blue-600">Política de Privacidad y Tratamiento de Datos</h1>
+
+                <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+                    <h2 class="text-xl font-semibold mb-4 text-blue-600">Introducción</h2>
+                    <p class="mb-4">En CARGOBAN OLP, valoramos tu privacidad y nos comprometemos a proteger tus datos
+                        personales. Esta Política de Privacidad explica cómo recopilamos, utilizamos, compartimos y
+                        protegemos la información que nos proporcionas al utilizar nuestra aplicación.</p>
+                    <p class="mb-4">Última actualización: 26 de Marzo de 2025</p>
+                </div>
+
+                <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+                    <h2 class="text-xl font-semibold mb-4 text-blue-600">1. Información que recopilamos</h2>
+                    <div class="pl-4 border-l-4 border-blue-100 mb-4">
+                        <h3 class="font-medium text-lg mb-2">1.1 Información proporcionada por el usuario</h3>
+                        <p class="mb-2">Recopilamos la información que proporcionas directamente al usar nuestra
+                            aplicación, incluyendo:</p>
+                        <ul class="list-disc pl-6 mb-4 space-y-1">
+                            <li>Datos de registro (nombre, correo electrónico, cargo, telefono)</li>
+                            <li>Información de perfil</li>
+                            <li>Datos de trabajadores y operaciones</li>
+                            <li>Comentarios y comunicaciones</li>
+                        </ul>
+                    </div>
+
+                    <div class="pl-4 border-l-4 border-blue-100">
+                        <h3 class="font-medium text-lg mb-2">1.2 Información recopilada automáticamente</h3>
+                        <p class="mb-2">Al utilizar nuestra aplicación, recopilamos automáticamente:</p>
+                        <ul class="list-disc pl-6 mb-4 space-y-1">
+                            <li>Datos de uso y analítica</li>
+                            <li>Información del dispositivo</li>
+                            <li>Registros de actividad</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+                    <h2 class="text-xl font-semibold mb-4 text-blue-600">2. Cómo utilizamos la información</h2>
+                    <p class="mb-4">Utilizamos la información recopilada para:</p>
+                    <ul class="list-disc pl-6 mb-4 space-y-2">
+                        <li>Proporcionar, mantener y mejorar nuestros servicios</li>
+                        <li>Gestionar las operaciones portuarias y asignaciones de trabajadores</li>
+                        <li>Generar reportes y estadísticas</li>
+                        <li>Comunicarnos contigo sobre actualizaciones o cambios</li>
+                        <li>Detectar, prevenir y solucionar problemas técnicos</li>
+                        <li>Cumplir con obligaciones legales</li>
+                    </ul>
+                </div>
+
+                <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+                    <h2 class="text-xl font-semibold mb-4 text-blue-600">3. Compartición de información</h2>
+                    <p class="mb-4">No compartimos tu información personal con terceros, excepto en las siguientes
+                        circunstancias:</p>
+                    <ul class="list-disc pl-6 mb-4 space-y-2">
+                        <li>Con tu consentimiento expreso</li>
+                        <li>Con proveedores de servicios que nos asisten en la operación de la aplicación</li>
+                        <li>Para cumplir con obligaciones legales</li>
+                        <li>En caso de reorganización, fusión o venta empresarial</li>
+                    </ul>
+                </div>
+
+                <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+                    <h2 class="text-xl font-semibold mb-4 text-blue-600">4. Seguridad de datos</h2>
+                    <p class="mb-4">Implementamos medidas de seguridad técnicas y organizativas diseñadas para proteger
+                        tus datos personales, incluyendo:</p>
+                    <ul class="list-disc pl-6 mb-4 space-y-2">
+                        <li>Encriptación de datos sensibles</li>
+                        <li>Acceso restringido a información personal</li>
+                        <li>Sistemas de monitoreo de seguridad</li>
+                        <li>Copias de seguridad regulares</li>
+                    </ul>
+                </div>
+
+                <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+                    <h2 class="text-xl font-semibold mb-4 text-blue-600">5. Tus derechos</h2>
+                    <p class="mb-4">Según las leyes de protección de datos aplicables, puedes tener los siguientes
+                        derechos:</p>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div class="p-4 bg-blue-50 rounded-lg">
+                            <h3 class="font-medium mb-2">Acceso</h3>
+                            <p class="text-sm">Solicitar una copia de tus datos personales.</p>
+                        </div>
+                        <div class="p-4 bg-blue-50 rounded-lg">
+                            <h3 class="font-medium mb-2">Rectificación</h3>
+                            <p class="text-sm">Corregir información inexacta o incompleta.</p>
+                        </div>
+                        <div class="p-4 bg-blue-50 rounded-lg">
+                            <h3 class="font-medium mb-2">Supresión</h3>
+                            <p class="text-sm">Solicitar la eliminación de tus datos personales.</p>
+                        </div>
+                        <div class="p-4 bg-blue-50 rounded-lg">
+                            <h3 class="font-medium mb-2">Restricción</h3>
+                            <p class="text-sm">Limitar el procesamiento de tus datos.</p>
+                        </div>
+                        <div class="p-4 bg-blue-50 rounded-lg">
+                            <h3 class="font-medium mb-2">Portabilidad</h3>
+                            <p class="text-sm">Recibir tus datos en un formato estructurado.</p>
+                        </div>
+                        <div class="p-4 bg-blue-50 rounded-lg">
+                            <h3 class="font-medium mb-2">Oposición</h3>
+                            <p class="text-sm">Oponerte al procesamiento de tus datos.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+                    <h2 class="text-xl font-semibold mb-4 text-blue-600">6. Cambios a esta política</h2>
+                    <p class="mb-4">Podemos actualizar nuestra Política de Privacidad ocasionalmente. Te notificaremos
+                        cualquier cambio publicando la nueva Política de Privacidad en esta página y actualizando la
+                        fecha de "última actualización".</p>
+                </div>
+
+                <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+                    <h2 class="text-xl font-semibold mb-4 text-blue-600">7. Contacto</h2>
+                    <p class="mb-4">Si tienes preguntas o inquietudes sobre esta Política de Privacidad, contacta con
+                        nosotros:</p>
+                    <div class="flex flex-col space-y-3">
+                        <div class="flex items-center space-x-3">
+                            <i class="fas fa-envelope text-blue-600"></i>
+                            <span>CargobanOLP@cargoban.com.co</span>
+                        </div>
+                        <div class="flex items-center space-x-3">
+                            <i class="fas fa-map-marker-alt text-blue-600"></i>
+                            <span>Calle 100 N°103-27, Apartadó-Antioquia-Colombia</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- English Content -->
+            <div x-show="language === 'en'" x-cloak>
+                <h1 class="text-3xl font-bold mb-6 text-blue-600">Privacy Policy and Data Processing</h1>
+
+                <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+                    <h2 class="text-xl font-semibold mb-4 text-blue-600">Introduction</h2>
+                    <p class="mb-4">At CARGOBAN OLP, we value your privacy and are committed to protecting your personal
+                        data. This Privacy Policy explains how we collect, use, share, and protect the information you
+                        provide when using our application.</p>
+                    <p class="mb-4">Last updated: March 26 of 2025</p>
+                </div>
+
+                <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+                    <h2 class="text-xl font-semibold mb-4 text-blue-600">1. Information We Collect</h2>
+                    <div class="pl-4 border-l-4 border-blue-100 mb-4">
+                        <h3 class="font-medium text-lg mb-2">1.1 Information Provided by the User</h3>
+                        <p class="mb-2">We collect information you provide directly when using our application,
+                            including:</p>
+                        <ul class="list-disc pl-6 mb-4 space-y-1">
+                            <li>Registration data (name, email, position)</li>
+                            <li>Profile information</li>
+                            <li>Worker and operation data</li>
+                            <li>Feedback and communications</li>
+                        </ul>
+                    </div>
+
+                    <div class="pl-4 border-l-4 border-blue-100">
+                        <h3 class="font-medium text-lg mb-2">1.2 Automatically Collected Information</h3>
+                        <p class="mb-2">When using our application, we automatically collect:</p>
+                        <ul class="list-disc pl-6 mb-4 space-y-1">
+                            <li>Usage and analytics data</li>
+                            <li>Device information</li>
+                            <li>Activity logs</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+                    <h2 class="text-xl font-semibold mb-4 text-blue-600">2. How We Use Information</h2>
+                    <p class="mb-4">We use the collected information to:</p>
+                    <ul class="list-disc pl-6 mb-4 space-y-2">
+                        <li>Provide, maintain, and improve our services</li>
+                        <li>Manage port operations and worker assignments</li>
+                        <li>Generate reports and statistics</li>
+                        <li>Communicate with you about updates or changes</li>
+                        <li>Detect, prevent, and solve technical issues</li>
+                        <li>Comply with legal obligations</li>
+                    </ul>
+                </div>
+
+                <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+                    <h2 class="text-xl font-semibold mb-4 text-blue-600">3. Information Sharing</h2>
+                    <p class="mb-4">We do not share your personal information with third parties except in the following
+                        circumstances:</p>
+                    <ul class="list-disc pl-6 mb-4 space-y-2">
+                        <li>With your express consent</li>
+                        <li>With service providers who assist us in operating the application</li>
+                        <li>To comply with legal obligations</li>
+                        <li>In case of business reorganization, merger, or sale</li>
+                    </ul>
+                </div>
+
+                <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+                    <h2 class="text-xl font-semibold mb-4 text-blue-600">4. Data Security</h2>
+                    <p class="mb-4">We implement technical and organizational security measures designed to protect your
+                        personal data, including:</p>
+                    <ul class="list-disc pl-6 mb-4 space-y-2">
+                        <li>Encryption of sensitive data</li>
+                        <li>Restricted access to personal information</li>
+                        <li>Security monitoring systems</li>
+                        <li>Regular backups</li>
+                    </ul>
+                </div>
+
+                <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+                    <h2 class="text-xl font-semibold mb-4 text-blue-600">5. Your Rights</h2>
+                    <p class="mb-4">Under applicable data protection laws, you may have the following rights:</p>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div class="p-4 bg-blue-50 rounded-lg">
+                            <h3 class="font-medium mb-2">Access</h3>
+                            <p class="text-sm">Request a copy of your personal data.</p>
+                        </div>
+                        <div class="p-4 bg-blue-50 rounded-lg">
+                            <h3 class="font-medium mb-2">Rectification</h3>
+                            <p class="text-sm">Correct inaccurate or incomplete information.</p>
+                        </div>
+                        <div class="p-4 bg-blue-50 rounded-lg">
+                            <h3 class="font-medium mb-2">Erasure</h3>
+                            <p class="text-sm">Request deletion of your personal data.</p>
+                        </div>
+                        <div class="p-4 bg-blue-50 rounded-lg">
+                            <h3 class="font-medium mb-2">Restriction</h3>
+                            <p class="text-sm">Limit the processing of your data.</p>
+                        </div>
+                        <div class="p-4 bg-blue-50 rounded-lg">
+                            <h3 class="font-medium mb-2">Portability</h3>
+                            <p class="text-sm">Receive your data in a structured format.</p>
+                        </div>
+                        <div class="p-4 bg-blue-50 rounded-lg">
+                            <h3 class="font-medium mb-2">Objection</h3>
+                            <p class="text-sm">Object to the processing of your data.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+                    <h2 class="text-xl font-semibold mb-4 text-blue-600">6. Changes to This Policy</h2>
+                    <p class="mb-4">We may update our Privacy Policy from time to time. We will notify you of any
+                        changes by posting the new Privacy Policy on this page and updating the "last updated" date.</p>
+                </div>
+
+                <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+                    <h2 class="text-xl font-semibold mb-4 text-blue-600">7. Contact</h2>
+                    <p class="mb-4">If you have questions or concerns about this Privacy Policy, please contact us:</p>
+                    <div class="flex flex-col space-y-3">
+                        <div class="flex items-center space-x-3">
+                            <i class="fas fa-envelope text-blue-600"></i>
+                            <span>CargobanOLP@cargoban.com.co</span>
+                        </div>
+                        <div class="flex items-center space-x-3">
+                            <i class="fas fa-map-marker-alt text-blue-600"></i>
+                            <span>Main Street 100 N°103-27, Apartadó-Antioquia-Colombia</span>
+                        </div>
+                        <div class="flex items-center space-x-3">
+                            <i class="fas fa-phone text-blue-600"></i>
+                            <span>+57 1234 5678</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <!-- Footer -->
+        <footer class="bg-gray-800 text-white py-8">
+            <div class="container mx-auto px-4">
+                <div class="flex flex-col md:flex-row justify-between items-center">
+                    <div class="mb-4 md:mb-0">
+                        <div class="flex items-center space-x-2">
+                            <img src="../assets/cargoban.png" alt="PlannerOP Logo" class="h-8 w-8">
+                            <span class="font-bold text-xl">CargoPlanner</span>
+                        </div>
+                        <p class="text-gray-400 text-sm mt-2">Sistema de Gestión de Operaciones Portuarias</p>
+                    </div>
+
+                    <div class="flex space-x-4">
+                        <a href="https://github.com/GhostRiderDev/plannerOP" class="text-gray-400 hover:text-white">
+                            <i class="fab fa-github text-xl"></i>
+                        </a>
+                    </div>
+                </div>
+                <hr class="border-gray-700 my-6">
+                <div class="text-center text-gray-400 text-sm">
+                    &copy; <span x-text="new Date().getFullYear()"></span> Cargoban. Todos los derechos reservados.
+                </div>
+            </div>
+        </footer>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.12.0/dist/cdn.min.js"></script>
+</body>
+
+</html>

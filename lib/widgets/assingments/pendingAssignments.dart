@@ -3,6 +3,7 @@ import 'package:flutter_neumorphic_plus/flutter_neumorphic.dart';
 import 'package:intl/intl.dart';
 import 'package:plannerop/core/model/user.dart';
 import 'package:plannerop/core/model/worker.dart';
+import 'package:plannerop/store/areas.dart';
 import 'package:plannerop/store/chargersOp.dart';
 import 'package:plannerop/store/workers.dart';
 import 'package:plannerop/utils/toast.dart';
@@ -12,14 +13,46 @@ import 'package:plannerop/store/assignments.dart';
 import 'package:plannerop/widgets/assingments/emptyState.dart';
 import 'package:plannerop/core/model/assignment.dart';
 
-class PendingAssignmentsView extends StatelessWidget {
+class PendingAssignmentsView extends StatefulWidget {
   final String searchQuery;
 
   const PendingAssignmentsView({Key? key, required this.searchQuery})
       : super(key: key);
 
   @override
+  _PendingAssignmentsViewState createState() => _PendingAssignmentsViewState();
+}
+
+class _PendingAssignmentsViewState extends State<PendingAssignmentsView> {
+  bool _isRefreshing = false;
+  String? _selectedArea;
+  int? _selectedSupervisorId;
+  bool _showFilters = false;
+
+  @override
   Widget build(BuildContext context) {
+    // Obtener áreas disponibles del provider
+    final areasProvider = Provider.of<AreasProvider>(context);
+    final areas = areasProvider.areas
+        .map((area) => area.name) // sacar las areas unicas
+        .toSet()
+        .toList();
+
+    // Verificar si el área seleccionada ya no existe en la lista filtrada
+    if (_selectedArea != null && !areas.contains(_selectedArea)) {
+      // Resetear si el área ya no existe
+      _selectedArea = null;
+    }
+
+    // Obtener supervisores disponibles del provider
+    final chargersProvider = Provider.of<ChargersOpProvider>(context);
+    final supervisors = chargersProvider.chargers;
+
+    // Verificar si el supervisor seleccionado aún existe
+    if (_selectedSupervisorId != null &&
+        !supervisors.any((s) => s.id == _selectedSupervisorId)) {
+      _selectedSupervisorId = null;
+    }
     return Consumer<AssignmentsProvider>(
       builder: (context, assignmentsProvider, child) {
         if (assignmentsProvider.isLoading) {
@@ -30,35 +63,36 @@ class PendingAssignmentsView extends StatelessWidget {
 
         final pendingAssignments = assignmentsProvider.pendingAssignments;
 
-        // Filtramos por búsqueda
-        final filteredAssignments = pendingAssignments.where((assignment) {
-          if (searchQuery.isEmpty) return true;
+        // Aplicar filtros
+        var filteredAssignments = pendingAssignments.where((assignment) {
+          // Filtrar por texto de búsqueda
+          bool matchesSearch = true;
+          if (widget.searchQuery.isNotEmpty) {
+            final matchesTask = assignment.task
+                .toLowerCase()
+                .contains(widget.searchQuery.toLowerCase());
+            final matchesWorker = assignment.workers.any((worker) => worker.name
+                .toString()
+                .toLowerCase()
+                .contains(widget.searchQuery.toLowerCase()));
+            matchesSearch = matchesTask || matchesWorker;
+          }
 
-          // Buscar en área, tarea, o nombres de trabajadores
-          final bool matchesArea =
-              assignment.area.toLowerCase().contains(searchQuery.toLowerCase());
-          final bool matchesTask =
-              assignment.task.toLowerCase().contains(searchQuery.toLowerCase());
-          final bool matchesWorker = assignment.workers.any((worker) => worker
-              .name
-              .toString()
-              .toLowerCase()
-              .contains(searchQuery.toLowerCase()));
+          // Filtrar por área seleccionada
+          bool matchesArea = true;
+          if (_selectedArea != null && _selectedArea!.isNotEmpty) {
+            matchesArea = assignment.area == _selectedArea;
+          }
 
-          return matchesArea || matchesTask || matchesWorker;
+          // Filtrar por supervisor seleccionado
+          bool matchesSupervisor = true;
+          if (_selectedSupervisorId != null) {
+            matchesSupervisor =
+                assignment.inChagers.contains(_selectedSupervisorId);
+          }
+
+          return matchesSearch && matchesArea && matchesSupervisor;
         }).toList();
-
-        if (filteredAssignments.isEmpty) {
-          return EmptyState(
-            message: pendingAssignments.isEmpty
-                ? 'No hay asignaciones pendientes en este momento.'
-                : 'No hay asignaciones pendientes que coincidan con la búsqueda.',
-            showClearButton: searchQuery.isNotEmpty,
-            onClear: () {
-              // Esta función debería limpiar la búsqueda desde el padre
-            },
-          );
-        }
 
         return RefreshIndicator(
           onRefresh: () async {
@@ -67,26 +101,245 @@ class PendingAssignmentsView extends StatelessWidget {
           child: ListView(
             padding: const EdgeInsets.all(16),
             children: [
-              GridView.builder(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 2,
-                  crossAxisSpacing: 12,
-                  mainAxisSpacing: 12,
-                  childAspectRatio: 0.9,
-                ),
-                itemCount: filteredAssignments.length,
-                itemBuilder: (context, index) {
-                  final assignment = filteredAssignments[index];
-                  return _buildAssignmentCard(
-                      context, assignment, assignmentsProvider);
-                },
-              ),
+              _buildFilterBar(areas, supervisors),
+              filteredAssignments.isEmpty
+                  ? EmptyState(
+                      message: pendingAssignments.isEmpty
+                          ? 'No hay asignaciones activas en este momento.'
+                          : 'No hay asignaciones activas que coincidan con los filtros aplicados.',
+                      showClearButton: widget.searchQuery.isNotEmpty ||
+                          _selectedArea != null ||
+                          _selectedSupervisorId != null,
+                      onClear: () {
+                        setState(() {
+                          _selectedArea = null;
+                          _selectedSupervisorId = null;
+                        });
+                      },
+                    )
+                  : GridView.builder(
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
+                      gridDelegate:
+                          const SliverGridDelegateWithFixedCrossAxisCount(
+                        crossAxisCount: 2,
+                        crossAxisSpacing: 12,
+                        mainAxisSpacing: 12,
+                        childAspectRatio: 0.9,
+                      ),
+                      itemCount: filteredAssignments.length,
+                      itemBuilder: (context, index) {
+                        final assignment = filteredAssignments[index];
+                        return _buildAssignmentCard(
+                            context, assignment, assignmentsProvider);
+                      },
+                    ),
             ],
           ),
         );
       },
+    );
+  }
+
+  Widget _buildFilterBar(List<String> areas, List<User> supervisors) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 5,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          Row(
+            children: [
+              Text(
+                'Filtros',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFF2D3748),
+                ),
+              ),
+              Spacer(),
+              NeumorphicButton(
+                style: NeumorphicStyle(
+                  depth: 2,
+                  intensity: 0.7,
+                  boxShape: NeumorphicBoxShape.circle(),
+                  color: _showFilters
+                      ? const Color(0xFF3182CE)
+                      : const Color(0xFFE2E8F0),
+                ),
+                padding: const EdgeInsets.all(8),
+                onPressed: () {
+                  setState(() {
+                    _showFilters = !_showFilters;
+                  });
+                },
+                child: Icon(
+                  Icons.filter_list,
+                  size: 18,
+                  color: _showFilters ? Colors.white : const Color(0xFF718096),
+                ),
+              ),
+            ],
+          ),
+          if (_showFilters) ...[
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                Expanded(
+                  child: DropdownButtonFormField<String>(
+                    decoration: InputDecoration(
+                      labelText: 'Área',
+                      contentPadding:
+                          EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
+                    value: _selectedArea,
+                    hint: Text('Todas las áreas'),
+                    isExpanded: true,
+                    items: [
+                      DropdownMenuItem<String>(
+                        value: null,
+                        child: Text('Todas las áreas'),
+                      ),
+                      ...areas.map((area) => DropdownMenuItem<String>(
+                            value: area,
+                            child: Text(area),
+                          )),
+                    ],
+                    onChanged: (value) {
+                      setState(() {
+                        _selectedArea = value;
+                      });
+                    },
+                  ),
+                ),
+                SizedBox(width: 8),
+                Expanded(
+                  child: DropdownButtonFormField<int>(
+                    decoration: InputDecoration(
+                      labelText: 'Supervisor',
+                      contentPadding:
+                          EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
+                    value: _selectedSupervisorId,
+                    hint: Text('Todos los supervisores'),
+                    isExpanded: true,
+                    // Personalizar cómo se muestra el elemento seleccionado
+                    selectedItemBuilder: (BuildContext context) {
+                      return supervisors.map<Widget>((User supervisor) {
+                        return Container(
+                          alignment: Alignment.centerLeft,
+                          constraints: BoxConstraints(minWidth: 100),
+                          child: Text(
+                            supervisor.name,
+                            overflow: TextOverflow.ellipsis,
+                            maxLines: 1,
+                            style: TextStyle(
+                              color: Color(0xFF2D3748),
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        );
+                      }).toList()
+                        ..insert(
+                            0,
+                            Text(
+                                'Todos los supervisores')); // Para el caso null
+                    },
+                    // Limitar altura máxima del menú desplegable
+                    menuMaxHeight: 300,
+                    // Separación entre elementos
+                    itemHeight: 60,
+                    items: [
+                      DropdownMenuItem<int>(
+                        value: null,
+                        child: Container(
+                          width: double.infinity,
+                          padding: EdgeInsets.symmetric(vertical: 8),
+                          decoration: BoxDecoration(
+                            border: Border(
+                              bottom: BorderSide(
+                                color: Color(0xFFEDF2F7),
+                                width: 1,
+                              ),
+                            ),
+                          ),
+                          child: Text('Todos los supervisores'),
+                        ),
+                      ),
+                      ...supervisors.map((supervisor) => DropdownMenuItem<int>(
+                            value: supervisor.id,
+                            child: Container(
+                              width: double.infinity,
+                              padding: EdgeInsets.symmetric(vertical: 8),
+                              decoration: BoxDecoration(
+                                border: Border(
+                                  bottom: BorderSide(
+                                    color: Color(0xFFEDF2F7),
+                                    width: 1,
+                                  ),
+                                ),
+                              ),
+                              // En el menú desplegado podemos mostrar el nombre completo
+                              child: Text(supervisor.name),
+                            ),
+                          )),
+                    ],
+                    onChanged: (value) {
+                      setState(() {
+                        _selectedSupervisorId = value;
+                      });
+                    },
+                  ),
+                ),
+              ],
+            ),
+            if (_selectedArea != null || _selectedSupervisorId != null) ...[
+              const SizedBox(height: 8),
+              Align(
+                alignment: Alignment.centerRight,
+                child: NeumorphicButton(
+                  style: NeumorphicStyle(
+                    depth: 2,
+                    intensity: 0.7,
+                    boxShape:
+                        NeumorphicBoxShape.roundRect(BorderRadius.circular(8)),
+                  ),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  onPressed: () {
+                    setState(() {
+                      _selectedArea = null;
+                      _selectedSupervisorId = null;
+                    });
+                  },
+                  child: Text(
+                    'Limpiar filtros',
+                    style: TextStyle(
+                      color: Color(0xFF718096),
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ],
+        ],
+      ),
     );
   }
 

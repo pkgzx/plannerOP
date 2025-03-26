@@ -150,7 +150,6 @@ class _ExportOptionsState extends State<ExportOptions> {
       final filteredAssignments = _getFilteredAssignments();
 
       if (filteredAssignments.isEmpty) {
-        _showErrorSnackbar(Exception('No hay datos para exportar'));
         widget.onExport('No hay datos para exportar');
         return;
       }
