@@ -28,6 +28,13 @@ class _DashboardTabState extends State<DashboardTab> {
   bool _isLoadingFaults = false;
   bool _isLoadingChargers = false;
 
+  // Variable para controlar si ya hemos iniciado las cargas
+  bool _hasStartedLoading = false;
+
+  // Sobreescribir para mantener el estado del widget entre cambios de tab
+  @override
+  bool get wantKeepAlive => true;
+
   @override
   void initState() {
     super.initState();
@@ -44,12 +51,13 @@ class _DashboardTabState extends State<DashboardTab> {
           _loadTask(),
           _loadClients(),
           _loadAssignments(),
-          _loadFaults(),
           _loadChargersOp(),
         ]).catchError((error) {
           debugPrint('Error durante la carga en paralelo: $error');
           // Continuar aunque haya errores
         });
+
+        _loadFaults();
       }
     });
   }
@@ -66,8 +74,6 @@ class _DashboardTabState extends State<DashboardTab> {
           Provider.of<ChargersOpProvider>(context, listen: false);
 
       await chargersOpProvider.fetchChargers(context);
-      debugPrint(
-          'Cargadores cargados con éxito: ${chargersOpProvider.chargers.length}');
     } catch (e) {
       debugPrint('Error al cargar cargadores: $e');
 
@@ -83,33 +89,33 @@ class _DashboardTabState extends State<DashboardTab> {
     }
   }
 
-// Método para cargar faltas (similar a los otros métodos de carga)
-  Future<void> _loadFaults() async {
-    if (!mounted) return;
+// // Método para cargar faltas (similar a los otros métodos de carga)
+//   Future<void> _loadFaults() async {
+//     if (!mounted) return;
 
-    setState(() {
-      _isLoadingFaults = true; // Añade esta variable de estado
-    });
+//     setState(() {
+//       _isLoadingFaults = true; // Añade esta variable de estado
+//     });
 
-    try {
-      final faultsProvider =
-          Provider.of<FaultsProvider>(context, listen: false);
+//     try {
+//       final faultsProvider =
+//           Provider.of<FaultsProvider>(context, listen: false);
 
-      await faultsProvider.fetchFaults(context);
-    } catch (e) {
-      debugPrint('Error al cargar faltas: $e');
+//       await faultsProvider.fetchFaults(context);
+//     } catch (e) {
+//       debugPrint('Error al cargar faltas: $e');
 
-      if (mounted) {
-        showErrorToast(context, "Error al cargar faltas.");
-      }
-    } finally {
-      if (mounted) {
-        setState(() {
-          _isLoadingFaults = false;
-        });
-      }
-    }
-  }
+//       if (mounted) {
+//         showErrorToast(context, "Error al cargar faltas.");
+//       }
+//     } finally {
+//       if (mounted) {
+//         setState(() {
+//           _isLoadingFaults = false;
+//         });
+//       }
+//     }
+//   }
 
   // Método para verificar si necesitamos cargar trabajadores
   Future<void> _checkAndLoadWorkersIfNeeded() async {
@@ -118,44 +124,51 @@ class _DashboardTabState extends State<DashboardTab> {
     final workersProvider =
         Provider.of<WorkersProvider>(context, listen: false);
 
+    final faultsProvider = Provider.of<FaultsProvider>(context, listen: false);
+
     // Solo cargaremos si no se han cargado antes
     if (!workersProvider.hasLoadedInitialData) {
       await _loadWorkers();
     }
-  }
 
-  Future<void> _loadWorkers() async {
-    if (!mounted) return;
-
-    setState(() {
-      _isLoadingWorkers = true;
-    });
-
-    final workersProvider =
-        Provider.of<WorkersProvider>(context, listen: false);
-
-    try {
-      // Intentar cargar desde la API usando el método que respeta el flag
-      // debugPrint('Cargando trabajadores desde API..++++.');
-      await workersProvider.fetchWorkersIfNeeded(context);
-
-      // Si después de intentar cargar no hay datos, añadir datos de muestra
-      if (workersProvider.workers.isEmpty) {}
-    } catch (e) {
-      // Si algo falla, cargar datos de muestra
-
-      // Mostrar un mensaje de error
-      if (mounted) {
-        showErrorToast(context, 'Error al cargar trabajadores.');
-      }
-    } finally {
-      if (mounted) {
-        setState(() {
-          _isLoadingWorkers = false;
-        });
-      }
+    if (!faultsProvider.hasLoadedInitialData) {
+      debugPrint('Cargando faltas....................');
+      _loadFaults();
     }
   }
+
+  // Future<void> _loadWorkers() async {
+  //   if (!mounted) return;
+
+  //   setState(() {
+  //     _isLoadingWorkers = true;
+  //   });
+
+  //   final workersProvider =
+  //       Provider.of<WorkersProvider>(context, listen: false);
+
+  //   try {
+  //     // Intentar cargar desde la API usando el método que respeta el flag
+  //     // debugPrint('Cargando trabajadores desde API..++++.');
+  //     await workersProvider.fetchWorkersIfNeeded(context);
+
+  //     // Si después de intentar cargar no hay datos, añadir datos de muestra
+  //     if (workersProvider.workers.isEmpty) {}
+  //   } catch (e) {
+  //     // Si algo falla, cargar datos de muestra
+
+  //     // Mostrar un mensaje de error
+  //     if (mounted) {
+  //       showErrorToast(context, 'Error al cargar trabajadores.');
+  //     }
+  //   } finally {
+  //     if (mounted) {
+  //       setState(() {
+  //         _isLoadingWorkers = false;
+  //       });
+  //     }
+  //   }
+  // }
 
   Future<void> _loadAreas() async {
     if (!mounted) return;
@@ -252,34 +265,42 @@ class _DashboardTabState extends State<DashboardTab> {
     }
   }
 
+  // 1. Primero, modifica el método _loadAssignments para continuar en segundo plano
+
   Future<void> _loadAssignments() async {
-    if (!mounted) return;
+    // CAMBIO 1: Eliminar esta verificación que detiene la carga cuando cambias de tab
+    // if (!mounted) return;
 
-    // Configurar un timeout para evitar carga infinita
-    final loadingTimeout = Future.delayed(const Duration(seconds: 10), () {
-      if (mounted && _isLoadingAssignments) {
-        debugPrint('⚠️ Timeout en carga de asignaciones');
-        setState(() {
-          _isLoadingAssignments = false;
-        });
-        // Desactivar loading en el provider también
-        Provider.of<AssignmentsProvider>(context, listen: false)
-            .changeIsLoadingOff();
-        showAlertToast(
-            context, 'La carga de datos está tomando demasiado tiempo');
-      }
-    });
-
-    // No mostrar indicador de carga si ya hay datos disponibles
+    // Extraer el provider para usarlo independientemente del estado del widget
     final assignmentsProvider =
         Provider.of<AssignmentsProvider>(context, listen: false);
     final hasExistingData = assignmentsProvider.assignments.isNotEmpty;
 
-    if (!hasExistingData) {
+    // CAMBIO 2: Solo actualizar UI si estamos montados
+    if (!hasExistingData && mounted) {
       setState(() {
         _isLoadingAssignments = true;
       });
+    } else {
+      // Aun así marcar como cargando para la lógica interna
+      _isLoadingAssignments = true;
     }
+
+    // Configurar un timeout que funcione independientemente del estado montado
+    Future.delayed(const Duration(seconds: 10), () {
+      if (_isLoadingAssignments) {
+        debugPrint('⚠️ Timeout en carga de asignaciones');
+        _isLoadingAssignments = false;
+        assignmentsProvider.changeIsLoadingOff();
+
+        // Solo mostrar toast si estamos montados
+        if (mounted) {
+          setState(() {});
+          showAlertToast(
+              context, 'La carga de datos está tomando demasiado tiempo');
+        }
+      }
+    });
 
     try {
       // Cargar asignaciones con prioridad
@@ -298,17 +319,89 @@ class _DashboardTabState extends State<DashboardTab> {
         showErrorToast(context, 'Error al cargar asignaciones.');
       }
     } finally {
-      // Asegurar que el estado de carga se desactive siempre al finalizar
+      // Actualizar estado independientemente del estado montado
+      _isLoadingAssignments = false;
+      assignmentsProvider.changeIsLoadingOff();
+
+      // Solo actualizar UI si estamos montados
       if (mounted) {
-        setState(() {
-          _isLoadingAssignments = false;
-        });
-        // Asegurar que el provider también deshabilite su indicador de carga
-        assignmentsProvider.changeIsLoadingOff();
+        setState(() {});
       }
     }
+  }
 
-    // No necesitamos esperar el timeout
+  // 2. Modifica _loadFaults de la misma manera:
+
+  Future<void> _loadFaults() async {
+    // Eliminar esta línea que detiene la carga
+    if (!mounted) return;
+
+    // Extraer el provider primero
+    final faultsProvider = Provider.of<FaultsProvider>(context, listen: false);
+
+    // Solo actualizar UI si estamos montados
+    if (mounted) {
+      setState(() {
+        _isLoadingFaults = true;
+      });
+    } else {
+      // Aun así cambiar la variable de estado
+      _isLoadingFaults = true;
+    }
+
+    try {
+      await faultsProvider.fetchFaults(context);
+      debugPrint('Faltas cargadas exitosamente');
+    } catch (e) {
+      debugPrint('Error al cargar faltas: $e');
+
+      if (mounted) {
+        showErrorToast(context, "Error al cargar faltas.");
+      }
+    } finally {
+      _isLoadingFaults = false;
+
+      if (mounted) {
+        setState(() {});
+      }
+    }
+  }
+
+  // 3. Aplica el mismo patrón al resto de métodos que necesites que continúen
+  // Por ejemplo, para _loadWorkers:
+
+  Future<void> _loadWorkers() async {
+    // Eliminar esta verificación
+    // if (!mounted) return;
+
+    // Extraer provider primero
+    final workersProvider =
+        Provider.of<WorkersProvider>(context, listen: false);
+
+    // Solo actualizar UI si estamos montados
+    if (mounted) {
+      setState(() {
+        _isLoadingWorkers = true;
+      });
+    } else {
+      _isLoadingWorkers = true;
+    }
+
+    try {
+      await workersProvider.fetchWorkersIfNeeded(context);
+    } catch (e) {
+      debugPrint('Error al cargar trabajadores: $e');
+
+      if (mounted) {
+        showErrorToast(context, 'Error al cargar trabajadores.');
+      }
+    } finally {
+      _isLoadingWorkers = false;
+
+      if (mounted) {
+        setState(() {});
+      }
+    }
   }
 
   // Método auxiliar para cargar áreas predeterminadas

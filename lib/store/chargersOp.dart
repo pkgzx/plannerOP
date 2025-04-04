@@ -22,4 +22,9 @@ class ChargersOpProvider extends ChangeNotifier {
       print(e);
     }
   }
+
+  User getChargerById(int id) {
+    return _chargers.firstWhere((charger) => charger.id == id,
+        orElse: () => User(id: 0, name: '', dni: "", phone: "", cargo: ""));
+  }
 }

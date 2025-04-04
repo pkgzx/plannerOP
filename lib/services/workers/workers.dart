@@ -60,8 +60,6 @@ class WorkerService {
               status = WorkerStatus.available;
             }
 
-            debugPrint('Failures: ${w['failures']}');
-
             workers.add(Worker(
               id: w['id'],
               document: w['dni'],

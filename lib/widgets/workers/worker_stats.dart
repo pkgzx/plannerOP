@@ -79,8 +79,7 @@ class WorkerStatsCards extends StatelessWidget {
                 ),
                 _buildStatCard(
                   title: 'Novedades',
-                  value:
-                      '${faultsProvider.getWorkersWithMostFaults(context).length}',
+                  value: '${faultsProvider.faults.length}',
                   icon: Icons.warning_amber_rounded,
                   color: const Color(0xFFF56565),
                   isSelected: currentFilter == WorkerFilter.faults,

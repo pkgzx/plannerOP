@@ -25,9 +25,6 @@ class ChargersopService {
 
       if (response.statusCode == 200) {
         final List<dynamic> chargers = jsonDecode(response.body);
-        for (var charger in chargers) {
-          print('charger: $charger');
-        }
         return chargers
             .where((charger) =>
                 charger['occupation'] == 'SUPERVISOR' ||

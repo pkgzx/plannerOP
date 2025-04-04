@@ -124,14 +124,14 @@ class DateField extends StatelessWidget {
   }
 }
 
-class TimeField extends StatelessWidget {
+class TimeField extends StatefulWidget {
   final String label;
   final String hint;
   final IconData icon;
   final TextEditingController controller;
   final TextEditingController? dateController;
   final bool isOptional;
-  final bool isEndTime; // Nuevo parámetro para identificar si es hora de fin
+  final bool isEndTime;
 
   const TimeField({
     Key? key,
@@ -141,13 +141,42 @@ class TimeField extends StatelessWidget {
     required this.controller,
     this.dateController,
     this.isOptional = false,
-    this.isEndTime = false, // Por defecto, asumimos que es hora de inicio
+    this.isEndTime = false,
   }) : super(key: key);
 
   @override
+  State<TimeField> createState() => _TimeFieldState();
+}
+
+class _TimeFieldState extends State<TimeField> {
+  @override
+  void initState() {
+    super.initState();
+    // Añadir un listener al controller para detectar cambios y forzar rebuild
+    widget.controller.addListener(_onControllerChanged);
+  }
+
+  @override
+  void dispose() {
+    // Remover el listener al destruir el widget
+    widget.controller.removeListener(_onControllerChanged);
+    super.dispose();
+  }
+
+  void _onControllerChanged() {
+    if (mounted) {
+      setState(() {
+        // Forzar rebuild cuando cambia el valor del controller
+        debugPrint(
+            'TimeField controller actualizado: ${widget.controller.text}');
+      });
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
-    debugPrint(
-        'TimeField build - date: ${dateController?.text}, time: ${controller.text}, isEndTime: $isEndTime');
+    // Mostrar para debugging
+    debugPrint('Renderizando TimeField con valor: ${widget.controller.text}');
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 16),
@@ -155,7 +184,7 @@ class TimeField extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            label,
+            widget.label,
             style: const TextStyle(
               fontWeight: FontWeight.w600,
               fontSize: 14,
@@ -173,13 +202,15 @@ class TimeField extends StatelessWidget {
               ),
               child: Row(
                 children: [
-                  Icon(icon, size: 20, color: const Color(0xFF718096)),
+                  Icon(widget.icon, size: 20, color: const Color(0xFF718096)),
                   const SizedBox(width: 10),
                   Expanded(
                     child: Text(
-                      controller.text.isEmpty ? hint : controller.text,
+                      widget.controller.text.isEmpty
+                          ? widget.hint
+                          : widget.controller.text,
                       style: TextStyle(
-                        color: controller.text.isEmpty
+                        color: widget.controller.text.isEmpty
                             ? const Color(0xFFA0AEC0)
                             : Colors.black,
                       ),
@@ -200,8 +231,8 @@ class TimeField extends StatelessWidget {
       // Determinar la hora inicial para el selector
       TimeOfDay initialTime;
       try {
-        if (controller.text.isNotEmpty) {
-          final timeParts = controller.text.split(':');
+        if (widget.controller.text.isNotEmpty) {
+          final timeParts = widget.controller.text.split(':');
           initialTime = TimeOfDay(
             hour: int.parse(timeParts[0]),
             minute: int.parse(timeParts[1]),
@@ -219,12 +250,12 @@ class TimeField extends StatelessWidget {
       TimeOfDay? minimumTime;
 
       // Solo verificamos restricciones para hora de inicio si tenemos una fecha y no es hora final
-      if (!isEndTime &&
-          dateController != null &&
-          dateController!.text.isNotEmpty) {
+      if (!widget.isEndTime &&
+          widget.dateController != null &&
+          widget.dateController!.text.isNotEmpty) {
         try {
           final selectedDate =
-              DateFormat('dd/MM/yyyy').parse(dateController!.text);
+              DateFormat('dd/MM/yyyy').parse(widget.dateController!.text);
           final now = DateTime.now();
 
           // Verificar si es hoy
@@ -282,7 +313,7 @@ class TimeField extends StatelessWidget {
             'Hora seleccionada: ${picked.hour}:${picked.minute} ($pickedHour12:${picked.minute.toString().padLeft(2, '0')} $pickedPeriod)');
 
         // Comprobación solo si es el día de hoy y es una hora de inicio
-        if (!isEndTime && isToday && minimumTime != null) {
+        if (!widget.isEndTime && isToday && minimumTime != null) {
           final selectedMinutes = picked.hour * 60 + picked.minute;
           final minimumMinutes = minimumTime.hour * 60 + minimumTime.minute;
 
@@ -301,14 +332,14 @@ class TimeField extends StatelessWidget {
         // Formatear la hora seleccionada
         final hour = picked.hour.toString().padLeft(2, '0');
         final minute = picked.minute.toString().padLeft(2, '0');
-        controller.text = '$hour:$minute';
+        widget.controller.text = '$hour:$minute';
 
         // Obligar actualización de UI si es necesario
         if (context is StatefulElement) {
           (context.state as State).setState(() {});
         }
 
-        debugPrint('Hora guardada: ${controller.text}');
+        debugPrint('Hora guardada: ${widget.controller.text}');
       }
     } catch (e, stackTrace) {
       debugPrint('Error en selector de hora: $e');

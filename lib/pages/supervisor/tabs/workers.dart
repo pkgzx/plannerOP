@@ -190,7 +190,7 @@ class _WorkersTabState extends State<WorkersTab> {
               },
             ),
 
-// NUEVO: Si estamos en modo faltas, mostrar filtros específicos
+// Si estamos en modo faltas, mostrar filtros específicos
             if (_currentFilter == WorkerFilter.faults)
               Padding(
                 padding:
@@ -270,7 +270,7 @@ class _WorkersTabState extends State<WorkersTab> {
                     case WorkerFilter.faults:
                       workers =
                           faultsProvider.getWorkersWithMostFaults(context);
-                      // NUEVO: Filtrar por tipo de falta si se ha seleccionado uno
+                      // Filtrar por tipo de falta si se ha seleccionado uno
                       if (_selectedFaultType != null) {
                         workers = workers.where((worker) {
                           final workerFaults = faultsProvider
@@ -283,6 +283,47 @@ class _WorkersTabState extends State<WorkersTab> {
                     default:
                       workers = workersProvider.workers.toList();
                   }
+
+                  //  Ordenar trabajadores por faltas más recientes cuando estamos en el filtro de faltas
+                  if (_currentFilter == WorkerFilter.faults) {
+                    workers.sort((a, b) {
+                      final faultsA =
+                          faultsProvider.fetchFaultsByWorker(context, a.id);
+                      final faultsB =
+                          faultsProvider.fetchFaultsByWorker(context, b.id);
+
+                      // Si ambos tienen faltas, comparar por la fecha más reciente
+                      if (faultsA.isNotEmpty && faultsB.isNotEmpty) {
+                        // Obtener falta más reciente de cada trabajador
+                        final latestFaultA = faultsA.reduce((curr, next) =>
+                            curr.createdAt.isAfter(next.createdAt)
+                                ? curr
+                                : next);
+                        final latestFaultB = faultsB.reduce((curr, next) =>
+                            curr.createdAt.isAfter(next.createdAt)
+                                ? curr
+                                : next);
+
+                        // Ordenar por fecha más reciente primero
+                        return latestFaultB.createdAt
+                            .compareTo(latestFaultA.createdAt);
+                      }
+
+                      // Si solo uno tiene faltas, ese va primero
+                      if (faultsA.isNotEmpty) return -1;
+                      if (faultsB.isNotEmpty) return 1;
+
+                      // Si ninguno tiene faltas, ordenar por nombre
+                      return a.name.compareTo(b.name);
+                    });
+                  } else {
+                    // Para el filtro "Todos", ordenar por cantidad de faltas (pero no reordenar otros filtros)
+                    if (_currentFilter == WorkerFilter.all) {
+                      // Primero ordenar por cantidad de faltas (descendente)
+                      workers.sort((a, b) => b.failures.compareTo(a.failures));
+                    }
+                  }
+
                   // Aplicar filtro de búsqueda sobre el resultado anterior
                   final filteredWorkers = _searchQuery.isEmpty
                       ? workers
@@ -413,6 +454,9 @@ class _WorkersTabState extends State<WorkersTab> {
           final filteredFaults = selectedFaultType == null
               ? faults
               : faults.where((f) => f.type == selectedFaultType).toList();
+
+          filteredFaults.sort((a, b) => b.createdAt.compareTo(a
+              .createdAt)); // Ordenar por fecha de creación (más reciente primero)
 
           return Dialog(
             shape: RoundedRectangleBorder(

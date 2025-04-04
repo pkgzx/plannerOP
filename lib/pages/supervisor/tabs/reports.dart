@@ -161,14 +161,6 @@ class _ReportesTabState extends State<ReportesTab> {
     });
   }
 
-  // Obtener el ícono para el gráfico seleccionado
-  IconData _getSelectedChartIcon() {
-    final selectedOption = _chartOptions.firstWhere(
-        (option) => option['title'] == _selectedChart,
-        orElse: () => _chartOptions[0]);
-    return selectedOption['icon'];
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(

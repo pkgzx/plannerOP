@@ -3,8 +3,10 @@ import 'package:flutter_neumorphic_plus/flutter_neumorphic.dart';
 import 'package:intl/intl.dart';
 import 'package:plannerop/core/model/user.dart';
 import 'package:plannerop/core/model/worker.dart';
+import 'package:plannerop/core/model/workerGroup.dart';
 import 'package:plannerop/store/areas.dart';
 import 'package:plannerop/store/chargersOp.dart';
+import 'package:plannerop/store/workerGroup.dart';
 import 'package:plannerop/store/workers.dart';
 import 'package:plannerop/utils/toast.dart';
 import 'package:plannerop/widgets/assingments/editAssignmentForm.dart';
@@ -652,12 +654,7 @@ class _PendingAssignmentsViewState extends State<PendingAssignmentsView> {
                             ],
                           ),
                           const SizedBox(height: 20),
-                          _buildDetailsSection(
-                            title: 'Trabajadores asignados',
-                            children: assignment.workers.map((worker) {
-                              return _buildWorkerItem(worker);
-                            }).toList(),
-                          ),
+                          _buildWorkersSection(assignment),
                           const SizedBox(height: 20),
                           assignment.deletedWorkers.map(
                             (worker) {
@@ -822,6 +819,160 @@ class _PendingAssignmentsViewState extends State<PendingAssignmentsView> {
         );
       },
     );
+  }
+
+// Método para mostrar trabajadores agrupados
+  Widget _buildWorkersSection(Assignment assignment) {
+    // Obtener los grupos de la asignación
+    final groups = assignment.groups;
+
+    // Agrupar los workers por su grupo
+    Map<String, List<Worker>> workersByGroup = {};
+    List<Worker> ungroupedWorkers = [];
+
+    // Conjunto para seguir los IDs de trabajadores que ya están en grupos
+    Set<int> groupedWorkerIds = {};
+
+    // Asignar colores únicos a cada grupo
+    Map<String, Color> groupColors = {};
+    List<Color> groupColorOptions = [
+      const Color(0xFFE6FFFA), // Verde claro
+      const Color(0xFFEBF4FF), // Azul claro
+      const Color(0xFFFEF3C7), // Amarillo claro
+      const Color(0xFFFEE2E2), // Rojo claro
+      const Color(0xFFFAF5FF), // Púrpura claro
+    ];
+
+    int colorIndex = 0;
+
+    // Primero: identificar todos los trabajadores en grupos
+    for (var group in groups) {
+      for (var workerId in group.workers) {
+        groupedWorkerIds.add(workerId);
+      }
+    }
+
+    // Segundo: clasificar trabajadores en sus grupos correspondientes
+    for (var worker in assignment.workers) {
+      bool assignedToGroup = false;
+
+      // Buscar en qué grupo está este trabajador
+      for (var group in groups) {
+        if (group.workers.contains(worker.id)) {
+          // Inicializar la lista del grupo si es necesario
+          if (!workersByGroup.containsKey(group.id)) {
+            workersByGroup[group.id] = [];
+            groupColors[group.id] =
+                groupColorOptions[colorIndex % groupColorOptions.length];
+            colorIndex++;
+          }
+
+          // Añadir el trabajador a su grupo
+          workersByGroup[group.id]!.add(worker);
+          assignedToGroup = true;
+          break;
+        }
+      }
+
+      // Si el trabajador no está en ningún grupo, añadirlo a los trabajadores sin grupo
+      if (!assignedToGroup && !groupedWorkerIds.contains(worker.id)) {
+        ungroupedWorkers.add(worker);
+      }
+    }
+
+    List<Widget> sections = [];
+
+    // Primero mostrar los grupos
+    workersByGroup.forEach((groupId, workers) {
+      final group = groups.firstWhere(
+        (g) => g.id == groupId,
+        orElse: () => WorkerGroup(workers: [], name: "", id: ""),
+      );
+
+      sections.add(
+        Container(
+          margin: const EdgeInsets.only(bottom: 16),
+          decoration: BoxDecoration(
+            color: groupColors[groupId],
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: const Color(0xFFE2E8F0)),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Encabezado del grupo
+              Container(
+                width: double.infinity,
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF38A169),
+                  borderRadius: BorderRadius.only(
+                    topLeft: Radius.circular(7),
+                    topRight: Radius.circular(7),
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    Icon(Icons.access_time, color: Colors.white, size: 14),
+                    SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        group.name,
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w500,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              // Lista de trabajadores en este grupo
+              Padding(
+                padding: const EdgeInsets.all(8.0),
+                child: Column(
+                  children: workers
+                      .map((worker) => _buildWorkerItem(worker))
+                      .toList(),
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    });
+
+    // Luego mostrar los trabajadores sin grupo si existen
+    if (ungroupedWorkers.isNotEmpty) {
+      sections.add(
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            if (workersByGroup
+                .isNotEmpty) // Solo mostrar este título si hay grupos
+              Padding(
+                padding: const EdgeInsets.only(bottom: 8.0, top: 8.0),
+                child: Text(
+                  'Trabajadores individuales',
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                    color: Color(0xFF4A5568),
+                  ),
+                ),
+              ),
+            ...ungroupedWorkers
+                .map((worker) => _buildWorkerItem(worker))
+                .toList(),
+          ],
+        ),
+      );
+    }
+
+    return Column(children: sections);
   }
 
   // Método para mostrar el diálogo de cancelación (agregarlo si no existe)

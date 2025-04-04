@@ -4,8 +4,11 @@ import 'package:flutter/material.dart';
 import 'package:plannerop/core/model/assignment.dart';
 import 'package:plannerop/core/model/user.dart';
 import 'package:plannerop/core/model/worker.dart';
+import 'package:plannerop/core/model/workerGroup.dart';
 import 'package:plannerop/dto/assignment/createAssigment.dart';
 import 'package:plannerop/services/assignments/assignment.dart';
+import 'package:plannerop/store/workerGroup.dart';
+import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class AssignmentsProvider extends ChangeNotifier {
@@ -34,12 +37,12 @@ class AssignmentsProvider extends ChangeNotifier {
   }
 
   void changeIsLoadingOff() {
-    debugPrint('Cambiando isLoading a false');
     _isLoading = false;
     notifyListeners();
   }
 
   void _startRefreshTimer() {
+    debugPrint('Iniciando temporizador de refresco...');
     _refreshTimer?.cancel();
     _refreshTimer = Timer.periodic(_refreshInterval, (timer) {
       if (_lastContext != null) {
@@ -53,6 +56,8 @@ class AssignmentsProvider extends ChangeNotifier {
   // Método para refrescar solo asignaciones activas
   Future<void> refreshActiveAssignments(BuildContext context) async {
     _lastContext = context;
+
+    debugPrint('Refrescando asignaciones activas...');
 
     try {
       // Refrescar solo asignaciones activas y pendientes
@@ -77,7 +82,48 @@ class AssignmentsProvider extends ChangeNotifier {
     super.dispose();
   }
 
+  Future<bool> completeAssignment(
+      int id, DateTime endDate, String endTime, BuildContext context) async {
+    debugPrint('Completando asignación...');
+    try {
+      final success = await _assignmentService.completeAssigment(
+          id, 'COMPLETED', endDate, endTime, context);
+
+      if (success) {
+        final index = _assignments.indexWhere((a) => a.id == id);
+        if (index >= 0) {
+          final currentAssignment = _assignments[index];
+          _assignments[index] = Assignment(
+            id: currentAssignment.id,
+            workers: currentAssignment.workers,
+            area: currentAssignment.area,
+            task: currentAssignment.task,
+            date: currentAssignment.date,
+            time: currentAssignment.time,
+            zone: currentAssignment.zone,
+            status: 'COMPLETED',
+            endDate: currentAssignment.endDate ?? endDate,
+            endTime: currentAssignment.endTime ?? endTime,
+            motorship: currentAssignment.motorship,
+            userId: currentAssignment.userId,
+            areaId: currentAssignment.areaId,
+            taskId: currentAssignment.taskId,
+            clientId: currentAssignment.clientId,
+            inChagers: currentAssignment.inChagers,
+          );
+          notifyListeners();
+        }
+      }
+
+      return success;
+    } catch (e) {
+      debugPrint('Error al completar la asignación: $e');
+      return false;
+    }
+  }
+
   Future<void> loadAssignments(BuildContext context) async {
+    debugPrint('Cargando asignaciones...');
     _isLoading = true;
     _error = null; // Resetear error previo
     notifyListeners();
@@ -109,6 +155,7 @@ class AssignmentsProvider extends ChangeNotifier {
   }
 
   Future<void> _saveAssignments() async {
+    debugPrint('Guardando asignaciones...');
     try {
       final prefs = await SharedPreferences.getInstance();
       final assignmentsJson = json.encode(
@@ -132,12 +179,14 @@ class AssignmentsProvider extends ChangeNotifier {
     required int userId,
     required int clientId,
     required List<int> chargerIds,
+    required List<WorkerGroup> groups,
     String? clientName,
     DateTime? endDate,
     String? endTime,
     String? motorship,
     BuildContext? context, // Necesario para el token
   }) async {
+    debugPrint('Agregando asignación...');
     _isLoading = true;
     _error = null;
     notifyListeners();
@@ -159,6 +208,7 @@ class AssignmentsProvider extends ChangeNotifier {
         taskId: taskId,
         clientId: clientId,
         inChagers: chargerIds,
+        groups: groups,
       );
 
       // Si tenemos contexto, intentamos enviar al backend
@@ -172,10 +222,15 @@ class AssignmentsProvider extends ChangeNotifier {
       // Si se envió con éxito al backend (o no hay contexto), guardamos localmente
       if (response.isSuccess) {
         _assignments.add(newAssignment);
+
         await _saveAssignments();
       } else {
         _error = "Error al crear la asignación en el servidor";
       }
+
+      WorkerGroupsProvider workerGroupsProvider =
+          Provider.of<WorkerGroupsProvider>(context!, listen: false);
+      workerGroupsProvider.groups.clear();
 
       _isLoading = false;
       notifyListeners();
@@ -191,6 +246,7 @@ class AssignmentsProvider extends ChangeNotifier {
 
   Future<void> updateAssignmentStatus(
       int id, String status, BuildContext context) async {
+    debugPrint('Actualizando estado de la asignación...');
     final index = _assignments.indexWhere((a) => a.id == id);
     if (index >= 0) {
       final currentAssignment = _assignments[index];
@@ -223,6 +279,7 @@ class AssignmentsProvider extends ChangeNotifier {
   }
 
   Future<void> updateAssignmentEndTime(int id, String endTime) async {
+    debugPrint('Actualizando hora de finalización de la asignación...');
     final index = _assignments.indexWhere((a) => a.id == id);
     if (index >= 0) {
       final currentAssignment = _assignments[index];
@@ -256,20 +313,23 @@ class AssignmentsProvider extends ChangeNotifier {
   }
 
   Assignment? getAssignmentById(String id) {
+    debugPrint('Obteniendo asignación por ID...');
     try {
       return _assignments.firstWhere(
         (a) => a.id == id,
         orElse: () => Assignment(
-            workers: [],
-            area: "",
-            task: "",
-            date: DateTime.now(),
-            time: "",
-            zone: 0,
-            userId: 0,
-            areaId: 0,
-            taskId: 0,
-            clientId: 0),
+          workers: [],
+          area: "",
+          task: "",
+          date: DateTime.now(),
+          time: "",
+          zone: 0,
+          userId: 0,
+          areaId: 0,
+          taskId: 0,
+          clientId: 0,
+          inChagers: [],
+        ),
       );
     } catch (e) {
       return null;
@@ -279,6 +339,7 @@ class AssignmentsProvider extends ChangeNotifier {
   // Añadir este nuevo método al AssignmentsProvider
   Future<bool> updateAssignment(
       Assignment updatedAssignment, BuildContext context) async {
+    debugPrint('Actualizando asignación2...');
     try {
       _isLoading = true;
       _error = null;
@@ -313,6 +374,7 @@ class AssignmentsProvider extends ChangeNotifier {
 
 // Añadir a la clase AssignmentsProvider
   Future<void> loadAssignmentsWithPriority(BuildContext context) async {
+    debugPrint('Cargando asignaciones con prioridad...');
     // No establecer isLoading = true si ya hay datos para evitar reconstrucciones innecesarias
     final hasExistingData = _assignments.isNotEmpty;
 
@@ -328,18 +390,14 @@ class AssignmentsProvider extends ChangeNotifier {
 
       // Actualizar primero las asignaciones de alta prioridad
       if (highPriorityAssignments.isNotEmpty) {
-        // Mantener asignaciones completadas y añadir/actualizar las de alta prioridad
-        final completedAssignments =
-            _assignments.where((a) => a.status == 'COMPLETED').toList();
-
         // Actualizar asignaciones actuales
         _updateAssignmentsList(highPriorityAssignments);
 
         // Notificar cambios para actualizar la UI inmediatamente
         if (!hasExistingData) {
           _isLoading = false;
-          notifyListeners();
         }
+        notifyListeners();
       }
 
       // Segunda fase: Cargar asignaciones completadas (baja prioridad) en segundo plano
@@ -358,6 +416,7 @@ class AssignmentsProvider extends ChangeNotifier {
 // Método auxiliar para cargar asignaciones completadas en segundo plano
   Future<void> _loadCompletedAssignmentsInBackground(
       BuildContext context) async {
+    debugPrint('Cargando asignaciones completadas en segundo plano...');
     try {
       final completedAssignments = await _assignmentService
           .fetchAssignmentsByStatus(context, ['COMPLETED']);
@@ -386,37 +445,5 @@ class AssignmentsProvider extends ChangeNotifier {
         _assignments.add(newAssignment);
       }
     }
-  }
-
-  // Metodo para pasar a completado una asignación
-  Future<bool> completeAssignment(
-      int id, DateTime endDate, String endTime, BuildContext context) async {
-    final index = _assignments.indexWhere((a) => a.id == id);
-    if (index >= 0) {
-      final currentAssignment = _assignments[index];
-      _assignments[index] = Assignment(
-        id: currentAssignment.id,
-        workers: currentAssignment.workers,
-        area: currentAssignment.area,
-        task: currentAssignment.task,
-        date: currentAssignment.date,
-        time: currentAssignment.time,
-        zone: currentAssignment.zone,
-        status: 'COMPLETED',
-        endDate: currentAssignment.endDate ?? endDate,
-        endTime: currentAssignment.endTime ?? endTime,
-        motorship: currentAssignment.motorship,
-        userId: currentAssignment.userId,
-        areaId: currentAssignment.areaId,
-        taskId: currentAssignment.taskId,
-        clientId: currentAssignment.clientId,
-        inChagers: currentAssignment.inChagers,
-      );
-      notifyListeners();
-    }
-
-    // Actualizar en el backend
-    return await _assignmentService.completeAssigment(
-        id, 'COMPLETED', endDate, endTime, context);
   }
 }

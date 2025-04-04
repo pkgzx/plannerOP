@@ -5,6 +5,7 @@ import 'package:plannerop/core/model/area.dart';
 import 'package:plannerop/core/model/client.dart';
 import 'package:plannerop/core/model/task.dart';
 import 'package:plannerop/core/model/worker.dart';
+import 'package:plannerop/core/model/workerGroup.dart';
 import 'package:plannerop/store/areas.dart';
 import 'package:plannerop/store/assignments.dart';
 import 'package:plannerop/store/clients.dart';
@@ -40,6 +41,7 @@ class _AddAssignmentDialogState extends State<AddAssignmentDialog> {
 
   // Lista de trabajadores seleccionados
   List<Worker> _selectedWorkers = [];
+  List<WorkerGroup> _selectedGroups = [];
 
   // Lista completa de trabajadores (datos de ejemplo)
   final List<Worker> _allWorkers = [];
@@ -56,6 +58,8 @@ class _AddAssignmentDialogState extends State<AddAssignmentDialog> {
 
   // variable para controlar el estado de carga
   bool _isSaving = false;
+
+  String _schedulingMode = 'global';
 
   @override
   void dispose() {
@@ -181,9 +185,9 @@ class _AddAssignmentDialogState extends State<AddAssignmentDialog> {
                 selectedWorkers: _selectedWorkers,
                 onWorkersChanged: _updateSelectedWorkers,
                 availableWorkers: _allWorkers,
+                selectedGroups: _selectedGroups,
               ),
-
-              const SizedBox(height: 24),
+              const SizedBox(height: 12),
 
               // Formulario de asignación
               AssignmentForm(
@@ -469,6 +473,7 @@ class _AddAssignmentDialogState extends State<AddAssignmentDialog> {
             : null,
         chargerIds: chargerIds,
         context: context, // Pasar el contexto para el token
+        groups: _selectedGroups,
       );
 
       // Si hubo error al guardar

@@ -14,7 +14,6 @@ class AreaService {
         await http.get(url, headers: {'Authorization': 'Bearer $token'});
 
     if (response.statusCode == 200) {
-      debugPrint('Áreas obtenidas correctamente');
       final jsonResponse = jsonDecode(response.body);
       debugPrint(jsonResponse.toString());
       List<Area> areas = [];
@@ -22,7 +21,6 @@ class AreaService {
         areas.add(Area(id: area['id'], name: area['name']));
       }
 
-      debugPrint('Áreas obtenidas correctamente****');
       return areas;
     } else {
       debugPrint('Error al obtener las áreas');

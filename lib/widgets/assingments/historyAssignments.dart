@@ -126,7 +126,20 @@ class _HistoryAssignmentsViewState extends State<HistoryAssignmentsView> {
           return const Center(child: CircularProgressIndicator());
         }
 
-        final completedAssignments = provider.completedAssignments;
+        // Obtener todas las asignaciones y ordenarlas por fecha más reciente
+        final allCompletedAssignments = provider.completedAssignments;
+
+        // Ordenar las asignaciones por fecha de finalización (más reciente primero)
+        allCompletedAssignments.sort((a, b) {
+          return (b.endDate ?? DateTime.now())
+              .compareTo(a.endDate ?? DateTime.now());
+        });
+
+        // Limitar a 30 asignaciones más recientes
+        final completedAssignments = allCompletedAssignments.length > 30
+            ? allCompletedAssignments.sublist(0, 30)
+            : allCompletedAssignments;
+
         final filteredAssignments = _filterAssignments(completedAssignments);
         final uniqueAreas = _getUniqueAreas(completedAssignments);
 
@@ -721,10 +734,7 @@ class _HistoryAssignmentsViewState extends State<HistoryAssignmentsView> {
                                   worker.name.hashCode %
                                       Colors.primaries.length],
                               child: Text(
-                                worker.name
-                                    .toString()
-                                    .substring(0, 1)
-                                    .toUpperCase(),
+                                worker.name,
                                 style: const TextStyle(
                                   color: Colors.white,
                                   fontWeight: FontWeight.bold,

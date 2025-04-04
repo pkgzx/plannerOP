@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_neumorphic_plus/flutter_neumorphic.dart';
-import 'package:plannerop/core/model/user.dart';
 import 'package:plannerop/pages/login.dart';
 import 'package:plannerop/pages/supervisor/tabs/dashboard.dart';
 import 'package:plannerop/pages/supervisor/tabs/asignaciones.dart';
