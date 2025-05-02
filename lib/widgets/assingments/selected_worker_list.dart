@@ -6,10 +6,14 @@ import 'package:plannerop/core/model/workerGroup.dart';
 import 'package:plannerop/store/assignments.dart';
 import 'package:plannerop/store/workerGroup.dart';
 import 'package:plannerop/store/workers.dart';
+import 'package:plannerop/utils/group.dart';
 import 'package:plannerop/utils/toast.dart';
+import 'package:plannerop/widgets/assingments/editAssignmentForm.dart';
 import 'package:provider/provider.dart';
 import 'worker_selection_dialog.dart';
 import 'package:intl/intl.dart';
+import 'package:plannerop/widgets/assingments/addAssignmentDialog.dart'
+    show AddAssignmentDialogState;
 
 class SelectedWorkersList extends StatefulWidget {
   // Lista de trabajadores seleccionados
@@ -19,8 +23,21 @@ class SelectedWorkersList extends StatefulWidget {
   // Función de callback cuando cambia la selección
   final Function(List<Worker>) onWorkersChanged;
 
+  final Function(List<WorkerGroup>)? onGroupsChanged;
+  // Modo edición
+  final bool inEditMode;
+
+  // Lista de trabajadores eliminados en modo edición
+  final List<Worker> deletedWorkers;
+
+  // Callback para actualizar la lista de trabajadores eliminados
+  final Function(List<Worker>)? onDeletedWorkersChanged;
+
   // Todos los trabajadores disponibles (para el diálogo de selección)
   final List<Worker> availableWorkers;
+
+  final List<WorkerGroup>? initialGroups;
+  final int? assignmentId;
 
   const SelectedWorkersList({
     Key? key,
@@ -28,6 +45,12 @@ class SelectedWorkersList extends StatefulWidget {
     required this.selectedGroups,
     required this.onWorkersChanged,
     required this.availableWorkers,
+    required this.onGroupsChanged,
+    this.inEditMode = false,
+    this.deletedWorkers = const [],
+    this.onDeletedWorkersChanged,
+    this.initialGroups,
+    this.assignmentId,
   }) : super(key: key);
 
   @override
@@ -50,6 +73,10 @@ class _SelectedWorkersListState extends State<SelectedWorkersList> {
   @override
   void initState() {
     super.initState();
+    // Inicializar _workerGroups con los grupos iniciales si existen
+    if (widget.initialGroups != null && widget.initialGroups!.isNotEmpty) {
+      _workerGroups = List.from(widget.initialGroups!);
+    }
     _calculateWorkerHours();
   }
 
@@ -154,9 +181,13 @@ class _SelectedWorkersListState extends State<SelectedWorkersList> {
       int.parse(endTimeParts[1]),
     );
 
+    debugPrint("Start: $startDateTime, End: $endDateTime");
+
     // Calcular diferencia en horas
     final difference = endDateTime.difference(startDateTime);
-    return difference.inMinutes / 60.0;
+    final fmtDiff = difference.inMinutes / 60.0;
+    final unsignedDiif = fmtDiff.abs();
+    return unsignedDiif > 0 ? unsignedDiif : 0.0;
   }
 
   // Abrir diálogo para seleccionar trabajadores
@@ -168,7 +199,6 @@ class _SelectedWorkersListState extends State<SelectedWorkersList> {
       context: context,
       builder: (context) => WorkerSelectionDialog(
         selectedWorkers: widget.selectedWorkers,
-        // Pasar solo los trabajadores filtrados por horas disponibles
         availableWorkers: _filteredWorkers,
         workerHours: _workerHours,
         title: 'Seleccionar trabajadores',
@@ -177,8 +207,23 @@ class _SelectedWorkersListState extends State<SelectedWorkersList> {
     );
 
     if (result != null) {
-      // Notificar al padre sobre el cambio
+      // Notificar al padre directamente sobre el cambio
       widget.onWorkersChanged(result);
+
+      // Importante: NO llamar a onGroupsChanged aquí para evitar
+      // que se procesen los horarios de grupo para trabajadores individuales
+
+      // También forzar el reseteo de los bloqueos de horario en el diálogo principal
+      final addAssignmentDialog =
+          context.findAncestorStateOfType<AddAssignmentDialogState>();
+
+      if (addAssignmentDialog != null) {
+        addAssignmentDialog.resetGroupScheduleLocks();
+      }
+
+      // DEBUG - verificación
+      debugPrint(
+          'Trabajadores seleccionados individualmente. Horarios desbloqueados.');
     }
   }
 
@@ -243,143 +288,310 @@ class _SelectedWorkersListState extends State<SelectedWorkersList> {
         .any((group) => group.workers.any((wId) => wId == worker.id));
   }
 
+  // Modificación para el método _createNewGroup en selected_worker_list.dart
   Future<void> _createNewGroup() async {
     // Variables para almacenar horarios seleccionados
     String? startTime;
     String? endTime;
+    DateTime? startDate;
+    DateTime? endDate;
 
-    // 1. Primero mostrar diálogo para seleccionar horarios (opcional)
+    // 1. Primero mostrar diálogo para seleccionar horarios
     bool continueToSelection = await showDialog<bool>(
           context: context,
           builder: (context) => AlertDialog(
             title: const Text('Definir horario común'),
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Text(
-                  'Define un horario común para este grupo de trabajadores (opcional):',
-                  style: TextStyle(fontSize: 14),
-                ),
-                const SizedBox(height: 24),
-                Row(
+            content: StatefulBuilder(builder: (context, setState) {
+              return SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Expanded(
-                      child: GestureDetector(
-                        onTap: () async {
-                          final TimeOfDay? picked = await showTimePicker(
-                            context: context,
-                            initialTime: TimeOfDay.now(),
-                            builder: (context, child) {
-                              return MediaQuery(
-                                data: MediaQuery.of(context).copyWith(
-                                  alwaysUse24HourFormat: false,
-                                ),
-                                child: child!,
-                              );
-                            },
-                          );
+                    const Text(
+                      'Define horarios comunes para este grupo de trabajadores:',
+                      style: TextStyle(fontSize: 14),
+                    ),
+                    const SizedBox(height: 16),
 
-                          if (picked != null) {
+                    // Sección de fecha y hora de inicio
+                    const Text(
+                      'INICIO',
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                        color: Color(0xFF718096),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+
+                    // Fecha de inicio
+                    GestureDetector(
+                      onTap: () async {
+                        final DateTime? picked = await showDatePicker(
+                          context: context,
+                          initialDate: DateTime.now(),
+                          firstDate: DateTime.now(),
+                          lastDate:
+                              DateTime.now().add(const Duration(days: 30)),
+                        );
+
+                        if (picked != null) {
+                          setState(() {
+                            startDate = picked;
+                          });
+                        }
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          border: Border.all(color: Colors.grey.shade300),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Row(
+                          children: [
+                            Icon(Icons.calendar_today,
+                                size: 18, color: Colors.grey.shade600),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const Text(
+                                    'Fecha inicio',
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color: Color(0xFF718096),
+                                    ),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    startDate != null
+                                        ? DateFormat('dd/MM/yyyy')
+                                            .format(startDate!)
+                                        : 'Seleccionar',
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.w500,
+                                      color: startDate != null
+                                          ? Colors.black
+                                          : Colors.grey.shade500,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+
+                    const SizedBox(height: 12),
+
+                    // Hora de inicio
+                    GestureDetector(
+                      onTap: () async {
+                        final TimeOfDay? picked = await showTimePicker(
+                          context: context,
+                          initialTime: TimeOfDay.now(),
+                          builder: (context, child) {
+                            return MediaQuery(
+                              data: MediaQuery.of(context).copyWith(
+                                alwaysUse24HourFormat: false,
+                              ),
+                              child: child!,
+                            );
+                          },
+                        );
+
+                        if (picked != null) {
+                          setState(() {
                             final hour = picked.hour.toString().padLeft(2, '0');
                             final minute =
                                 picked.minute.toString().padLeft(2, '0');
                             startTime = '$hour:$minute';
-
-                            // Forzar actualización de UI
-                            (context as Element).markNeedsBuild();
-                          }
-                        },
-                        child: Container(
-                          padding: const EdgeInsets.all(12),
-                          decoration: BoxDecoration(
-                            border: Border.all(color: Colors.grey.shade300),
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              const Text(
-                                'Hora inicio',
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  color: Color(0xFF718096),
-                                ),
+                          });
+                        }
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          border: Border.all(color: Colors.grey.shade300),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Row(
+                          children: [
+                            Icon(Icons.access_time,
+                                size: 18, color: Colors.grey.shade600),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const Text(
+                                    'Hora inicio',
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color: Color(0xFF718096),
+                                    ),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    startTime ?? 'Seleccionar',
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.w500,
+                                      color: startTime != null
+                                          ? Colors.black
+                                          : Colors.grey.shade500,
+                                    ),
+                                  ),
+                                ],
                               ),
-                              const SizedBox(height: 4),
-                              Text(
-                                startTime ?? 'Seleccionar',
-                                style: TextStyle(
-                                  fontWeight: FontWeight.w500,
-                                  color: startTime != null
-                                      ? Colors.black
-                                      : Colors.grey.shade500,
-                                ),
-                              ),
-                            ],
-                          ),
+                            ),
+                          ],
                         ),
                       ),
                     ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: GestureDetector(
-                        onTap: () async {
-                          final TimeOfDay? picked = await showTimePicker(
-                            context: context,
-                            initialTime: TimeOfDay.now(),
-                            builder: (context, child) {
-                              return MediaQuery(
-                                data: MediaQuery.of(context),
-                                child: child!,
-                              );
-                            },
-                          );
 
-                          if (picked != null) {
+                    const SizedBox(height: 24),
+
+                    // Sección de fecha y hora de finalización
+                    const Text(
+                      'FINALIZACIÓN',
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                        color: Color(0xFF718096),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+
+                    // Fecha de finalización
+                    GestureDetector(
+                      onTap: () async {
+                        final DateTime? picked = await showDatePicker(
+                          context: context,
+                          initialDate: startDate ?? DateTime.now(),
+                          firstDate: DateTime.now(),
+                          lastDate:
+                              DateTime.now().add(const Duration(days: 30)),
+                        );
+
+                        if (picked != null) {
+                          setState(() {
+                            endDate = picked;
+                          });
+                        }
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          border: Border.all(color: Colors.grey.shade300),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Row(
+                          children: [
+                            Icon(Icons.calendar_today,
+                                size: 18, color: Colors.grey.shade600),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const Text(
+                                    'Fecha fin',
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color: Color(0xFF718096),
+                                    ),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    endDate != null
+                                        ? DateFormat('dd/MM/yyyy')
+                                            .format(endDate!)
+                                        : 'Seleccionar',
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.w500,
+                                      color: endDate != null
+                                          ? Colors.black
+                                          : Colors.grey.shade500,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+
+                    const SizedBox(height: 12),
+
+                    // Hora de finalización
+                    GestureDetector(
+                      onTap: () async {
+                        final TimeOfDay? picked = await showTimePicker(
+                          context: context,
+                          initialTime: TimeOfDay.now(),
+                          builder: (context, child) {
+                            return MediaQuery(
+                              data: MediaQuery.of(context),
+                              child: child!,
+                            );
+                          },
+                        );
+
+                        if (picked != null) {
+                          setState(() {
                             final hour = picked.hour.toString().padLeft(2, '0');
                             final minute =
                                 picked.minute.toString().padLeft(2, '0');
                             endTime = '$hour:$minute';
-
-                            // Forzar actualización de UI
-                            (context as Element).markNeedsBuild();
-                          }
-                        },
-                        child: Container(
-                          padding: const EdgeInsets.all(12),
-                          decoration: BoxDecoration(
-                            border: Border.all(color: Colors.grey.shade300),
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              const Text(
-                                'Hora fin',
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  color: Color(0xFF718096),
-                                ),
+                          });
+                        }
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          border: Border.all(color: Colors.grey.shade300),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Row(
+                          children: [
+                            Icon(Icons.access_time,
+                                size: 18, color: Colors.grey.shade600),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const Text(
+                                    'Hora fin',
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color: Color(0xFF718096),
+                                    ),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    endTime ?? 'Seleccionar',
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.w500,
+                                      color: endTime != null
+                                          ? Colors.black
+                                          : Colors.grey.shade500,
+                                    ),
+                                  ),
+                                ],
                               ),
-                              const SizedBox(height: 4),
-                              Text(
-                                endTime ?? 'Seleccionar',
-                                style: TextStyle(
-                                  fontWeight: FontWeight.w500,
-                                  color: endTime != null
-                                      ? Colors.black
-                                      : Colors.grey.shade500,
-                                ),
-                              ),
-                            ],
-                          ),
+                            ),
+                          ],
                         ),
                       ),
                     ),
                   ],
                 ),
-              ],
-            ),
+              );
+            }),
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(context, false),
@@ -399,6 +611,14 @@ class _SelectedWorkersListState extends State<SelectedWorkersList> {
 
     if (!continueToSelection) return;
 
+    // Verificar que al menos tenga un horario definido
+    bool hasValidSchedule = startTime != null || startTime != null;
+
+    if (!hasValidSchedule) {
+      showAlertToast(context, "Debes definir al menos el horario de inicio");
+      return;
+    }
+
     // 2. Luego, mostrar selección de trabajadores
     await _calculateWorkerHours(); // Actualizar horas antes de mostrar
 
@@ -414,21 +634,22 @@ class _SelectedWorkersListState extends State<SelectedWorkersList> {
     );
 
     if (selectedWorkers != null && selectedWorkers.isNotEmpty) {
-      // Crear nombre de grupo basado en horarios
-      String groupName = 'Grupo';
-      if (startTime != null && endTime != null) {
-        groupName = 'Grupo $startTime - $endTime';
-      } else if (startTime != null) {
-        groupName = 'Grupo inicio $startTime-N/A';
-      } else if (endTime != null) {
-        groupName = 'Grupo fin N/A-$endTime';
-      }
+      String groupName = getGroupName(startDate, endDate, startTime, endTime);
+
+      // Formatear fechas para guardar
+      String? startDateStr = startDate != null
+          ? DateFormat('yyyy-MM-dd').format(startDate!)
+          : null;
+      String? endDateStr =
+          endDate != null ? DateFormat('yyyy-MM-dd').format(endDate!) : null;
 
       // Crear el grupo
       final newGroup = WorkerGroup(
         id: DateTime.now().millisecondsSinceEpoch.toString(),
         startTime: startTime,
         endTime: endTime,
+        startDate: startDateStr,
+        endDate: endDateStr,
         workers: selectedWorkers.map((worker) => worker.id).toList(),
         name: groupName,
       );
@@ -449,9 +670,13 @@ class _SelectedWorkersListState extends State<SelectedWorkersList> {
       setState(() {
         _workerGroups.add(newGroup);
       });
-
       // Notificar al padre
       widget.onWorkersChanged(updatedWorkers);
+
+      widget.onWorkersChanged(updatedWorkers);
+      if (widget.onGroupsChanged != null) {
+        widget.onGroupsChanged!(widget.selectedGroups);
+      }
 
       // Mostrar confirmación
       showSuccessToast(context, "Grupo creado con éxito");
@@ -470,23 +695,122 @@ class _SelectedWorkersListState extends State<SelectedWorkersList> {
     return hours < 12.0;
   }
 
-  void _onDeleteGroup(WorkerGroup group) {
+// Modificar el método _onDeleteGroup
+  void _onDeleteGroup(WorkerGroup group, int assignmentId) {
+    // Guardar los trabajadores del grupo que se va a eliminar
+    final workersToRemove = group.workers.toList();
+
+    // Eliminar el grupo del provider local
     final groupsProvider =
         Provider.of<WorkerGroupsProvider>(context, listen: false);
     groupsProvider.removeGroup(group.id);
 
-    // Eliminar todos los trabajadores de este grupo de la lista
-    for (var id in group.workers) {
-      widget.selectedWorkers.removeWhere((w) => w.id == id);
+    // Eliminar el grupo de la lista local
+    setState(() {
+      _workerGroups.removeWhere((g) => g.id == group.id);
+      widget.selectedGroups.removeWhere((g) => g.id == group.id);
+    });
+
+    // En modo edición, registrar los trabajadores eliminados
+    if (widget.inEditMode) {
+      List<Worker> updatedDeletedWorkers = List.from(widget.deletedWorkers);
+
+      for (var workerId in workersToRemove) {
+        final workerToRemove = widget.selectedWorkers
+            .firstWhere((w) => w.id == workerId, orElse: () => null as Worker);
+
+        if (workerToRemove != null &&
+            !updatedDeletedWorkers.any((w) => w.id == workerToRemove.id)) {
+          updatedDeletedWorkers.add(workerToRemove);
+        }
+      }
+
+      if (widget.onDeletedWorkersChanged != null) {
+        widget.onDeletedWorkersChanged!(updatedDeletedWorkers);
+      }
     }
 
-    showSuccessToast(context, "Grupo eliminado con éxito");
+    // Eliminar trabajadores de este grupo si no están en otros grupos
+    List<Worker> workersToKeep = [];
+
+    for (Worker worker in widget.selectedWorkers) {
+      // Si el trabajador no está en el grupo eliminado o está en otro grupo, mantenerlo
+      if (!workersToRemove.contains(worker.id) ||
+          widget.selectedGroups.any((g) => g.workers.contains(worker.id))) {
+        workersToKeep.add(worker);
+      }
+    }
+
+    // Sincronizar con el backend si estamos en modo edición
+    if (widget.inEditMode) {
+      // Obtener el provider de asignaciones
+      final assignmentsProvider =
+          Provider.of<AssignmentsProvider>(context, listen: false);
+
+      // Buscar el ID de la asignación actual
+      // (Necesitamos acceder a este ID desde algún lugar)
+      // Esto podría venir como prop adicional al widget o desde un ancestro
+      BuildContext? editFormContext =
+          context.findAncestorStateOfType<EditAssignmentFormState>()?.context;
+
+      if (editFormContext != null) {
+        // Mostrar un indicador de carga
+        showDialog(
+          context: context,
+          barrierDismissible: false,
+          builder: (context) =>
+              const Center(child: CircularProgressIndicator()),
+        );
+
+        // Aquí llamamos al servicio de backend para eliminar el grupo
+        try {
+          // Esta función debe implementarse en el AssignmentService
+          // y exponerse a través del provider
+          assignmentsProvider
+              .removeGroupFromAssignment(group.workers, context, assignmentId)
+              .then((_) {
+            // Cerrar el indicador de carga
+            Navigator.of(context, rootNavigator: true).pop();
+            // Mostrar mensaje de éxito
+            showSuccessToast(context, "Grupo eliminado correctamente");
+          }).catchError((error) {
+            // Cerrar el indicador de carga
+            Navigator.of(context, rootNavigator: true).pop();
+            // Mostrar mensaje de error
+            showErrorToast(context, "Error al eliminar el grupo: $error");
+          });
+        } catch (e) {
+          // Cerrar el indicador de carga
+          Navigator.of(context, rootNavigator: true).pop();
+          // Mostrar mensaje de error
+          showErrorToast(context, "Error al eliminar el grupo: $e");
+        }
+      }
+    }
+
+    // Buscar en AddAssignmentDialog para notificar sobre el cambio de grupos
+    final addAssignmentDialog =
+        context.findAncestorStateOfType<AddAssignmentDialogState>();
+    if (addAssignmentDialog != null) {
+      // Actualizar los grupos en el diálogo y recalcular horarios
+      addAssignmentDialog.updateSelectedGroups(widget.selectedGroups);
+    } else {
+      debugPrint('No se encontró el estado de AddAssignmentDialog');
+    }
+
+    // Notificar al padre sobre el cambio en trabajadores
+    widget.onWorkersChanged(workersToKeep);
+
+    if (widget.onGroupsChanged != null) {
+      widget.onGroupsChanged!(widget.selectedGroups);
+    }
+
+    // Mostrar confirmación
+    showSuccessToast(context, "Grupo eliminado");
   }
 
   @override
   Widget build(BuildContext context) {
-    final groupsProvider = Provider.of<WorkerGroupsProvider>(context);
-
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -581,7 +905,14 @@ class _SelectedWorkersListState extends State<SelectedWorkersList> {
                   itemBuilder: (context, index) {
                     final worker = widget.selectedWorkers[index];
                     final isAvailable = _isWorkerAvailable(worker.id);
-                    final workerGroup = groupsProvider.getWorkerGroup(worker);
+                    // IMPORTANTE: Obtener el grupo directamente de widget.selectedGroups
+                    WorkerGroup? workerGroup;
+                    for (var group in widget.selectedGroups) {
+                      if (group.workers.contains(worker.id)) {
+                        workerGroup = group;
+                        break;
+                      }
+                    }
 
                     // Determinar si es el primer trabajador del grupo en la lista
                     bool isFirstWorkerInGroupInList = false;
@@ -589,8 +920,7 @@ class _SelectedWorkersListState extends State<SelectedWorkersList> {
                       isFirstWorkerInGroupInList = true;
                       for (int i = 0; i < index; i++) {
                         final previousWorker = widget.selectedWorkers[i];
-                        if (groupsProvider.areWorkersInSameGroup(
-                            previousWorker, worker)) {
+                        if (workerGroup.workers.contains(previousWorker.id)) {
                           isFirstWorkerInGroupInList = false;
                           break;
                         }
@@ -648,7 +978,8 @@ class _SelectedWorkersListState extends State<SelectedWorkersList> {
                                     icon: Icon(Icons.delete,
                                         color: Colors.red, size: 20),
                                     onPressed: () {
-                                      _onDeleteGroup(workerGroup);
+                                      _onDeleteGroup(workerGroup!,
+                                          widget.assignmentId ?? 0);
                                       setState(() {
                                         _workerGroups.remove(workerGroup);
                                       });
@@ -736,22 +1067,67 @@ class _SelectedWorkersListState extends State<SelectedWorkersList> {
                               icon: const Icon(Icons.delete_outline,
                                   color: Colors.red, size: 20),
                               onPressed: () {
+                                // Si estamos en modo edición y tenemos un ID de asignación, usar el disconnect API
+                                if (widget.inEditMode &&
+                                    widget.assignmentId != null) {
+                                  // Obtener el provider para la llamada al backend
+                                  final assignmentsProvider =
+                                      Provider.of<AssignmentsProvider>(context,
+                                          listen: false);
+
+                                  // Llamar al mismo método que se usa para grupos, pero solo con este trabajador
+                                  assignmentsProvider.removeGroupFromAssignment(
+                                      [
+                                        worker.id
+                                      ], // Lista con solo este trabajador
+                                      context,
+                                      widget.assignmentId ?? 0);
+
+                                  // Mostrar un toast de confirmación
+                                  showSuccessToast(
+                                      context, "Trabajador eliminado");
+                                }
+
                                 final updatedList =
                                     List<Worker>.from(widget.selectedWorkers);
-                                updatedList.removeAt(index);
+                                final removedWorker =
+                                    updatedList.removeAt(index);
 
                                 // Si es parte de un grupo, actualizar el grupo
                                 if (workerGroup != null) {
                                   setState(() {
                                     // Quitar el trabajador del grupo
-                                    workerGroup.workers
+                                    workerGroup!.workers
                                         .removeWhere((wId) => wId == worker.id);
 
                                     // Si el grupo queda vacío, eliminar el grupo
                                     if (workerGroup.workers.isEmpty) {
+                                      widget.selectedGroups.removeWhere(
+                                          (g) => g.id == workerGroup!.id);
                                       _workerGroups.remove(workerGroup);
+
+                                      // Notificar cambio en grupos para recalcular horarios
+                                      if (widget.onGroupsChanged != null) {
+                                        widget.onGroupsChanged!(
+                                            widget.selectedGroups);
+                                      }
                                     }
                                   });
+                                }
+
+                                // En modo edición, agregar el trabajador eliminado a la lista de eliminados
+                                if (widget.inEditMode &&
+                                    widget.onDeletedWorkersChanged != null) {
+                                  List<Worker> updatedDeletedWorkers =
+                                      List.from(widget.deletedWorkers);
+
+                                  // Solo agregar si no está ya en la lista
+                                  if (!updatedDeletedWorkers
+                                      .any((w) => w.id == removedWorker.id)) {
+                                    updatedDeletedWorkers.add(removedWorker);
+                                    widget.onDeletedWorkersChanged!(
+                                        updatedDeletedWorkers);
+                                  }
                                 }
 
                                 widget.onWorkersChanged(updatedList);

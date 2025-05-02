@@ -39,6 +39,11 @@ class Worker {
   void setDeactivationDate(DateTime date) {
     deactivationDate = date;
   }
+
+  @override
+  String toString() {
+    return 'Worker{id: $id, name: $name, area: $area, phone: $phone, document: $document, startDate: $startDate, endDate: $endDate, incapacityStartDate: $incapacityStartDate, incapacityEndDate: $incapacityEndDate, deactivationDate: $deactivationDate, idArea: $idArea, status: $status, code: $code, failures: $failures}';
+  }
 }
 
 enum WorkerStatus {

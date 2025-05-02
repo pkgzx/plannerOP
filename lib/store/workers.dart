@@ -296,14 +296,14 @@ class WorkersProvider with ChangeNotifier {
     notifyListeners();
 
     try {
-      debugPrint('Cargando trabajadores desde API (primera vez)...');
+      // debugPrint('Cargando trabajadores desde API (primera vez)...');
       final FetchWorkersDto result = await _workerService.fetchWorkers(context);
 
       if (result.isSuccess && result.workers.isNotEmpty) {
         _workers.clear();
         _workers.addAll(result.workers);
-        debugPrint(
-            'Datos iniciales cargados correctamente: ${_workers.length} trabajadores');
+        // debugPrint(
+        //     'Datos iniciales cargados correctamente: ${_workers.length} trabajadores');
       } else {
         _hasError = true;
         _errorMessage =
@@ -381,7 +381,7 @@ class WorkersProvider with ChangeNotifier {
       // Llamar al servicio para actualizar en la API
       final success = await _workerService.updateWorker(newWorker, context);
       if (success) {
-        debugPrint('Trabajador actualizado correctamente en la API');
+        // debugPrint('Trabajador actualizado correctamente en la API');
         // Actualizar en la lista local
         final index = _workers.indexWhere((w) => w.id == oldWorker.id);
         if (index >= 0) {
@@ -539,7 +539,7 @@ class WorkersProvider with ChangeNotifier {
     try {
       // Llamar al servicio para actualizar el estado en el backend
       final success = await _workerService.updateWorkerStatus(
-          worker.id, "ASSIGNED", context);
+          worker.id, "assigned", context);
 
       if (success) {
         // Actualizar estado localmente

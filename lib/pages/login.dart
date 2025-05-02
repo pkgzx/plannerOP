@@ -89,13 +89,13 @@ class _LoginPageState extends State<LoginPage> {
           closeDialog();
           showAlertToast(
               context, 'La operación está tardando demasiado tiempo');
-          debugPrint(
-              '⚠️ Timeout de login activado - Diálogo cerrado por timeout');
+          // debugPrint(
+              // '⚠️ Timeout de login activado - Diálogo cerrado por timeout');
         }
       });
 
       try {
-        debugPrint('🔒 Iniciando proceso de login...');
+        // debugPrint('🔒 Iniciando proceso de login...');
 
         final ResSigninDto response = await _signinService.signin(
           _usernameController.text,
@@ -104,7 +104,7 @@ class _LoginPageState extends State<LoginPage> {
 
         // Cerrar el diálogo de carga si aún está abierto
         closeDialog();
-        debugPrint('✅ Login completado - Diálogo cerrado normalmente');
+        // debugPrint('✅ Login completado - Diálogo cerrado normalmente');
 
         if (response.isSuccess) {
           if (!mounted) return;

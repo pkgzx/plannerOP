@@ -20,6 +20,13 @@ class AssignmentForm extends StatefulWidget {
   final List<Client> clients;
   final bool showEndDateTime;
   final TextEditingController? motorshipController;
+  //propiedades de bloqueo basadas en grupos
+  final bool startDateLocked;
+  final bool startTimeLocked;
+  final bool endDateLocked;
+  final bool endTimeLocked;
+  //función para cuando los horarios cambien
+  final Function(DateTime?, DateTime?, String?, String?)? onScheduleChanged;
 
   const AssignmentForm({
     Key? key,
@@ -32,11 +39,15 @@ class AssignmentForm extends StatefulWidget {
     required this.clientController,
     required this.clients,
     required this.areas,
-    // Parámetros opcionales para fecha/hora de fin
     this.endDateController,
     this.endTimeController,
     this.motorshipController,
     this.showEndDateTime = false,
+    this.startDateLocked = false,
+    this.startTimeLocked = false,
+    this.endDateLocked = false,
+    this.endTimeLocked = false,
+    this.onScheduleChanged,
   }) : super(key: key);
 
   @override
@@ -80,7 +91,7 @@ class _AssignmentFormState extends State<AssignmentForm> {
       widget.motorshipController!.clear();
     }
 
-    debugPrint('Área cambiada: $area, es buque: $_isShipArea');
+    // debugPrint('Área cambiada: $area, es buque: $_isShipArea');
   }
 
   @override
@@ -104,8 +115,8 @@ class _AssignmentFormState extends State<AssignmentForm> {
     setState(() {
       _endTimeUpdateCounter++;
     });
-    debugPrint(
-        'Hora fin actualizada: ${widget.endTimeController?.text}, contador: $_endTimeUpdateCounter');
+    // debugPrint(
+    //     'Hora fin actualizada: ${widget.endTimeController?.text}, contador: $_endTimeUpdateCounter');
   }
 
   void _onEndDateChanged() {
@@ -124,16 +135,16 @@ class _AssignmentFormState extends State<AssignmentForm> {
       widget.endTimeController!.clear();
     }
 
-    debugPrint(
-        'Fecha fin actualizada: $newDate, contador: $_endDateUpdateCounter');
+    // debugPrint(
+    //     'Fecha fin actualizada: $newDate, contador: $_endDateUpdateCounter');
   }
 
   void _onTimeChanged() {
     setState(() {
       _timeUpdateCounter++;
     });
-    debugPrint(
-        'Hora actualizada: ${widget.startTimeController.text}, contador: $_timeUpdateCounter');
+    // debugPrint(
+    //     'Hora actualizada: ${widget.startTimeController.text}, contador: $_timeUpdateCounter');
   }
 
   void _onDateChanged() {
@@ -152,7 +163,7 @@ class _AssignmentFormState extends State<AssignmentForm> {
       widget.startTimeController.clear();
     }
 
-    debugPrint('Fecha actualizada: $newDate, contador: $_dateUpdateCounter');
+    // debugPrint('Fecha actualizada: $newDate, contador: $_dateUpdateCounter');
   }
 
   @override
@@ -179,7 +190,7 @@ class _AssignmentFormState extends State<AssignmentForm> {
           onSelected: (area) {
             // Esta es la línea clave que falta
             _checkIfShipArea(area);
-            debugPrint('Área seleccionada: $area');
+            // debugPrint('Área seleccionada: $area');
           },
         ),
 
@@ -230,6 +241,8 @@ class _AssignmentFormState extends State<AssignmentForm> {
           controller: widget.startDateController,
           onDateChanged: _handleDateChanged,
           key: ValueKey('date_field_$_dateUpdateCounter'),
+          locked: widget.startDateLocked,
+          lockedMessage: widget.startDateLocked ? '' : null,
         ),
 
         // Campo de hora de inicio
@@ -242,6 +255,10 @@ class _AssignmentFormState extends State<AssignmentForm> {
           // Añadir key para forzar reconstrucción cuando la fecha cambia
           key: ValueKey(
               'time_field_${_dateUpdateCounter}_${_timeUpdateCounter}'),
+          locked: widget.startTimeLocked, // Pasar estado de bloqueo
+          lockedMessage: widget.startTimeLocked
+              ? 'Hora definida por grupo de trabajo'
+              : null,
         ),
 
         // Mostrar campos opcionales de fecha y hora de fin si están habilitados
@@ -255,7 +272,9 @@ class _AssignmentFormState extends State<AssignmentForm> {
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 10),
                   child: Text(
-                    "FINALIZACIÓN (OPCIONAL)",
+                    widget.endDateLocked || widget.endTimeLocked
+                        ? "FINALIZACIÓN"
+                        : "FINALIZACIÓN (OPCIONAL)",
                     style: TextStyle(
                         fontSize: 12,
                         color: Colors.grey[600],
@@ -275,6 +294,8 @@ class _AssignmentFormState extends State<AssignmentForm> {
             controller: widget.endDateController!,
             onDateChanged: _handleEndDateChanged,
             key: ValueKey('end_date_field_$_endDateUpdateCounter'),
+            locked: widget.endDateLocked,
+            lockedMessage: widget.endDateLocked ? '' : null,
           ),
 
           // Campo de hora de fin (opcional)
@@ -288,6 +309,10 @@ class _AssignmentFormState extends State<AssignmentForm> {
               isEndTime: true,
               key: ValueKey(
                   'end_time_field_${_endDateUpdateCounter}_${_endTimeUpdateCounter}'),
+              locked: widget.endTimeLocked,
+              lockedMessage: widget.endTimeLocked
+                  ? 'Hora definida por grupo de trabajo'
+                  : null,
             ),
         ],
 

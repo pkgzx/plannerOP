@@ -437,7 +437,7 @@ class _WorkersTabState extends State<WorkersTab> {
 
     // Cargar las faltas del trabajador
     List<Fault> faults = faultsProvider.fetchFaultsByWorker(context, worker.id);
-    debugPrint('Faltas cargadas: ${faults.length}');
+    // debugPrint('Faltas cargadas: ${faults.length}');
 
     // Quitar indicador de carga
     Navigator.of(context).pop();
