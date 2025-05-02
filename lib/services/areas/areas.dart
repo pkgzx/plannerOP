@@ -15,7 +15,7 @@ class AreaService {
 
     if (response.statusCode == 200) {
       final jsonResponse = jsonDecode(response.body);
-      debugPrint(jsonResponse.toString());
+      // debugPrint(jsonResponse.toString());
       List<Area> areas = [];
       for (var area in jsonResponse) {
         areas.add(Area(id: area['id'], name: area['name']));

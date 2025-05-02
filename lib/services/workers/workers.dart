@@ -144,8 +144,8 @@ class WorkerService {
         }),
       );
 
-      debugPrint(
-          'Worker API Response: ${workerResponse.statusCode} - ${workerResponse.body}');
+      // debugPrint(
+      //     'Worker API Response: ${workerResponse.statusCode} - ${workerResponse.body}');
 
       if (!(workerResponse.statusCode >= 200 &&
           workerResponse.statusCode < 300)) {
@@ -168,8 +168,8 @@ class WorkerService {
           }),
         );
 
-        debugPrint(
-            'Fault API Response: ${faultResponse.statusCode} - ${faultResponse.body}');
+        // debugPrint(
+        //     'Fault API Response: ${faultResponse.statusCode} - ${faultResponse.body}');
 
         if (!(faultResponse.statusCode >= 200 &&
             faultResponse.statusCode < 300)) {
@@ -210,8 +210,8 @@ class WorkerService {
         }),
       );
 
-      debugPrint(
-          'Worker API Response: ${workerResponse.statusCode} - ${workerResponse.body}');
+      // debugPrint(
+      //     'Worker API Response: ${workerResponse.statusCode} - ${workerResponse.body}');
 
       if (!(workerResponse.statusCode >= 200 &&
           workerResponse.statusCode < 300)) {
@@ -237,8 +237,8 @@ class WorkerService {
         }),
       );
 
-      debugPrint(
-          'Abandonment API Response: ${response.statusCode} - ${response.body}');
+      // debugPrint(
+      //     'Abandonment API Response: ${response.statusCode} - ${response.body}');
 
       return response.statusCode >= 200 && response.statusCode < 300;
     } catch (e) {
@@ -272,8 +272,8 @@ class WorkerService {
         }),
       );
 
-      debugPrint(
-          'Worker API Response: ${workerResponse.statusCode} - ${workerResponse.body}');
+      // debugPrint(
+      //     'Worker API Response: ${workerResponse.statusCode} - ${workerResponse.body}');
 
       if (!(workerResponse.statusCode >= 200 &&
           workerResponse.statusCode < 300)) {
@@ -300,8 +300,8 @@ class WorkerService {
         }),
       );
 
-      debugPrint(
-          'Disrespect API Response: ${response.statusCode} - ${response.body}');
+      // debugPrint(
+      //     'Disrespect API Response: ${response.statusCode} - ${response.body}');
 
       return response.statusCode >= 200 && response.statusCode < 300;
     } catch (e) {
@@ -341,8 +341,8 @@ class WorkerService {
             'code': worker.code,
           }));
 
-      debugPrint('Lo que envio: ${response.request}');
-      debugPrint('Respuesta API: ${response.statusCode} - ${response.body}');
+      // debugPrint('Lo que envio: ${response.request}');
+      // debugPrint('Respuesta API: ${response.statusCode} - ${response.body}');
 
       if (response.statusCode == 201) {
         return {
@@ -406,8 +406,8 @@ class WorkerService {
         'incapacitated': 'DISABLE',
       };
 
-      debugPrint('Nuevo estado: $newStatus');
-      debugPrint('Estado mapeado: ${statusToAPI[newStatus]}');
+      // debugPrint('Nuevo estado: $newStatus');
+      // debugPrint('Estado mapeado: ${statusToAPI[newStatus]}');
 
       // Prepara el cuerpo de la solicitud
       Map<String, dynamic> body = {
@@ -415,7 +415,7 @@ class WorkerService {
       };
 
       // debug id del worker
-      debugPrint('Worker ID: $workerId');
+      // debugPrint('Worker ID: $workerId');
 
       // Añadir fechas según el estado
       if (newStatus == 'incapacitated' &&
@@ -447,7 +447,7 @@ class WorkerService {
 
 // Método completo para actualizar un trabajador
   Future<bool> updateWorker(Worker worker, BuildContext context) async {
-    debugPrint('Actualizando worker: ${worker.id}');
+    // debugPrint('Actualizando worker: ${worker.id}');
     try {
       final authProvider = Provider.of<AuthProvider>(context, listen: false);
       final String token = authProvider.accessToken;
@@ -498,8 +498,8 @@ class WorkerService {
       }
 
       // Debug info
-      debugPrint('Actualizando worker ID: ${worker.id}');
-      debugPrint('Datos a enviar: $body');
+      // debugPrint('Actualizando worker ID: ${worker.id}');
+      // debugPrint('Datos a enviar: $body');
 
       var response = await http.patch(
         url,
@@ -510,7 +510,7 @@ class WorkerService {
         body: jsonEncode(body),
       );
 
-      debugPrint('API Response: ${response.statusCode} - ${response.body}');
+      // debugPrint('API Response: ${response.statusCode} - ${response.body}');
 
       return response.statusCode >= 200 && response.statusCode < 300;
     } catch (e) {

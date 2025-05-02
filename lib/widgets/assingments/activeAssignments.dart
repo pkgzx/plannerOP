@@ -6,14 +6,17 @@ import 'package:plannerop/core/model/worker.dart';
 import 'package:plannerop/core/model/workerGroup.dart';
 import 'package:plannerop/store/areas.dart';
 import 'package:plannerop/store/chargersOp.dart';
-import 'package:plannerop/store/user.dart';
 import 'package:plannerop/store/workers.dart';
+
 import 'package:plannerop/utils/toast.dart';
+import 'package:plannerop/widgets/assingments/components/buildWorkerItem.dart';
 import 'package:plannerop/widgets/assingments/editAssignmentForm.dart';
 import 'package:provider/provider.dart';
 import 'package:plannerop/store/assignments.dart';
 import 'package:plannerop/widgets/assingments/emptyState.dart';
 import 'package:plannerop/core/model/assignment.dart';
+import 'package:plannerop/widgets/assingments/components/showCompletionDialog.dart';
+import 'package:plannerop/widgets/assingments/components/utils.dart';
 
 // Actualizar ActiveAssignmentsView para mostrar indicador sutil de actualización
 class ActiveAssignmentsView extends StatefulWidget {
@@ -27,7 +30,6 @@ class ActiveAssignmentsView extends StatefulWidget {
 }
 
 class _ActiveAssignmentsViewState extends State<ActiveAssignmentsView> {
-  bool _isRefreshing = false;
   String? _selectedArea;
   int? _selectedSupervisorId;
   bool _showFilters = false;
@@ -535,8 +537,10 @@ class _ActiveAssignmentsViewState extends State<ActiveAssignmentsView> {
                     child: Material(
                       color: Colors.transparent,
                       child: InkWell(
-                        onTap: () => _showCompletionDialog(
-                            context, assignment, provider),
+                        onTap: () => showCompletionDialog(
+                            context: context,
+                            assignment: assignment,
+                            provider: provider),
                         customBorder: const CircleBorder(),
                         child: const Icon(
                           Icons.check,
@@ -555,163 +559,7 @@ class _ActiveAssignmentsViewState extends State<ActiveAssignmentsView> {
     );
   }
 
-  // Método para mostrar trabajadores agrupados
-  Widget _buildWorkersSection(Assignment assignment) {
-    // Obtener los grupos de la asignación
-    final groups = assignment.groups;
-
-    // Agrupar los workers por su grupo
-    Map<String, List<Worker>> workersByGroup = {};
-    List<Worker> ungroupedWorkers = [];
-
-    // Conjunto para seguir los IDs de trabajadores que ya están en grupos
-    Set<int> groupedWorkerIds = {};
-
-    // Asignar colores únicos a cada grupo
-    Map<String, Color> groupColors = {};
-    List<Color> groupColorOptions = [
-      const Color(0xFFE6FFFA), // Verde claro
-      const Color(0xFFEBF4FF), // Azul claro
-      const Color(0xFFFEF3C7), // Amarillo claro
-      const Color(0xFFFEE2E2), // Rojo claro
-      const Color(0xFFFAF5FF), // Púrpura claro
-    ];
-
-    int colorIndex = 0;
-
-    // Primero: identificar todos los trabajadores en grupos
-    for (var group in groups) {
-      for (var workerId in group.workers) {
-        groupedWorkerIds.add(workerId);
-      }
-    }
-
-    // Segundo: clasificar trabajadores en sus grupos correspondientes
-    for (var worker in assignment.workers) {
-      bool assignedToGroup = false;
-
-      // Buscar en qué grupo está este trabajador
-      for (var group in groups) {
-        if (group.workers.contains(worker.id)) {
-          // Inicializar la lista del grupo si es necesario
-          if (!workersByGroup.containsKey(group.id)) {
-            workersByGroup[group.id] = [];
-            groupColors[group.id] =
-                groupColorOptions[colorIndex % groupColorOptions.length];
-            colorIndex++;
-          }
-
-          // Añadir el trabajador a su grupo
-          workersByGroup[group.id]!.add(worker);
-          assignedToGroup = true;
-          break;
-        }
-      }
-
-      // Si el trabajador no está en ningún grupo, añadirlo a los trabajadores sin grupo
-      if (!assignedToGroup && !groupedWorkerIds.contains(worker.id)) {
-        ungroupedWorkers.add(worker);
-      }
-    }
-
-    List<Widget> sections = [];
-
-    // Primero mostrar los grupos
-    workersByGroup.forEach((groupId, workers) {
-      final group = groups.firstWhere(
-        (g) => g.id == groupId,
-        orElse: () => WorkerGroup(workers: [], name: "", id: ""),
-      );
-
-      sections.add(
-        Container(
-          margin: const EdgeInsets.only(bottom: 16),
-          decoration: BoxDecoration(
-            color: groupColors[groupId],
-            borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: const Color(0xFFE2E8F0)),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Encabezado del grupo
-              Container(
-                width: double.infinity,
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                decoration: BoxDecoration(
-                  color: const Color(0xFF38A169),
-                  borderRadius: BorderRadius.only(
-                    topLeft: Radius.circular(7),
-                    topRight: Radius.circular(7),
-                  ),
-                ),
-                child: Row(
-                  children: [
-                    Icon(Icons.access_time, color: Colors.white, size: 14),
-                    SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        group.name,
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.w500,
-                          fontSize: 12,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-
-              // Lista de trabajadores en este grupo
-              Padding(
-                padding: const EdgeInsets.all(8.0),
-                child: Column(
-                  children: workers
-                      .map((worker) => _buildWorkerItem(worker))
-                      .toList(),
-                ),
-              ),
-            ],
-          ),
-        ),
-      );
-    });
-
-    // Luego mostrar los trabajadores sin grupo si existen
-    if (ungroupedWorkers.isNotEmpty) {
-      sections.add(
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            if (workersByGroup
-                .isNotEmpty) // Solo mostrar este título si hay grupos
-              Padding(
-                padding: const EdgeInsets.only(bottom: 8.0, top: 8.0),
-                child: Text(
-                  'Trabajadores individuales',
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w500,
-                    color: Color(0xFF4A5568),
-                  ),
-                ),
-              ),
-            ...ungroupedWorkers
-                .map((worker) => _buildWorkerItem(worker))
-                .toList(),
-          ],
-        ),
-      );
-    }
-
-    return Column(children: sections);
-  }
-
-  // Modificar la sección de _showAssignmentDetails para incluir un FloatingActionButton para cancelar
   void _showAssignmentDetails(BuildContext context, Assignment assignment) {
-    final areas_provider = Provider.of<AreasProvider>(context, listen: false);
     final assignmentsProvider =
         Provider.of<AssignmentsProvider>(context, listen: false);
 
@@ -735,7 +583,6 @@ class _ActiveAssignmentsViewState extends State<ActiveAssignmentsView> {
       builder: (context) {
         return Stack(
           children: [
-            // Contenido principal del modal
             Container(
               height: MediaQuery.of(context).size.height * 0.85,
               decoration: const BoxDecoration(
@@ -745,18 +592,18 @@ class _ActiveAssignmentsViewState extends State<ActiveAssignmentsView> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Header (sin cambios)
+                  // Header
                   Container(
                     padding: const EdgeInsets.all(20),
                     decoration: BoxDecoration(
-                      color: const Color(0xFF3182CE).withOpacity(0.1),
+                      color: const Color.fromARGB(255, 13, 184, 84)
+                          .withOpacity(0.1),
                       borderRadius:
-                          BorderRadius.vertical(top: Radius.circular(20)),
+                          const BorderRadius.vertical(top: Radius.circular(20)),
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        // Primera fila: título y botón cerrar
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
@@ -768,34 +615,27 @@ class _ActiveAssignmentsViewState extends State<ActiveAssignmentsView> {
                                   fontWeight: FontWeight.bold,
                                   color: Color(0xFF2D3748),
                                 ),
-                                maxLines: 2,
-                                overflow: TextOverflow.ellipsis,
                               ),
                             ),
-                            // IconButton(
-                            //   icon: const Icon(Icons.close),
-                            //   onPressed: () => Navigator.pop(context),
-                            // ),
+                            IconButton(
+                              icon: const Icon(Icons.close),
+                              onPressed: () => Navigator.pop(context),
+                            ),
                           ],
                         ),
-
-                        // Segunda fila: Área y estado
                         Row(
                           children: [
                             const Icon(
                               Icons.room_outlined,
                               size: 16,
-                              color: Color(0xFF3182CE),
+                              color: Color.fromARGB(255, 11, 80, 53),
                             ),
                             const SizedBox(width: 4),
                             Text(
-                              areas_provider
-                                      .getAreaById(assignment.areaId)
-                                      ?.name ??
-                                  "",
+                              assignment.area,
                               style: const TextStyle(
                                 fontSize: 14,
-                                color: Color(0xFF3182CE),
+                                color: Color.fromARGB(255, 11, 80, 53),
                                 fontWeight: FontWeight.w500,
                               ),
                             ),
@@ -805,7 +645,7 @@ class _ActiveAssignmentsViewState extends State<ActiveAssignmentsView> {
                     ),
                   ),
 
-                  // Content (sin cambios)
+                  // Content
                   Expanded(
                     child: SingleChildScrollView(
                       padding: const EdgeInsets.all(20),
@@ -813,42 +653,42 @@ class _ActiveAssignmentsViewState extends State<ActiveAssignmentsView> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           _buildDetailsSection(
-                            title: 'Detalles de la operación',
+                            title: 'Detalles de la asignación',
                             children: [
-                              _buildDetailRow(
+                              buildDetailRow(
                                   'Fecha',
                                   DateFormat('dd/MM/yyyy')
                                       .format(assignment.date)),
-                              _buildDetailRow('Hora', assignment.time),
-                              _buildDetailRow('Estado', 'En curso'),
+                              buildDetailRow('Hora', assignment.time),
+                              buildDetailRow('Estado', 'En curso'),
                               if (assignment.endTime != null)
-                                _buildDetailRow('Hora de finalización',
+                                buildDetailRow('Hora de finalización',
                                     assignment.endTime ?? 'No especificada'),
                               if (assignment.endDate != null)
-                                _buildDetailRow(
+                                buildDetailRow(
                                     'Fecha de finalización',
                                     DateFormat('dd/MM/yyyy')
                                         .format(assignment.endDate!)),
-                              _buildDetailRow('Zona',
-                                  ' ${assignment.zone == 0 ? 'N/A' : 'Zona ' + assignment.zone.toString()}'),
-                              _buildDetailRow(
-                                  'Motonave', assignment.motorship ?? ''),
+                              buildDetailRow('Zona', 'Zona ${assignment.zone}'),
+                              if (assignment.motorship != "" &&
+                                  assignment.motorship != null)
+                                buildDetailRow(
+                                    'Motonave', assignment.motorship ?? ''),
                             ],
                           ),
                           const SizedBox(height: 20),
                           _buildWorkersSection(assignment),
-
                           const SizedBox(height: 20),
                           assignment.deletedWorkers.map(
                             (worker) {
-                              return _buildWorkerItem(worker);
+                              return buildWorkerItem(worker);
                             },
                           ).isNotEmpty
                               ? _buildDetailsSection(
                                   title: 'Trabajadores eliminados',
                                   children: assignment.deletedWorkers.map(
                                     (worker) {
-                                      return _buildWorkerItem(worker,
+                                      return buildWorkerItem(worker,
                                           isDeleted: true);
                                     },
                                   ).toList(),
@@ -860,7 +700,7 @@ class _ActiveAssignmentsViewState extends State<ActiveAssignmentsView> {
                           _buildDetailsSection(
                             title: 'Encargados de la operación',
                             children: inChargersFormat.map((charger) {
-                              return _buildInChargerItem(charger);
+                              return buildInChargerItem(charger);
                             }).toList(),
                           ),
                           const SizedBox(height: 60),
@@ -869,7 +709,7 @@ class _ActiveAssignmentsViewState extends State<ActiveAssignmentsView> {
                     ),
                   ),
 
-                  // Action buttons (mantener los botones principales)
+                  // Action buttons
                   Container(
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
@@ -895,7 +735,6 @@ class _ActiveAssignmentsViewState extends State<ActiveAssignmentsView> {
                             ),
                             onPressed: () {
                               Navigator.pop(context);
-                              // Código de edición existente
 
                               showDialog(
                                 context: context,
@@ -948,14 +787,16 @@ class _ActiveAssignmentsViewState extends State<ActiveAssignmentsView> {
                               style: NeumorphicStyle(
                                 depth: 2,
                                 intensity: 0.7,
-                                color: const Color(0xFF38A169),
+                                color: const Color(0xFF3182CE),
                                 boxShape: NeumorphicBoxShape.roundRect(
                                     BorderRadius.circular(8)),
                               ),
                               onPressed: () {
                                 Navigator.pop(context);
-                                _showCompletionDialog(
-                                    context, assignment, provider);
+                                showCompletionDialog(
+                                    context: context,
+                                    assignment: assignment,
+                                    provider: provider);
                               },
                               child: const Text(
                                 'Completar',
@@ -1130,212 +971,321 @@ class _ActiveAssignmentsViewState extends State<ActiveAssignmentsView> {
       },
     );
   }
-  // Reemplaza el método _showCompletionDialog actual con este:
 
-  void _showCompletionDialog(BuildContext context, Assignment assignment,
-      AssignmentsProvider provider) {
-    // Variable para controlar el estado de procesamiento
-    bool isProcessing = false;
+  Widget _buildWorkersSection(Assignment assignment) {
+    // Obtener los grupos de la asignación
+    final groups = assignment.groups;
+    final assignmentsProvider =
+        Provider.of<AssignmentsProvider>(context, listen: false);
 
-    showDialog(
-      context: context,
-      barrierDismissible: false, // Evita cierres accidentales
-      builder: (BuildContext dialogContext) {
-        return StatefulBuilder(
-          builder: (context, setDialogState) {
-            return AlertDialog(
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16)),
-              title: const Text('Completar asignación'),
-              content: const Text(
-                '¿Estás seguro de que deseas marcar esta asignación como completada?',
-                style: TextStyle(color: Color(0xFF718096)),
-              ),
-              actions: [
-                // Botón Cancelar (deshabilitado durante el procesamiento)
-                TextButton(
-                  onPressed:
-                      isProcessing ? null : () => Navigator.pop(dialogContext),
-                  style: TextButton.styleFrom(
-                    foregroundColor: isProcessing
-                        ? const Color(0xFFCBD5E0)
-                        : const Color(0xFF718096),
-                  ),
-                  child: const Text('Cancelar'),
+    // Fecha y hora actual para comparar
+    final DateTime now = DateTime.now();
+
+    // Agrupar los workers por su grupo
+    Map<String, List<Worker>> workersByGroup = {};
+    List<Worker> ungroupedWorkers = [];
+
+    // Conjunto para seguir los IDs de trabajadores que ya están en grupos o finalizados
+    Set<int> groupedWorkerIds = {};
+    Set<int> finishedWorkerIds =
+        assignment.workersFinished.map((w) => w.id).toSet();
+
+    // Asignar colores únicos a cada grupo
+    Map<String, Color> groupColors = {};
+    List<Color> groupColorOptions = [
+      const Color(0xFFE6FFFA), // Verde claro
+      const Color(0xFFEBF4FF), // Azul claro
+      const Color(0xFFFEF3C7), // Amarillo claro
+      const Color(0xFFFEE2E2), // Rojo claro
+      const Color(0xFFFAF5FF), // Púrpura claro
+    ];
+
+    int colorIndex = 0;
+
+    // Primero: identificar todos los trabajadores en grupos
+    for (var group in groups) {
+      // Solo considerar los grupos que no han finalizado o que su fecha de finalización es futura
+      bool isGroupFinished = false;
+      if (group.endDate != null && group.endTime != null) {
+        // Parsear la fecha y hora de finalización
+        try {
+          final endDate = DateTime.parse(group.endDate!);
+          final timeParts = group.endTime!.split(':');
+          final endDateTime = DateTime(
+            endDate.year,
+            endDate.month,
+            endDate.day,
+            int.parse(timeParts[0]),
+            int.parse(timeParts[1]),
+          );
+
+          if (endDateTime.isBefore(now)) {
+            isGroupFinished = true;
+          }
+        } catch (e) {
+          debugPrint('Error al parsear fecha/hora: $e');
+        }
+      }
+
+      // Verificar si todos los trabajadores del grupo están en workersFinished
+      if (group.workers
+          .every((workerId) => finishedWorkerIds.contains(workerId))) {
+        isGroupFinished = true;
+      }
+
+      // Si el grupo no ha finalizado o queremos mostrar todos incluyendo los finalizados
+      if (!isGroupFinished) {
+        // Asignar un color único al grupo
+        if (!groupColors.containsKey(group.id)) {
+          groupColors[group.id] =
+              groupColorOptions[colorIndex % groupColorOptions.length];
+          colorIndex++;
+        }
+
+        // Inicializar lista para este grupo
+        workersByGroup[group.id] = [];
+
+        // Añadir IDs de trabajadores de este grupo al conjunto de agrupados
+        for (var workerId in group.workers) {
+          // Solo añadir si no está finalizado
+          if (!finishedWorkerIds.contains(workerId)) {
+            groupedWorkerIds.add(workerId);
+          }
+        }
+      }
+    }
+
+    // Segundo: clasificar trabajadores en sus grupos correspondientes
+    for (var worker in assignment.workers) {
+      // Saltarse trabajadores que ya están finalizados
+      if (finishedWorkerIds.contains(worker.id)) {
+        continue;
+      }
+
+      bool assignedToGroup = false;
+
+      // Buscar en qué grupo está este trabajador
+      for (var group in groups) {
+        // Verificar si el grupo ya ha finalizado
+        bool isGroupFinished = false;
+        if (group.endDate != null && group.endTime != null) {
+          try {
+            final endDate = DateTime.parse(group.endDate!);
+            final timeParts = group.endTime!.split(':');
+            final endDateTime = DateTime(
+              endDate.year,
+              endDate.month,
+              endDate.day,
+              int.parse(timeParts[0]),
+              int.parse(timeParts[1]),
+            );
+
+            if (endDateTime.isBefore(now)) {
+              isGroupFinished = true;
+            }
+          } catch (e) {
+            debugPrint('Error al parsear fecha/hora: $e');
+          }
+        }
+
+        // Verificar si todos los trabajadores del grupo están en workersFinished
+        if (group.workers
+            .every((workerId) => finishedWorkerIds.contains(workerId))) {
+          isGroupFinished = true;
+        }
+
+        // Solo procesar grupos no finalizados y si el trabajador pertenece a este grupo
+        if (!isGroupFinished &&
+            group.workers.contains(worker.id) &&
+            workersByGroup.containsKey(group.id)) {
+          workersByGroup[group.id]!.add(worker);
+          assignedToGroup = true;
+          break; // Un trabajador solo puede estar en un grupo
+        }
+      }
+
+      // Si el trabajador no está en ningún grupo ni está finalizado, añadirlo a los trabajadores sin grupo
+      if (!assignedToGroup &&
+          !groupedWorkerIds.contains(worker.id) &&
+          !finishedWorkerIds.contains(worker.id)) {
+        ungroupedWorkers.add(worker);
+      }
+    }
+
+    List<Widget> sections = [];
+
+    // Primero mostrar los grupos (solo los no finalizados)
+    workersByGroup.forEach((groupId, workers) {
+      if (workers.isEmpty)
+        return; // Ignorar grupos sin trabajadores (todos finalizados)
+
+      final group = groups.firstWhere(
+        (g) => g.id == groupId,
+        orElse: () => WorkerGroup(workers: [], name: "", id: ""),
+      );
+
+      sections.add(
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              decoration: BoxDecoration(
+                color: const Color(0xFF38A169),
+                borderRadius: BorderRadius.only(
+                  topLeft: Radius.circular(7),
+                  topRight: Radius.circular(7),
                 ),
-                // Botón Confirmar con estado de carga
-                NeumorphicButton(
-                  style: NeumorphicStyle(
-                    depth: isProcessing ? 0 : 2,
-                    intensity: 0.7,
-                    color: isProcessing
-                        ? const Color(
-                            0xFF9AE6B4) // Color más claro cuando está procesando
-                        : const Color(0xFF38A169),
-                    boxShape:
-                        NeumorphicBoxShape.roundRect(BorderRadius.circular(8)),
-                  ),
-                  onPressed: isProcessing
-                      ? null
-                      : () async {
-                          // Actualizar estado a "procesando"
-                          setDialogState(() {
-                            isProcessing = true;
-                          });
-
-                          try {
-                            // Obtener fecha y hora actuales
-                            final now = DateTime.now();
-                            final currentTime = DateFormat('HH:mm').format(now);
-
-                            debugPrint(
-                                'Completando asignación ${assignment.id}');
-
-                            var endTimeToSave =
-                                assignment.endTime?.isNotEmpty == true
-                                    ? assignment.endTime
-                                    : currentTime;
-
-                            endTimeToSave ??= currentTime;
-
-                            // Actualizar la asignación en el servidor con todos los datos modificados
-                            final success = await provider.completeAssignment(
-                                assignment.id ?? 0,
-                                assignment.endDate ?? now,
-                                endTimeToSave,
-                                context);
-
-                            if (success) {
-                              // Liberar a los trabajadores
-                              final workersProvider =
-                                  Provider.of<WorkersProvider>(context,
-                                      listen: false);
-                              for (var worker in assignment.workers) {
-                                workersProvider.releaseWorkerObject(
-                                    worker, context);
-                              }
-
-                              Navigator.pop(dialogContext);
-                              showSuccessToast(
-                                  context, 'Operación completada exitosamente');
-                            } else {
-                              // En caso de error, restaurar el estado del botón
-                              setDialogState(() {
-                                isProcessing = false;
-                              });
-                              showErrorToast(context,
-                                  'Error al completar la asignación: ${provider.error ?? "Desconocido"}');
-                            }
-                          } catch (e) {
-                            debugPrint('Error al completar asignación: $e');
-
-                            // Restaurar estado del botón en caso de error
-                            if (context.mounted) {
-                              setDialogState(() {
-                                isProcessing = false;
-                              });
-                              showErrorToast(
-                                  context, 'Error al completar asignación: $e');
-                            }
-                          }
-                        },
-                  child: Container(
-                    width: 100, // Ancho fijo para evitar saltos de diseño
-                    height: 36,
-                    child: Center(
-                      child: isProcessing
-                          ? Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: const [
-                                SizedBox(
-                                  width: 16,
-                                  height: 16,
-                                  child: CircularProgressIndicator(
-                                    valueColor: AlwaysStoppedAnimation<Color>(
-                                        Colors.white),
-                                    strokeWidth: 2,
-                                  ),
-                                ),
-                                SizedBox(width: 8),
-                                Text(
-                                  'Procesando',
-                                  style: TextStyle(
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.w600,
-                                    fontSize: 13,
-                                  ),
-                                ),
-                              ],
-                            )
-                          : const Text(
-                              'Confirmar',
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
+              ),
+              child: Row(
+                children: [
+                  Icon(Icons.group, color: Colors.white, size: 14),
+                  SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      group.name,
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w500,
+                        fontSize: 12,
+                      ),
                     ),
                   ),
+                  NeumorphicButton(
+                    style: NeumorphicStyle(
+                      depth: 2,
+                      intensity: 0.5,
+                      color: Colors.white,
+                      boxShape: NeumorphicBoxShape.roundRect(
+                          BorderRadius.circular(4)),
+                    ),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    onPressed: () {
+                      showGroupCompletionDialog(context, assignment, workers,
+                          groupId, assignmentsProvider, setState);
+                    },
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: const [
+                        Icon(Icons.done_all,
+                            color: Color(0xFF38A169), size: 14),
+                        SizedBox(width: 4),
+                        Text(
+                          'Completar grupo',
+                          style: TextStyle(
+                            color: Color(0xFF38A169),
+                            fontWeight: FontWeight.w500,
+                            fontSize: 10,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Container(
+              decoration: BoxDecoration(
+                color: groupColors[groupId]!,
+                borderRadius: BorderRadius.only(
+                  bottomLeft: Radius.circular(7),
+                  bottomRight: Radius.circular(7),
                 ),
-              ],
-            );
-          },
-        );
-      },
-    );
-  }
-
-  Widget _buildDetailRow(String label, String value) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          SizedBox(
-            width: 100,
-            child: Text(
-              label,
-              style: const TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.bold,
-                color: Color(0xFF4A5568),
+              ),
+              padding: const EdgeInsets.all(12),
+              child: Column(
+                children: [
+                  ...workers
+                      .map((worker) => _buildWorkerItemWithCompletion(
+                          worker, assignment, assignmentsProvider,
+                          isInGroup: true))
+                      .toList(),
+                ],
               ),
             ),
-          ),
-          Expanded(
-            child: Text(
-              value,
-              style: const TextStyle(
-                fontSize: 14,
-                color: Color(0xFF2D3748),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildDetailsSection(
-      {required String title, required List<Widget> children}) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          title,
-          style: const TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.bold,
-            color: Color(0xFF2D3748),
-          ),
+            SizedBox(height: 16),
+          ],
         ),
-        const SizedBox(height: 12),
-        ...children,
-      ],
-    );
+      );
+    });
+
+    // Luego mostrar los trabajadores sin grupo si existen (y no están finalizados)
+    if (ungroupedWorkers.isNotEmpty) {
+      sections.add(
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            if (workersByGroup
+                .isNotEmpty) // Solo mostrar este título si hay grupos
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Expanded(
+                    child: Padding(
+                      padding: const EdgeInsets.only(bottom: 8.0, top: 8.0),
+                      child: Text(
+                        'Trabajadores individuales',
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w500,
+                          color: Color(0xFF4A5568),
+                        ),
+                      ),
+                    ),
+                  ),
+                  // Botón para completar todos los trabajadores individuales
+                  if (ungroupedWorkers.length > 1)
+                    NeumorphicButton(
+                      style: NeumorphicStyle(
+                        depth: 2,
+                        intensity: 0.5,
+                        color: Colors.white,
+                        boxShape: NeumorphicBoxShape.roundRect(
+                            BorderRadius.circular(4)),
+                      ),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 8, vertical: 4),
+                      onPressed: () {
+                        _showCompleteAllIndividualsDialog(context, assignment,
+                            ungroupedWorkers, assignmentsProvider);
+                      },
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: const [
+                          Icon(Icons.done_all,
+                              color: Color(0xFF38A169), size: 14),
+                          SizedBox(width: 4),
+                          Text(
+                            'Completar todos',
+                            style: TextStyle(
+                              color: Color(0xFF38A169),
+                              fontWeight: FontWeight.w500,
+                              fontSize: 10,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                ],
+              ),
+            ...ungroupedWorkers
+                .map((worker) => _buildWorkerItemWithCompletion(
+                    worker, assignment, assignmentsProvider,
+                    isInGroup: false))
+                .toList(),
+          ],
+        ),
+      );
+    }
+
+    return Column(children: sections);
   }
 
-  Widget _buildWorkerItem(Worker worker, {bool isDeleted = false}) {
+  Widget _buildWorkerItemWithCompletion(Worker worker, Assignment assignment,
+      AssignmentsProvider assignmentsProvider,
+      {bool isDeleted = false, bool isInGroup = false}) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
       child: Container(
@@ -1346,7 +1296,10 @@ class _ActiveAssignmentsViewState extends State<ActiveAssignmentsView> {
                 borderRadius: BorderRadius.circular(8),
                 border: Border.all(color: Colors.red.shade100),
               )
-            : null,
+            : BoxDecoration(
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: Color(0xFFE2E8F0)),
+              ),
         child: Row(
           children: [
             CircleAvatar(
@@ -1419,68 +1372,350 @@ class _ActiveAssignmentsViewState extends State<ActiveAssignmentsView> {
                 ],
               ),
             ),
+            // Solo mostrar el botón de completar para trabajadores individuales (no en grupo)
+            if (!isDeleted && !isInGroup)
+              NeumorphicButton(
+                style: NeumorphicStyle(
+                  depth: 1,
+                  intensity: 0.5,
+                  color: Colors.white,
+                  boxShape:
+                      NeumorphicBoxShape.roundRect(BorderRadius.circular(4)),
+                ),
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                onPressed: () {
+                  showIndividualCompletionDialog(
+                      context, assignment, worker, assignmentsProvider);
+                },
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.check, color: Color(0xFF38A169), size: 14),
+                    SizedBox(width: 4),
+                    Text(
+                      'Completar',
+                      style: TextStyle(
+                        color: Color(0xFF38A169),
+                        fontWeight: FontWeight.w500,
+                        fontSize: 10,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildInChargerItem(User charger) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-        decoration: BoxDecoration(
-          color: Colors.green.shade50,
-          borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: Colors.green.shade100),
-        ),
-        child: Row(
-          children: [
-            CircleAvatar(
-              backgroundColor: Colors.green.shade400,
-              radius: 18,
-              child: Text(
-                charger.name.toString().substring(0, 1).toUpperCase(),
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Text(
-                          charger.name.toString(),
-                          style: const TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w600,
-                            color: const Color(0xFF2D3748),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  if (charger.cargo.isNotEmpty)
+  void _showCompleteAllIndividualsDialog(
+      BuildContext context,
+      Assignment assignment,
+      List<Worker> workers,
+      AssignmentsProvider provider) {
+    bool isProcessing = false;
+    DateTime selectedDate = DateTime.now();
+    TimeOfDay selectedTime = TimeOfDay.now();
+
+    // Formatear fecha y hora para mostrar
+    String formattedDate = DateFormat('dd/MM/yyyy').format(selectedDate);
+    String formattedTime =
+        "${selectedTime.hour.toString().padLeft(2, '0')}:${selectedTime.minute.toString().padLeft(2, '0')}";
+
+    showDialog(
+      context: context,
+      builder: (BuildContext dialogContext) {
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            return AlertDialog(
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16)),
+              title: Text('Completar Todos los Trabajadores Individuales'),
+              content: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
                     Text(
-                      charger.cargo.toString(),
+                      'Se marcarán como completadas las tareas de ${workers.length} trabajador(es) individual(es).',
+                      style: TextStyle(color: Color(0xFF718096)),
+                    ),
+                    SizedBox(height: 16),
+                    Text(
+                      'Fecha de finalización',
                       style: TextStyle(
-                        fontSize: 12,
-                        color: const Color(0xFF718096),
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                        color: Color(0xFF4A5568),
                       ),
                     ),
-                ],
+                    SizedBox(height: 8),
+                    GestureDetector(
+                      onTap: isProcessing
+                          ? null
+                          : () async {
+                              final DateTime? picked = await showDatePicker(
+                                context: context,
+                                initialDate: selectedDate,
+                                firstDate:
+                                    DateTime.now().subtract(Duration(days: 30)),
+                                lastDate: DateTime.now().add(Duration(days: 1)),
+                              );
+                              if (picked != null) {
+                                setDialogState(() {
+                                  selectedDate = picked;
+                                  formattedDate = DateFormat('dd/MM/yyyy')
+                                      .format(selectedDate);
+                                });
+                              }
+                            },
+                      child: Container(
+                        padding:
+                            EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                        decoration: BoxDecoration(
+                          border: Border.all(color: Color(0xFFE2E8F0)),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Row(
+                          children: [
+                            Icon(Icons.calendar_today,
+                                size: 18, color: Color(0xFF718096)),
+                            SizedBox(width: 8),
+                            Text(
+                              formattedDate,
+                              style: TextStyle(
+                                fontSize: 14,
+                                color: Color(0xFF2D3748),
+                              ),
+                            ),
+                            Spacer(),
+                            Icon(Icons.arrow_drop_down,
+                                color: Color(0xFF718096)),
+                          ],
+                        ),
+                      ),
+                    ),
+                    SizedBox(height: 16),
+                    Text(
+                      'Hora de finalización',
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                        color: Color(0xFF4A5568),
+                      ),
+                    ),
+                    SizedBox(height: 8),
+                    GestureDetector(
+                      onTap: isProcessing
+                          ? null
+                          : () async {
+                              final TimeOfDay? picked = await showTimePicker(
+                                context: context,
+                                initialTime: selectedTime,
+                              );
+                              if (picked != null) {
+                                setDialogState(() {
+                                  selectedTime = picked;
+                                  formattedTime =
+                                      "${picked.hour.toString().padLeft(2, '0')}:${picked.minute.toString().padLeft(2, '0')}";
+                                });
+                              }
+                            },
+                      child: Container(
+                        padding:
+                            EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                        decoration: BoxDecoration(
+                          border: Border.all(color: Color(0xFFE2E8F0)),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Row(
+                          children: [
+                            Icon(Icons.access_time,
+                                size: 18, color: Color(0xFF718096)),
+                            SizedBox(width: 8),
+                            Text(
+                              formattedTime,
+                              style: TextStyle(
+                                fontSize: 14,
+                                color: Color(0xFF2D3748),
+                              ),
+                            ),
+                            Spacer(),
+                            Icon(Icons.arrow_drop_down,
+                                color: Color(0xFF718096)),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ),
-            ),
-          ],
+              actions: [
+                TextButton(
+                  onPressed:
+                      isProcessing ? null : () => Navigator.pop(dialogContext),
+                  style: TextButton.styleFrom(
+                    foregroundColor:
+                        isProcessing ? Color(0xFFCBD5E0) : Color(0xFF718096),
+                  ),
+                  child: Text('Cancelar'),
+                ),
+                NeumorphicButton(
+                  style: NeumorphicStyle(
+                    depth: isProcessing ? 0 : 2,
+                    intensity: 0.7,
+                    color: isProcessing ? Color(0xFF9AE6B4) : Color(0xFF38A169),
+                    boxShape:
+                        NeumorphicBoxShape.roundRect(BorderRadius.circular(8)),
+                  ),
+                  onPressed: isProcessing
+                      ? null
+                      : () async {
+                          setDialogState(() {
+                            isProcessing = true;
+                          });
+
+                          try {
+                            // Liberar a todos los trabajadores individuales
+                            var workersProvider = Provider.of<WorkersProvider>(
+                                context,
+                                listen: false);
+
+                            // Crear copia de la asignación con solo los trabajadores completados
+                            Assignment completedAssignment = Assignment(
+                              id: assignment.id,
+                              workers: assignment.workers,
+                              area: assignment.area,
+                              task: assignment.task,
+                              date: assignment.date,
+                              time: assignment.time,
+                              supervisor: assignment.supervisor,
+                              status: assignment.status,
+                              endDate: selectedDate,
+                              endTime: formattedTime,
+                              zone: assignment.zone,
+                              motorship: assignment.motorship,
+                              userId: assignment.userId,
+                              areaId: assignment.areaId,
+                              taskId: assignment.taskId,
+                              clientId: assignment.clientId,
+                              inChagers: assignment.inChagers,
+                              groups: assignment.groups,
+                            );
+
+                            // Llamar a API para completar operación grupal
+                            final success =
+                                await provider.completeGroupOrIndividual(
+                                    completedAssignment,
+                                    workers,
+                                    "individual", // Identificador para trabajadores individuales
+                                    selectedDate,
+                                    formattedTime,
+                                    context);
+
+                            // Liberar trabajadores
+                            if (success) {
+                              for (var worker in workers) {
+                                await workersProvider.releaseWorkerObject(
+                                    worker, context);
+                              }
+                              Navigator.of(dialogContext).pop();
+                              Navigator.of(context).pop();
+
+                              // Forzar actualización del estado global
+                              setState(() {
+                                // Vacío intencionalmente, solo para forzar rebuild
+                              });
+
+                              if (context.mounted) {
+                                showSuccessToast(context,
+                                    'Trabajadores individuales completados exitosamente');
+                              }
+                            } else {
+                              setDialogState(() {
+                                isProcessing = false;
+                              });
+                              if (context.mounted) {
+                                showErrorToast(context,
+                                    'No se pudo completar la operación');
+                              }
+                            }
+                          } catch (e) {
+                            debugPrint(
+                                'Error al completar tareas individuales: $e');
+
+                            if (context.mounted) {
+                              setDialogState(() {
+                                isProcessing = false;
+                              });
+                              showErrorToast(
+                                  context, 'Error al completar las tareas: $e');
+                            }
+                          }
+                        },
+                  child: Container(
+                    width: 100,
+                    height: 36,
+                    child: Center(
+                      child: isProcessing
+                          ? Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                SizedBox(
+                                  width: 16,
+                                  height: 16,
+                                  child: CircularProgressIndicator(
+                                    valueColor: AlwaysStoppedAnimation<Color>(
+                                        Colors.white),
+                                    strokeWidth: 2,
+                                  ),
+                                ),
+                                SizedBox(width: 8),
+                                Text(
+                                  'Procesando',
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.w600,
+                                    fontSize: 13,
+                                  ),
+                                ),
+                              ],
+                            )
+                          : Text(
+                              'Completar todos',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                    ),
+                  ),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Widget _buildDetailsSection(
+      {required String title, required List<Widget> children}) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          title,
+          style: const TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.bold,
+            color: Color(0xFF2D3748),
+          ),
         ),
-      ),
+        const SizedBox(height: 12),
+        ...children,
+      ],
     );
   }
 }

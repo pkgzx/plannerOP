@@ -5,6 +5,7 @@ import 'package:plannerop/core/model/workerGroup.dart';
 class Assignment {
   int? id;
   final List<Worker> workers;
+  List<Worker> workersFinished = [];
   final List<int> inChagers;
   final String area;
   final String task;
@@ -55,6 +56,7 @@ class Assignment {
     this.createdAt,
     this.updatedAt,
     this.groups = const [],
+    this.workersFinished = const [],
     // required this.groups,
   });
 

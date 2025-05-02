@@ -39,8 +39,6 @@ class FaultService {
         final jsonResponse = jsonDecode(response.body);
         List<Fault> faults = [];
 
-        debugPrint('Respuesta de la API: $jsonResponse');
-
         for (var fault in jsonResponse) {
           try {
             if (workers.length == 0) {

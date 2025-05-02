@@ -175,7 +175,7 @@ class _SupervisorHomeState extends State<SupervisorHome> {
 
   // Métodos específicos para refrescar cada tab
   void _refreshDashboard() {
-    debugPrint('🔄 Refrescando Dashboard...');
+    // debugPrint('🔄 Refrescando Dashboard...');
     final assignmentsProvider =
         Provider.of<AssignmentsProvider>(context, listen: false);
     // Actualizar silenciosamente sin mostrar indicadores de carga
@@ -183,7 +183,7 @@ class _SupervisorHomeState extends State<SupervisorHome> {
   }
 
   void _refreshAsignaciones() {
-    debugPrint('🔄 Refrescando Asignaciones...');
+    // debugPrint('🔄 Refrescando Asignaciones...');
     final assignmentsProvider =
         Provider.of<AssignmentsProvider>(context, listen: false);
     // Refrescar solo asignaciones activas y pendientes
@@ -192,11 +192,11 @@ class _SupervisorHomeState extends State<SupervisorHome> {
 
   void _refreshReportes() {
     // No requiere actualización automática, pues normalmente usa datos históricos
-    debugPrint('🔄 Reportes seleccionado (no requiere refresco automático)');
+    // debugPrint('🔄 Reportes seleccionado (no requiere refresco automático)');
   }
 
   void _refreshWorkers() {
-    debugPrint('🔄 Refrescando Trabajadores...');
+    // debugPrint('🔄 Refrescando Trabajadores...');
     // Usar el mecanismo existente en WorkersProvider si existe
     // (esto dependerá de tu implementación actual)
   }
