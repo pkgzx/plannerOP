@@ -204,12 +204,7 @@ class _DashboardTabState extends State<DashboardTab> {
     }
   }
 
-  // 1. Primero, modifica el método _loadAssignments para continuar en segundo plano
-
   Future<void> _loadAssignments() async {
-    // CAMBIO 1: Eliminar esta verificación que detiene la carga cuando cambias de tab
-    // if (!mounted) return;
-
     // Extraer el provider para usarlo independientemente del estado del widget
     final assignmentsProvider =
         Provider.of<AssignmentsProvider>(context, listen: false);
@@ -270,7 +265,6 @@ class _DashboardTabState extends State<DashboardTab> {
   }
 
   Future<void> _loadFaults() async {
-    // Extraer el provider primero
     final faultsProvider = Provider.of<FaultsProvider>(context, listen: false);
 
     // Solo actualizar UI si estamos montados
@@ -302,7 +296,6 @@ class _DashboardTabState extends State<DashboardTab> {
   }
 
   Future<void> _loadWorkers() async {
-    // Extraer provider primero
     final workersProvider =
         Provider.of<WorkersProvider>(context, listen: false);
 

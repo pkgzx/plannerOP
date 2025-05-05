@@ -610,6 +610,12 @@ class AddAssignmentDialogState extends State<AddAssignmentDialog> {
       return false;
     }
 
+    // Validación para campo encargados
+    if (_chargerController.text.isEmpty) {
+      showAlertToast(context, 'Por favor, selecciona al menos un encargado');
+      return false;
+    }
+
     try {
       // Obtener proveedores
       final workersProvider =

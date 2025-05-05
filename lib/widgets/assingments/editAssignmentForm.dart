@@ -1,22 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_neumorphic_plus/flutter_neumorphic.dart';
 import 'package:intl/intl.dart';
-import 'package:plannerop/core/model/area.dart';
 import 'package:plannerop/core/model/assignment.dart';
 import 'package:plannerop/core/model/client.dart';
 import 'package:plannerop/core/model/worker.dart';
 import 'package:plannerop/core/model/workerGroup.dart';
-import 'package:plannerop/store/areas.dart';
 import 'package:plannerop/store/assignments.dart';
 import 'package:plannerop/store/clients.dart';
-import 'package:plannerop/store/task.dart';
 import 'package:plannerop/store/workers.dart';
 import 'package:plannerop/utils/toast.dart';
 import 'package:plannerop/widgets/assingments/date_time_fields.dart';
 import 'package:plannerop/widgets/assingments/selected_worker_list.dart';
 import 'package:provider/provider.dart';
-import 'package:plannerop/widgets/assingments/dropdown_field.dart';
-import 'package:plannerop/widgets/assingments/workerSelection.dart';
 
 class EditAssignmentForm extends StatefulWidget {
   final Assignment assignment;

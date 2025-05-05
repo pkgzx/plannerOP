@@ -4,6 +4,7 @@ import 'package:plannerop/core/model/assignment.dart';
 import 'package:plannerop/core/model/user.dart';
 import 'package:plannerop/core/model/worker.dart';
 import 'package:plannerop/store/chargersOp.dart';
+import 'package:plannerop/widgets/assingments/components/utils.dart';
 import 'package:plannerop/widgets/assingments/emptyState.dart';
 import 'package:plannerop/store/assignments.dart';
 import 'package:provider/provider.dart';
@@ -1081,7 +1082,7 @@ class _HistoryAssignmentsViewState extends State<HistoryAssignmentsView> {
                         ),
                         const SizedBox(height: 12),
                         ...inChargersFormat
-                            .map((charger) => _buildInChargerItem(charger))
+                            .map((charger) => buildInChargerItem(charger))
                             .toList(),
                       ],
                     ],
@@ -1229,65 +1230,6 @@ class _HistoryAssignmentsViewState extends State<HistoryAssignmentsView> {
           );
         }).toList(),
       ],
-    );
-  }
-
-  Widget _buildInChargerItem(User charger) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-        decoration: BoxDecoration(
-          color: Colors.green.shade50,
-          borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: Colors.green.shade100),
-        ),
-        child: Row(
-          children: [
-            CircleAvatar(
-              backgroundColor: Colors.green.shade400,
-              radius: 18,
-              child: Text(
-                charger.name.toString().substring(0, 1).toUpperCase(),
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Text(
-                          charger.name.toString(),
-                          style: const TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w600,
-                            color: const Color(0xFF2D3748),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  if (charger.cargo.isNotEmpty)
-                    Text(
-                      charger.cargo.toString(),
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: const Color(0xFF718096),
-                      ),
-                    ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
     );
   }
 }
