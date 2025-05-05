@@ -456,14 +456,14 @@ class _PendingAssignmentsViewState extends State<PendingAssignmentsView> {
                           const SizedBox(height: 20),
                           assignment.deletedWorkers.map(
                             (worker) {
-                              return buildWorkerItem(worker);
+                              return buildWorkerItem(worker, context);
                             },
                           ).isNotEmpty
                               ? _buildDetailsSection(
                                   title: 'Trabajadores eliminados',
                                   children: assignment.deletedWorkers.map(
                                     (worker) {
-                                      return buildWorkerItem(worker,
+                                      return buildWorkerItem(worker, context,
                                           isDeleted: true);
                                     },
                                   ).toList(),

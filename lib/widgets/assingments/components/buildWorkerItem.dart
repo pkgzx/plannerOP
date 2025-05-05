@@ -1,66 +1,110 @@
 import 'package:flutter/material.dart';
 import 'package:plannerop/core/model/worker.dart';
+import 'package:plannerop/utils/toast.dart';
 
-Widget buildWorkerItem(Worker worker, {bool isDeleted = false}) {
+Widget buildWorkerItem(Worker worker, BuildContext context,
+    {bool isDeleted = false,
+    bool? alimentacionEntregada, // Añadir parámetro opcional
+    Function(bool)? onAlimentacionChanged // Callback para notificar cambios
+    }) {
+  // Usar el valor proporcionado o defaultear a false
+  final bool _alimentacionEntregada = alimentacionEntregada ?? false;
+
   return Padding(
     padding: const EdgeInsets.only(bottom: 12),
     child: Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-      decoration: isDeleted
-          ? BoxDecoration(
-              color: Colors.red.shade50,
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: Colors.red.shade100),
-            )
-          : null,
+      padding: const EdgeInsets.all(8),
+      decoration: BoxDecoration(
+        color: isDeleted ? Colors.red.shade50 : Colors.white,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(
+            color: isDeleted ? Colors.red.shade100 : const Color(0xFFE2E8F0)),
+      ),
       child: Row(
         children: [
+          // Avatar del trabajador
           CircleAvatar(
-            backgroundColor: isDeleted
-                ? Colors.grey
-                : Colors
-                    .primaries[worker.name.hashCode % Colors.primaries.length],
-            radius: 18,
-            child: isDeleted
-                ? const Icon(Icons.person_off_outlined,
-                    color: Colors.white, size: 16)
-                : Text(
-                    worker.name.toString().substring(0, 1).toUpperCase(),
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
+            backgroundColor: Colors
+                .primaries[worker.name.hashCode % Colors.primaries.length],
+            radius: 16,
+            child: Text(
+              worker.name.isNotEmpty ? worker.name[0].toUpperCase() : '?',
+              style: const TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+                fontSize: 12,
+              ),
+            ),
           ),
+
           const SizedBox(width: 12),
+
+          // Información del trabajador
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  worker.name.toString(),
-                  style: TextStyle(
+                  worker.name,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w500,
                     fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                    color: isDeleted
-                        ? Colors.red.shade700
-                        : const Color(0xFF2D3748),
-                    decoration: isDeleted ? TextDecoration.lineThrough : null,
+                    color: Color(0xFF2D3748),
                   ),
                 ),
-                if (worker.area.isNotEmpty)
-                  Text(
-                    worker.area.toString(),
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: isDeleted
-                          ? Colors.red.shade300
-                          : const Color(0xFF718096),
-                    ),
+                Text(
+                  worker.area,
+                  style: const TextStyle(
+                    fontSize: 12,
+                    color: Color(0xFF718096),
                   ),
+                ),
               ],
             ),
           ),
+
+          // Botón para marcar alimentación - SIEMPRE VISIBLE
+          TextButton.icon(
+            onPressed: () {
+              // Notificar cambio si hay callback
+              if (onAlimentacionChanged != null) {
+                onAlimentacionChanged(!_alimentacionEntregada);
+                showSuccessToast(context,
+                    "Alimentación ${_alimentacionEntregada ? 'no entregada' : 'entregada'}");
+              }
+            },
+            icon: Icon(
+              _alimentacionEntregada
+                  ? Icons.restaurant
+                  : Icons.restaurant_outlined,
+              color: _alimentacionEntregada ? Colors.green : Colors.grey,
+              size: 18,
+            ),
+            label: Text(
+              _alimentacionEntregada ? 'Entregada' : 'Pendiente',
+              style: TextStyle(
+                color: _alimentacionEntregada ? Colors.green : Colors.grey[700],
+                fontSize: 12,
+                fontWeight: _alimentacionEntregada
+                    ? FontWeight.bold
+                    : FontWeight.normal,
+              ),
+            ),
+            style: TextButton.styleFrom(
+              backgroundColor: _alimentacionEntregada
+                  ? Colors.green.withOpacity(0.1)
+                  : Colors.grey.withOpacity(0.05),
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+                side: BorderSide(
+                  color: _alimentacionEntregada
+                      ? Colors.green
+                      : Colors.grey.shade300,
+                ),
+              ),
+            ),
+          )
         ],
       ),
     ),

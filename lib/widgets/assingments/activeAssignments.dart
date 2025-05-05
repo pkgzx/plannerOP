@@ -31,6 +31,182 @@ class _ActiveAssignmentsViewState extends State<ActiveAssignmentsView> {
   String? _selectedArea;
   int? _selectedSupervisorId;
   bool _showFilters = false;
+  Map<int, bool> alimentacionStatus = {};
+  List<String> _determinateFoods(String? horaInicio, String? horaFin) {
+    List<String> foods = [];
+
+    // 1. Obtener la hora actual
+    DateTime now = DateTime.now();
+    // Usamos la hora actual real en producción
+    TimeOfDay currentTime = TimeOfDay(hour: now.hour, minute: now.minute);
+    // Para pruebas, usamos hora simulada
+    TimeOfDay mockCurrentTime = TimeOfDay(hour: 09, minute: 30);
+    int currentMinutes = mockCurrentTime.hour * 60 + mockCurrentTime.minute;
+
+    // 2. Convertir strings de hora a objetos TimeOfDay para la operación
+    TimeOfDay? inicio =
+        horaInicio != null ? _parseTimeString(horaInicio) : null;
+    TimeOfDay? fin = horaFin != null ? _parseTimeString(horaFin) : null;
+
+    if (inicio == null) return foods; // Sin hora de inicio, no hay comidas
+
+    // Convertir horas a minutos para facilitar comparaciones
+    int inicioMinutos = inicio.hour * 60 + inicio.minute;
+    int finMinutos = fin != null
+        ? fin.hour * 60 + fin.minute
+        : inicioMinutos + 480; // Asumir 8 horas de duración por defecto
+
+    // Si la operación termina antes que inicia, asumimos que cruza la medianoche
+    if (finMinutos < inicioMinutos) {
+      finMinutos += 24 * 60; // Sumar un día completo
+    }
+
+    // 3. Definir rangos de horarios para comidas
+    int desayunoMin = 6 * 60; // 6:00 am
+    int desayunoMax = 7 * 60 - 1; // 6:59 am
+
+    int almuerzoMin = 12 * 60; // 12:00 pm
+    int almuerzoMax = 13 * 60 - 1; // 12:59 pm
+
+    int cenaMin = 18 * 60; // 6:00 pm
+    int cenaMax = 19 * 60 - 1; // 6:59 pm
+
+    int mediaNocheMin = 0; // 00:00 am
+    int mediaNocheMax = 60 - 1; // 00:59 am
+
+    // 4. NUEVA LÓGICA: Definir periodos extendidos para cada comida
+    // Estos periodos determinan cuándo es relevante mostrar cada comida
+    int periodoDesayuno = 9 * 60; // Desayuno relevante hasta las 9 am
+    int periodoAlmuerzo = 15 * 60; // Almuerzo relevante hasta las 3 pm
+    int periodoCena = 21 * 60; // Cena relevante hasta las 9 pm
+    int periodoMediaNoche = 3 * 60; // Media noche relevante hasta las 3 am
+
+    // ----- NUEVA LÓGICA: Operación activa durante el día actual -----
+    bool operacionEnCursoHoy =
+        // La operación ya comenzó
+        (inicioMinutos <= currentMinutes) &&
+            // Y aún no ha terminado o terminará hoy
+            (finMinutos >= currentMinutes || fin == null);
+
+    if (operacionEnCursoHoy) {
+      // Crear una lista de todas las comidas a las que tiene derecho la operación
+      List<String> todasLasComidas = [];
+
+      if (inicioMinutos <= desayunoMax) {
+        todasLasComidas.add('Desayuno');
+      }
+      if (inicioMinutos <= almuerzoMax) {
+        todasLasComidas.add('Almuerzo');
+      }
+      if (inicioMinutos <= cenaMax) {
+        todasLasComidas.add('Cena');
+      }
+      if (inicioMinutos <= mediaNocheMax || inicioMinutos >= 23 * 60) {
+        todasLasComidas.add('Media noche');
+      }
+
+      // Si no hay comidas, retornar lista vacía
+      if (todasLasComidas.isEmpty) return foods;
+
+      // Determinar cuál comida mostrar según la hora actual
+      String comidaAMostrar = '';
+
+      if (currentMinutes >= mediaNocheMin &&
+          currentMinutes <= periodoMediaNoche) {
+        // Entre 12 am y 3 am: Mostrar media noche
+        if (todasLasComidas.contains('Media noche')) {
+          comidaAMostrar = 'Media noche';
+        }
+      } else if (currentMinutes >= desayunoMin &&
+          currentMinutes <= periodoDesayuno) {
+        // Entre 6 am y 10 am: Mostrar desayuno
+        if (todasLasComidas.contains('Desayuno')) {
+          comidaAMostrar = 'Desayuno';
+        }
+      } else if (currentMinutes >= almuerzoMin &&
+          currentMinutes <= periodoAlmuerzo) {
+        // Entre 12 pm y 4 pm: Mostrar almuerzo
+        if (todasLasComidas.contains('Almuerzo')) {
+          comidaAMostrar = 'Almuerzo';
+        }
+      } else if (currentMinutes >= cenaMin && currentMinutes <= periodoCena) {
+        // Entre 6 pm y 10 pm: Mostrar cena
+        if (todasLasComidas.contains('Cena')) {
+          comidaAMostrar = 'Cena';
+        }
+      } else if (currentMinutes > periodoCena ||
+          currentMinutes < mediaNocheMin) {
+        // Entre 10 pm y 12 am: Mostrar media noche
+        if (todasLasComidas.contains('Media noche')) {
+          comidaAMostrar = 'Media noche';
+        }
+      } else {
+        // En periodos intermedios (10am-12pm, 4pm-6pm), mostrar la siguiente comida
+        if (currentMinutes > periodoDesayuno &&
+            currentMinutes < almuerzoMin &&
+            todasLasComidas.contains('Almuerzo')) {
+          comidaAMostrar = 'Almuerzo';
+        } else if (currentMinutes > periodoAlmuerzo &&
+            currentMinutes < cenaMin &&
+            todasLasComidas.contains('Cena')) {
+          comidaAMostrar = 'Cena';
+        }
+      }
+
+      // Si encontramos una comida para mostrar, la agregamos
+      if (comidaAMostrar.isNotEmpty) {
+        foods.add(comidaAMostrar);
+      }
+      // // Si no encontramos comida relevante para la hora actual,
+      // // mostrar la última comida a la que tuvo derecho
+      // else if (todasLasComidas.isNotEmpty) {
+      //   foods.add(todasLasComidas.last);
+      // }
+    } else {
+      // ----- OPERACIONES FUTURAS -----
+      // Para operaciones que aún no han comenzado, mostrar la primera comida relevante
+      bool operacionFutura = inicioMinutos > currentMinutes;
+
+      if (operacionFutura) {
+        // Desayuno: comienza entre 5:00-5:59 o finaliza entre 6:00-6:59
+        if ((inicioMinutos >= 5 * 60 && inicioMinutos < 6 * 60) ||
+            (finMinutos >= 6 * 60 && finMinutos < 7 * 60)) {
+          foods.add('Desayuno');
+        }
+        // Almuerzo: comienza entre 11:00-11:59 o finaliza entre 12:00-12:59
+        else if ((inicioMinutos >= 11 * 60 && inicioMinutos < 12 * 60) ||
+            (finMinutos >= 12 * 60 && finMinutos < 13 * 60)) {
+          foods.add('Almuerzo');
+        }
+        // Cena: comienza entre 17:00-17:59 o finaliza entre 18:00-18:59
+        else if ((inicioMinutos >= 17 * 60 && inicioMinutos < 18 * 60) ||
+            (finMinutos >= 18 * 60 && finMinutos < 19 * 60)) {
+          foods.add('Cena');
+        }
+        // Media noche: comienza entre 23:00-23:59 o finaliza entre 00:00-00:59
+        else if ((inicioMinutos >= 23 * 60) || (finMinutos % (24 * 60) < 60)) {
+          foods.add('Media noche');
+        }
+      }
+    }
+
+    return [foods.isNotEmpty ? foods.last : 'Sin alimentación'];
+  }
+
+  // Helper para convertir string de hora a TimeOfDay
+  TimeOfDay? _parseTimeString(String timeString) {
+    try {
+      final List<String> parts = timeString.split(':');
+      if (parts.length < 2) return null;
+      return TimeOfDay(
+        hour: int.parse(parts[0]),
+        minute: int.parse(parts[1]),
+      );
+    } catch (e) {
+      debugPrint('Error al parsear hora: $e');
+      return null;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -159,6 +335,8 @@ class _ActiveAssignmentsViewState extends State<ActiveAssignmentsView> {
       AssignmentsProvider provider) {
     final areas_provider = Provider.of<AreasProvider>(context, listen: false);
 
+    List<String> foods = _determinateFoods(assignment.time, assignment.endTime);
+
     return Neumorphic(
       style: NeumorphicStyle(
         depth: 4,
@@ -173,7 +351,7 @@ class _ActiveAssignmentsViewState extends State<ActiveAssignmentsView> {
         onTap: () => _showAssignmentDetails(context, assignment),
         borderRadius: BorderRadius.circular(16),
         child: Container(
-          padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+          padding: const EdgeInsets.fromLTRB(8, 8, 8, 8),
           decoration: BoxDecoration(
             border: Border(
               left: BorderSide(
@@ -349,6 +527,69 @@ class _ActiveAssignmentsViewState extends State<ActiveAssignmentsView> {
                   ),
                 ],
               ),
+
+              // Reemplazar la sección actual de los íconos de comida con este código mejorado
+              if (foods.isNotEmpty)
+                Container(
+                  margin: const EdgeInsets.only(top: 4.0),
+                  padding: const EdgeInsets.symmetric(
+                      vertical: 4.0, horizontal: 4.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          if (foods.contains('Desayuno'))
+                            _buildFoodChip(Icons.free_breakfast, "Desayuno",
+                                Colors.orange[700]!),
+                          if (foods.contains('Almuerzo'))
+                            _buildFoodChip(Icons.restaurant, "Almuerzo",
+                                Colors.green[700]!),
+                          if (foods.contains('Cena'))
+                            _buildFoodChip(
+                                Icons.dinner_dining, "Cena", Colors.blue[700]!),
+                          if (foods.contains('Media noche'))
+                            _buildFoodChip(Icons.nightlight_round,
+                                "Media noche", Colors.indigo[700]!),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildFoodChip(IconData icon, String label, Color color) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 2.0),
+      child: Tooltip(
+        message: "",
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 6.0, vertical: 2.0),
+          decoration: BoxDecoration(
+            color: color.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: color.withOpacity(0.3)),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(icon, size: 12, color: color),
+              const SizedBox(width: 2),
+              Text(
+                label.split(' ')[
+                    0], // Mostrar solo la primera palabra para ahorrar espacio
+                style: TextStyle(
+                  fontSize: 9,
+                  fontWeight: FontWeight.w600,
+                  color: color,
+                ),
+              ),
             ],
           ),
         ),
@@ -373,6 +614,9 @@ class _ActiveAssignmentsViewState extends State<ActiveAssignmentsView> {
         phone: charger.phone,
       );
     }).toList();
+
+    List<String> foods = _determinateFoods(assignment.time, assignment.endTime);
+    bool tieneDerechoAlimentacion = foods.isNotEmpty;
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -474,19 +718,49 @@ class _ActiveAssignmentsViewState extends State<ActiveAssignmentsView> {
                             ],
                           ),
                           const SizedBox(height: 20),
-                          buildWorkersSection(assignment, context,
-                              setState: setState),
+                          buildWorkersSection(
+                            assignment,
+                            context,
+                            setState: setState,
+                            alimentacionStatus: alimentacionStatus,
+                            foods: foods,
+                            onAlimentacionChanged: tieneDerechoAlimentacion
+                                ? (workerId, entregada) {
+                                    setState(() {
+                                      alimentacionStatus[workerId] = entregada;
+                                    });
+                                    showSuccessToast(context,
+                                        "Alimentación ${entregada ? 'entregada' : 'pendiente'}");
+                                  }
+                                : null, // Pasar null si no hay derechos de alimentación
+                          ),
+
                           const SizedBox(height: 20),
                           assignment.deletedWorkers.map(
                             (worker) {
-                              return buildWorkerItem(worker);
+                              bool entregada =
+                                  alimentacionStatus[worker.id] ?? false;
+
+                              debugPrint(
+                                  'Alimentación entregada para ${worker.name}: $entregada');
+
+                              return buildWorkerItem(worker, context,
+                                  alimentacionEntregada: entregada,
+                                  onAlimentacionChanged: (newValue) {
+                                // Actualizar el estado local
+                                setState(() {
+                                  alimentacionStatus[worker.id] = newValue;
+                                });
+
+                                // Aquí podrías agregar código para guardar en base de datos si es necesario
+                              });
                             },
                           ).isNotEmpty
                               ? _buildDetailsSection(
                                   title: 'Trabajadores eliminados',
                                   children: assignment.deletedWorkers.map(
                                     (worker) {
-                                      return buildWorkerItem(worker,
+                                      return buildWorkerItem(worker, context,
                                           isDeleted: true);
                                     },
                                   ).toList(),

@@ -115,7 +115,10 @@ Widget buildInChargerItem(User charger) {
 }
 
 Widget buildWorkersSection(Assignment assignment, BuildContext context,
-    {required Function setState}) {
+    {required Function setState,
+    Map<int, bool> alimentacionStatus = const {},
+    List<String> foods = const [],
+    Function(int, bool)? onAlimentacionChanged}) {
   // Obtener los grupos de la asignación
   final groups = assignment.groups;
   final assignmentsProvider =
@@ -123,6 +126,9 @@ Widget buildWorkersSection(Assignment assignment, BuildContext context,
 
   // Fecha y hora actual para comparar
   final DateTime now = DateTime.now();
+
+  // Verificar si hay comidas disponibles que mostrar
+  bool hasFoodRights = foods.isNotEmpty && !foods.contains('Sin alimentación');
 
   // Agrupar los workers por su grupo
   Map<String, List<Worker>> workersByGroup = {};
@@ -341,8 +347,17 @@ Widget buildWorkersSection(Assignment assignment, BuildContext context,
               children: [
                 ...workers
                     .map((worker) => _buildWorkerItemWithCompletion(
-                        worker, assignment, assignmentsProvider, context,
-                        isInGroup: true))
+                          worker,
+                          assignment,
+                          assignmentsProvider,
+                          context,
+                          isInGroup: true,
+                          alimentacionEntregada:
+                              alimentacionStatus[worker.id] ?? false,
+                          onAlimentacionChanged: hasFoodRights
+                              ? onAlimentacionChanged
+                              : null, // Solo pasar si hay comida disponible
+                        ))
                     .toList(),
               ],
             ),
@@ -414,8 +429,17 @@ Widget buildWorkersSection(Assignment assignment, BuildContext context,
             ),
           ...ungroupedWorkers
               .map((worker) => _buildWorkerItemWithCompletion(
-                  worker, assignment, assignmentsProvider, context,
-                  isInGroup: false))
+                    worker,
+                    assignment,
+                    assignmentsProvider,
+                    context,
+                    isInGroup: false,
+                    alimentacionEntregada:
+                        alimentacionStatus[worker.id] ?? false,
+                    onAlimentacionChanged: hasFoodRights
+                        ? onAlimentacionChanged
+                        : null, // Solo pasar si hay comida disponible
+                  ))
               .toList(),
         ],
       ),
@@ -427,7 +451,14 @@ Widget buildWorkersSection(Assignment assignment, BuildContext context,
 
 Widget _buildWorkerItemWithCompletion(Worker worker, Assignment assignment,
     AssignmentsProvider assignmentsProvider, BuildContext context,
-    {bool isDeleted = false, bool isInGroup = false}) {
+    {bool isDeleted = false,
+    bool isInGroup = false,
+    bool? alimentacionEntregada, // Nuevo parámetro para controlar estado
+    Function(int, bool)? onAlimentacionChanged // Nuevo callback
+    }) {
+  // Usar el valor proporcionado o defaultear a false
+  final bool _alimentacionEntregada = alimentacionEntregada ?? false;
+
   return Padding(
     padding: const EdgeInsets.only(bottom: 12),
     child: Container(
@@ -441,108 +472,175 @@ Widget _buildWorkerItemWithCompletion(Worker worker, Assignment assignment,
           : BoxDecoration(
               borderRadius: BorderRadius.circular(8),
               border: Border.all(color: Color(0xFFE2E8F0)),
+              // Añadir un sutil color de fondo cuando la alimentación está entregada
+              color: _alimentacionEntregada
+                  ? Colors.green.shade50.withOpacity(0.5)
+                  : Colors.white,
             ),
-      child: Row(
+      child: Column(
         children: [
-          CircleAvatar(
-            backgroundColor: isDeleted
-                ? Colors.grey
-                : Colors
-                    .primaries[worker.name.hashCode % Colors.primaries.length],
-            radius: 18,
-            child: isDeleted
-                ? const Icon(Icons.person_off_outlined,
-                    color: Colors.white, size: 16)
-                : Text(
-                    worker.name.toString().substring(0, 1).toUpperCase(),
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        worker.name.toString(),
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600,
-                          color: isDeleted
-                              ? Colors.red.shade700
-                              : const Color(0xFF2D3748),
-                          decoration:
-                              isDeleted ? TextDecoration.lineThrough : null,
+          // Primera fila: información del trabajador y botón de completar
+          Row(
+            children: [
+              CircleAvatar(
+                backgroundColor: isDeleted
+                    ? Colors.grey
+                    : Colors.primaries[
+                        worker.name.hashCode % Colors.primaries.length],
+                radius: 18,
+                child: isDeleted
+                    ? const Icon(Icons.person_off_outlined,
+                        color: Colors.white, size: 16)
+                    : Text(
+                        worker.name.toString().substring(0, 1).toUpperCase(),
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
                         ),
                       ),
-                    ),
-                    if (isDeleted)
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 6, vertical: 2),
-                        decoration: BoxDecoration(
-                          color: Colors.red.shade100,
-                          borderRadius: BorderRadius.circular(4),
-                        ),
-                        child: Text(
-                          'Eliminado',
-                          style: TextStyle(
-                            fontSize: 10,
-                            color: Colors.red.shade800,
-                            fontWeight: FontWeight.w500,
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            worker.name.toString(),
+                            style: TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
+                              color: isDeleted
+                                  ? Colors.red.shade700
+                                  : const Color(0xFF2D3748),
+                              decoration:
+                                  isDeleted ? TextDecoration.lineThrough : null,
+                            ),
                           ),
+                        ),
+                        if (isDeleted)
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 6, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: Colors.red.shade100,
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                            child: Text(
+                              'Eliminado',
+                              style: TextStyle(
+                                fontSize: 10,
+                                color: Colors.red.shade800,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
+                    if (worker.area.isNotEmpty)
+                      Text(
+                        worker.area.toString(),
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: isDeleted
+                              ? Colors.red.shade300
+                              : const Color(0xFF718096),
                         ),
                       ),
                   ],
                 ),
-                if (worker.area.isNotEmpty)
-                  Text(
-                    worker.area.toString(),
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: isDeleted
-                          ? Colors.red.shade300
-                          : const Color(0xFF718096),
-                    ),
-                  ),
-              ],
-            ),
-          ),
-          // Solo mostrar el botón de completar para trabajadores individuales (no en grupo)
-          if (!isDeleted && !isInGroup)
-            NeumorphicButton(
-              style: NeumorphicStyle(
-                depth: 1,
-                intensity: 0.5,
-                color: Colors.white,
-                boxShape:
-                    NeumorphicBoxShape.roundRect(BorderRadius.circular(4)),
               ),
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-              onPressed: () {
-                showIndividualCompletionDialog(
-                    context, assignment, worker, assignmentsProvider);
-              },
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(Icons.check, color: Color(0xFF38A169), size: 14),
-                  SizedBox(width: 4),
-                  Text(
-                    'Completar',
-                    style: TextStyle(
-                      color: Color(0xFF38A169),
-                      fontWeight: FontWeight.w500,
-                      fontSize: 10,
+              // Solo mostrar el botón de completar para trabajadores individuales (no en grupo)
+              if (!isDeleted && !isInGroup)
+                NeumorphicButton(
+                  style: NeumorphicStyle(
+                    depth: 1,
+                    intensity: 0.5,
+                    color: Colors.white,
+                    boxShape:
+                        NeumorphicBoxShape.roundRect(BorderRadius.circular(4)),
+                  ),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  onPressed: () {
+                    showIndividualCompletionDialog(
+                        context, assignment, worker, assignmentsProvider);
+                  },
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.check, color: Color(0xFF38A169), size: 14),
+                      SizedBox(width: 4),
+                      Text(
+                        'Completar',
+                        style: TextStyle(
+                          color: Color(0xFF38A169),
+                          fontWeight: FontWeight.w500,
+                          fontSize: 10,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+            ],
+          ),
+
+          // NUEVA SECCIÓN: Botón para marcar alimentación
+          if (!isDeleted && onAlimentacionChanged != null)
+            Padding(
+              padding: const EdgeInsets.only(top: 6.0),
+              child: GestureDetector(
+                onTap: () {
+                  // Llamar al callback con el nuevo valor invertido
+                  onAlimentacionChanged(worker.id, !_alimentacionEntregada);
+                },
+                child: Container(
+                  width: double.infinity,
+                  padding:
+                      const EdgeInsets.symmetric(vertical: 6, horizontal: 8),
+                  decoration: BoxDecoration(
+                    color: _alimentacionEntregada
+                        ? Colors.green.shade100
+                        : Colors.grey.shade100,
+                    borderRadius: BorderRadius.circular(4),
+                    border: Border.all(
+                      color: _alimentacionEntregada
+                          ? Colors.green.shade400
+                          : Colors.grey.shade300,
                     ),
                   ),
-                ],
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        _alimentacionEntregada
+                            ? Icons.restaurant
+                            : Icons.restaurant_outlined,
+                        color: _alimentacionEntregada
+                            ? Colors.green
+                            : Colors.grey.shade700,
+                        size: 16,
+                      ),
+                      const SizedBox(width: 6),
+                      Text(
+                        _alimentacionEntregada
+                            ? 'Alimentación entregada'
+                            : 'Marcar alimentación',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: _alimentacionEntregada
+                              ? FontWeight.bold
+                              : FontWeight.normal,
+                          color: _alimentacionEntregada
+                              ? Colors.green
+                              : Colors.grey.shade700,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               ),
             ),
         ],
