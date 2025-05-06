@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 import 'package:plannerop/core/model/user.dart';
 import 'package:plannerop/store/areas.dart';
 import 'package:plannerop/store/chargersOp.dart';
+import 'package:plannerop/store/feedings.dart';
 import 'package:plannerop/store/workers.dart';
 
 import 'package:plannerop/utils/toast.dart';
@@ -32,6 +33,7 @@ class _ActiveAssignmentsViewState extends State<ActiveAssignmentsView> {
   int? _selectedSupervisorId;
   bool _showFilters = false;
   Map<int, bool> alimentacionStatus = {};
+
   List<String> _determinateFoods(String? horaInicio, String? horaFin) {
     List<String> foods = [];
 
@@ -39,9 +41,9 @@ class _ActiveAssignmentsViewState extends State<ActiveAssignmentsView> {
     DateTime now = DateTime.now();
     // Usamos la hora actual real en producción
     TimeOfDay currentTime = TimeOfDay(hour: now.hour, minute: now.minute);
-    // Para pruebas, usamos hora simulada
-    TimeOfDay mockCurrentTime = TimeOfDay(hour: 09, minute: 30);
-    int currentMinutes = mockCurrentTime.hour * 60 + mockCurrentTime.minute;
+    // // Para pruebas, usamos hora simulada
+    // TimeOfDay mockCurrentTime = TimeOfDay(hour: 12, minute: 01);
+    int currentMinutes = currentTime.hour * 60 + currentTime.minute;
 
     // 2. Convertir strings de hora a objetos TimeOfDay para la operación
     TimeOfDay? inicio =
@@ -74,14 +76,13 @@ class _ActiveAssignmentsViewState extends State<ActiveAssignmentsView> {
     int mediaNocheMin = 0; // 00:00 am
     int mediaNocheMax = 60 - 1; // 00:59 am
 
-    // 4. NUEVA LÓGICA: Definir periodos extendidos para cada comida
-    // Estos periodos determinan cuándo es relevante mostrar cada comida
-    int periodoDesayuno = 9 * 60; // Desayuno relevante hasta las 9 am
-    int periodoAlmuerzo = 15 * 60; // Almuerzo relevante hasta las 3 pm
+    // 4. Definir periodos extendidos para cada comida
+    int periodoDesayuno = 10 * 60; // Desayuno relevante hasta las 10 am
+    int periodoAlmuerzo = 16 * 60; // Almuerzo relevante hasta las 4 pm
     int periodoCena = 21 * 60; // Cena relevante hasta las 9 pm
     int periodoMediaNoche = 3 * 60; // Media noche relevante hasta las 3 am
 
-    // ----- NUEVA LÓGICA: Operación activa durante el día actual -----
+    // Verificar si la operación está activa o ya ocurrió durante el día actual
     bool operacionEnCursoHoy =
         // La operación ya comenzó
         (inicioMinutos <= currentMinutes) &&
@@ -111,6 +112,7 @@ class _ActiveAssignmentsViewState extends State<ActiveAssignmentsView> {
       // Determinar cuál comida mostrar según la hora actual
       String comidaAMostrar = '';
 
+      // Corrección: Verificar los horarios adecuadamente
       if (currentMinutes >= mediaNocheMin &&
           currentMinutes <= periodoMediaNoche) {
         // Entre 12 am y 3 am: Mostrar media noche
@@ -130,26 +132,44 @@ class _ActiveAssignmentsViewState extends State<ActiveAssignmentsView> {
           comidaAMostrar = 'Almuerzo';
         }
       } else if (currentMinutes >= cenaMin && currentMinutes <= periodoCena) {
-        // Entre 6 pm y 10 pm: Mostrar cena
+        // Entre 6 pm y 9 pm: Mostrar cena
         if (todasLasComidas.contains('Cena')) {
           comidaAMostrar = 'Cena';
         }
       } else if (currentMinutes > periodoCena ||
           currentMinutes < mediaNocheMin) {
-        // Entre 10 pm y 12 am: Mostrar media noche
+        // Entre 9 pm y 12 am: Mostrar media noche
         if (todasLasComidas.contains('Media noche')) {
           comidaAMostrar = 'Media noche';
         }
-      } else {
-        // En periodos intermedios (10am-12pm, 4pm-6pm), mostrar la siguiente comida
-        if (currentMinutes > periodoDesayuno &&
-            currentMinutes < almuerzoMin &&
-            todasLasComidas.contains('Almuerzo')) {
+      } else if (currentMinutes > periodoDesayuno &&
+          currentMinutes < almuerzoMin) {
+        // Entre 10 am y 12 pm: Mostrar almuerzo (siguiente comida)
+        if (todasLasComidas.contains('Almuerzo')) {
           comidaAMostrar = 'Almuerzo';
-        } else if (currentMinutes > periodoAlmuerzo &&
-            currentMinutes < cenaMin &&
-            todasLasComidas.contains('Cena')) {
-          comidaAMostrar = 'Cena';
+        } else if (todasLasComidas.contains('Desayuno')) {
+          // Si no hay almuerzo, mostrar desayuno
+          comidaAMostrar = 'Desayuno';
+        }
+      } else if (currentMinutes > periodoAlmuerzo && currentMinutes < cenaMin) {
+        // Entre 4 pm y 6 pm:
+        // Si estamos más cerca de la hora del almuerzo (antes de las 5pm), seguir mostrando almuerzo
+        // Si estamos más cerca de la hora de la cena (después de las 5pm), mostrar cena
+        int puntoMedio = periodoAlmuerzo + ((cenaMin - periodoAlmuerzo) ~/ 2);
+
+        if (currentMinutes < puntoMedio) {
+          // Antes de las 5pm, seguir mostrando almuerzo
+          if (todasLasComidas.contains('Almuerzo')) {
+            comidaAMostrar = 'Almuerzo';
+          }
+        } else {
+          // Después de las 5pm, mostrar cena
+          if (todasLasComidas.contains('Cena')) {
+            comidaAMostrar = 'Cena';
+          } else if (todasLasComidas.contains('Almuerzo')) {
+            // Si no hay cena, mostrar almuerzo
+            comidaAMostrar = 'Almuerzo';
+          }
         }
       }
 
@@ -157,11 +177,6 @@ class _ActiveAssignmentsViewState extends State<ActiveAssignmentsView> {
       if (comidaAMostrar.isNotEmpty) {
         foods.add(comidaAMostrar);
       }
-      // // Si no encontramos comida relevante para la hora actual,
-      // // mostrar la última comida a la que tuvo derecho
-      // else if (todasLasComidas.isNotEmpty) {
-      //   foods.add(todasLasComidas.last);
-      // }
     } else {
       // ----- OPERACIONES FUTURAS -----
       // Para operaciones que aún no han comenzado, mostrar la primera comida relevante
@@ -304,21 +319,25 @@ class _ActiveAssignmentsViewState extends State<ActiveAssignmentsView> {
                     : ListView(
                         padding: const EdgeInsets.all(16),
                         children: [
-                          GridView.builder(
-                            shrinkWrap: true,
-                            physics: const NeverScrollableScrollPhysics(),
-                            gridDelegate:
-                                const SliverGridDelegateWithFixedCrossAxisCount(
-                              crossAxisCount: 2,
-                              crossAxisSpacing: 12,
-                              mainAxisSpacing: 12,
-                              childAspectRatio: 0.9,
-                            ),
-                            itemCount: filteredAssignments.length,
-                            itemBuilder: (context, index) {
-                              final assignment = filteredAssignments[index];
-                              return _buildAssignmentCard(
-                                  context, assignment, assignmentsProvider);
+                          Consumer<FeedingProvider>(
+                            builder: (context, feedingProvider, _) {
+                              return GridView.builder(
+                                shrinkWrap: true,
+                                physics: const NeverScrollableScrollPhysics(),
+                                gridDelegate:
+                                    const SliverGridDelegateWithFixedCrossAxisCount(
+                                  crossAxisCount: 2,
+                                  crossAxisSpacing: 12,
+                                  mainAxisSpacing: 12,
+                                  childAspectRatio: 0.9,
+                                ),
+                                itemCount: filteredAssignments.length,
+                                itemBuilder: (context, index) {
+                                  final assignment = filteredAssignments[index];
+                                  return _buildAssignmentCard(
+                                      context, assignment, assignmentsProvider);
+                                },
+                              );
                             },
                           ),
                         ],
@@ -334,8 +353,24 @@ class _ActiveAssignmentsViewState extends State<ActiveAssignmentsView> {
   Widget _buildAssignmentCard(BuildContext context, Assignment assignment,
       AssignmentsProvider provider) {
     final areas_provider = Provider.of<AreasProvider>(context, listen: false);
+    final feedingProvider =
+        Provider.of<FeedingProvider>(context, listen: false);
 
     List<String> foods = _determinateFoods(assignment.time, assignment.endTime);
+    // Verificar si hay comidas y no es "Sin alimentación"
+    bool validFood = foods.isNotEmpty && foods[0] != 'Sin alimentación';
+
+    // Verificar si todos los trabajadores han recibido la comida
+    bool allWorkersReceived = false;
+    if (validFood) {
+      // Usar el nuevo método para verificar
+      List<int> workerIds = assignment.workers.map((w) => w.id).toList();
+      allWorkersReceived = feedingProvider.areAllWorkersMarked(
+          assignment.id ?? 0, workerIds, foods[0]);
+    }
+
+    // Mostrar chip solo si hay comida válida y NO todos han recibido
+    bool shouldShowFoodChips = validFood && !allWorkersReceived;
 
     return Neumorphic(
       style: NeumorphicStyle(
@@ -527,9 +562,8 @@ class _ActiveAssignmentsViewState extends State<ActiveAssignmentsView> {
                   ),
                 ],
               ),
-
-              // Reemplazar la sección actual de los íconos de comida con este código mejorado
-              if (foods.isNotEmpty)
+              // Food chips section modified with conditional rendering
+              if (shouldShowFoodChips)
                 Container(
                   margin: const EdgeInsets.only(top: 4.0),
                   padding: const EdgeInsets.symmetric(
@@ -600,6 +634,11 @@ class _ActiveAssignmentsViewState extends State<ActiveAssignmentsView> {
   void _showAssignmentDetails(BuildContext context, Assignment assignment) {
     final assignmentsProvider =
         Provider.of<AssignmentsProvider>(context, listen: false);
+
+    final feedingProvider =
+        Provider.of<FeedingProvider>(context, listen: false);
+
+    feedingProvider.loadFeedingStatusForOperation(assignment.id ?? 0, context);
 
     final inChargersFormat =
         Provider.of<ChargersOpProvider>(context, listen: false)
@@ -726,13 +765,17 @@ class _ActiveAssignmentsViewState extends State<ActiveAssignmentsView> {
                             foods: foods,
                             onAlimentacionChanged: tieneDerechoAlimentacion
                                 ? (workerId, entregada) {
-                                    setState(() {
-                                      alimentacionStatus[workerId] = entregada;
-                                    });
-                                    showSuccessToast(context,
-                                        "Alimentación ${entregada ? 'entregada' : 'pendiente'}");
+                                    // Usar el provider para marcar la comida
+                                    if (foods.isNotEmpty) {
+                                      feedingProvider.markFeeding(
+                                        operationId: assignment.id ?? 0,
+                                        workerId: workerId,
+                                        foodType: foods[0],
+                                        context: context,
+                                      );
+                                    }
                                   }
-                                : null, // Pasar null si no hay derechos de alimentación
+                                : null,
                           ),
 
                           const SizedBox(height: 20),

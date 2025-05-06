@@ -27,7 +27,7 @@ class _DashboardTabState extends State<DashboardTab> {
   bool _isLoadingAssignments = false;
   bool _isLoadingFaults = false;
   bool _isLoadingChargers = false;
-
+  bool _isMounted = true;
   // Variable para controlar si ya hemos iniciado las cargas
   bool _hasStartedLoading = false;
 
@@ -40,26 +40,63 @@ class _DashboardTabState extends State<DashboardTab> {
     super.initState();
     // Evitar multiples cargas simultáneas
     bool isLoading = false;
+    _isMounted = true;
 
-    // Usar addPostFrameCallback para programar la carga después del primer frame
-    WidgetsBinding.instance.addPostFrameCallback((_) async {
-      if (!isLoading) {
-        isLoading = true;
+    // // Usar addPostFrameCallback para programar la carga después del primer frame
+    // WidgetsBinding.instance.addPostFrameCallback((_) async {
+    //   if (!isLoading) {
+    //     isLoading = true;
+    //     await Future.wait([
+    //       _checkAndLoadWorkersIfNeeded(),
+    //       _loadAreas(),
+    //       _loadTask(),
+    //       _loadClients(),
+    //       _loadAssignments(),
+    //       _loadChargersOp(),
+    //     ]).catchError((error) {
+    //       debugPrint('Error durante la carga en paralelo: $error');
+    //       // Continuar aunque haya errores
+    //     });
+
+    //     _loadFaults();
+    //   }
+    // });
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _loadDataInBackground();
+    });
+  }
+
+  @override
+  void dispose() {
+    // Marcar que el widget ya no está montado para evitar actualizaciones de estado
+    _isMounted = false;
+    super.dispose();
+  }
+
+  void _loadDataInBackground() async {
+    // Cargar datos esenciales primero
+    await Future.wait([
+      _loadAreas(),
+      _loadAssignments(),
+      _checkAndLoadWorkersIfNeeded(),
+    ]).catchError((error) {
+      debugPrint('Error durante la carga esencial: $error');
+    });
+
+    // Luego cargar datos secundarios si el widget sigue montado
+    if (_isMounted) {
+      // dar prioridad altisima a la carga de trabajadores
+      Future.sync(() async {
         await Future.wait([
-          _checkAndLoadWorkersIfNeeded(),
-          _loadAreas(),
           _loadTask(),
           _loadClients(),
-          _loadAssignments(),
           _loadChargersOp(),
         ]).catchError((error) {
-          debugPrint('Error durante la carga en paralelo: $error');
-          // Continuar aunque haya errores
+          debugPrint('Error durante la carga secundaria: $error');
         });
-
-        _loadFaults();
-      }
-    });
+      });
+    }
   }
 
   Future<void> _loadChargersOp() async {

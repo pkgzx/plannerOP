@@ -352,6 +352,7 @@ class _PendingAssignmentsViewState extends State<PendingAssignmentsView> {
         phone: charger.phone,
       );
     }).toList();
+
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,

@@ -5,6 +5,7 @@ import 'package:plannerop/core/model/user.dart';
 import 'package:plannerop/core/model/worker.dart';
 import 'package:plannerop/core/model/workerGroup.dart';
 import 'package:plannerop/store/assignments.dart';
+import 'package:plannerop/store/feedings.dart';
 import 'package:plannerop/widgets/assingments/components/showCompletionDialog.dart';
 import 'package:provider/provider.dart';
 
@@ -123,6 +124,9 @@ Widget buildWorkersSection(Assignment assignment, BuildContext context,
   final groups = assignment.groups;
   final assignmentsProvider =
       Provider.of<AssignmentsProvider>(context, listen: false);
+
+  // Obtener el FeedingProvider
+  final feedingProvider = Provider.of<FeedingProvider>(context);
 
   // Fecha y hora actual para comparar
   final DateTime now = DateTime.now();
@@ -434,8 +438,10 @@ Widget buildWorkersSection(Assignment assignment, BuildContext context,
                     assignmentsProvider,
                     context,
                     isInGroup: false,
-                    alimentacionEntregada:
-                        alimentacionStatus[worker.id] ?? false,
+                    alimentacionEntregada: foods.isNotEmpty
+                        ? feedingProvider.isMarked(
+                            assignment.id ?? 0, worker.id, foods[0])
+                        : false,
                     onAlimentacionChanged: hasFoodRights
                         ? onAlimentacionChanged
                         : null, // Solo pasar si hay comida disponible
@@ -458,6 +464,8 @@ Widget _buildWorkerItemWithCompletion(Worker worker, Assignment assignment,
     }) {
   // Usar el valor proporcionado o defaultear a false
   final bool _alimentacionEntregada = alimentacionEntregada ?? false;
+  final FeedingProvider feedingsProvider =
+      Provider.of<FeedingProvider>(context, listen: false);
 
   return Padding(
     padding: const EdgeInsets.only(bottom: 12),
@@ -587,7 +595,7 @@ Widget _buildWorkerItemWithCompletion(Worker worker, Assignment assignment,
             ],
           ),
 
-          // NUEVA SECCIÓN: Botón para marcar alimentación
+          // Botón para marcar alimentación
           if (!isDeleted && onAlimentacionChanged != null)
             Padding(
               padding: const EdgeInsets.only(top: 6.0),
