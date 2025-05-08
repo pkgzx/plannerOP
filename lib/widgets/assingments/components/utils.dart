@@ -131,8 +131,8 @@ Widget buildWorkersSection(Assignment assignment, BuildContext context,
   // Fecha y hora actual para comparar
   final DateTime now = DateTime.now();
 
-  // Verificar si hay comidas disponibles que mostrar
   bool hasFoodRights = foods.isNotEmpty && !foods.contains('Sin alimentación');
+  String currentFoodType = hasFoodRights ? foods[0] : '';
 
   // Agrupar los workers por su grupo
   Map<String, List<Worker>> workersByGroup = {};
@@ -361,6 +361,7 @@ Widget buildWorkersSection(Assignment assignment, BuildContext context,
                           onAlimentacionChanged: hasFoodRights
                               ? onAlimentacionChanged
                               : null, // Solo pasar si hay comida disponible
+                          currentFoodType: currentFoodType,
                         ))
                     .toList(),
               ],
@@ -445,6 +446,7 @@ Widget buildWorkersSection(Assignment assignment, BuildContext context,
                     onAlimentacionChanged: hasFoodRights
                         ? onAlimentacionChanged
                         : null, // Solo pasar si hay comida disponible
+                    currentFoodType: currentFoodType,
                   ))
               .toList(),
         ],
@@ -455,17 +457,26 @@ Widget buildWorkersSection(Assignment assignment, BuildContext context,
   return Column(children: sections);
 }
 
+// Actualizar _buildWorkerItemWithCompletion para sincronizarse con franjas horarias específicas
 Widget _buildWorkerItemWithCompletion(Worker worker, Assignment assignment,
     AssignmentsProvider assignmentsProvider, BuildContext context,
     {bool isDeleted = false,
     bool isInGroup = false,
-    bool? alimentacionEntregada, // Nuevo parámetro para controlar estado
-    Function(int, bool)? onAlimentacionChanged // Nuevo callback
+    bool? alimentacionEntregada, // Parámetro para controlar estado
+    Function(int, bool)? onAlimentacionChanged, // Callback
+    String? currentFoodType // Nuevo parámetro: tipo actual de comida
     }) {
   // Usar el valor proporcionado o defaultear a false
   final bool _alimentacionEntregada = alimentacionEntregada ?? false;
   final FeedingProvider feedingsProvider =
       Provider.of<FeedingProvider>(context, listen: false);
+
+  // Si no hay tipo de comida válido o está fuera de horario, no mostrar botón
+  bool showFoodButton = currentFoodType != null &&
+      currentFoodType.isNotEmpty &&
+      currentFoodType != 'Sin alimentación';
+
+  // Verificar y mostrar sola la alimentacion si esta dentro de la franja horaria
 
   return Padding(
     padding: const EdgeInsets.only(bottom: 12),
@@ -595,8 +606,8 @@ Widget _buildWorkerItemWithCompletion(Worker worker, Assignment assignment,
             ],
           ),
 
-          // Botón para marcar alimentación
-          if (!isDeleted && onAlimentacionChanged != null)
+          // Botón para marcar alimentación - SOLO se muestra si hay comida aplicable
+          if (!isDeleted && showFoodButton && onAlimentacionChanged != null)
             Padding(
               padding: const EdgeInsets.only(top: 6.0),
               child: GestureDetector(
@@ -623,9 +634,8 @@ Widget _buildWorkerItemWithCompletion(Worker worker, Assignment assignment,
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Icon(
-                        _alimentacionEntregada
-                            ? Icons.restaurant
-                            : Icons.restaurant_outlined,
+                        _getIconForFoodType(
+                            currentFoodType!, _alimentacionEntregada),
                         color: _alimentacionEntregada
                             ? Colors.green
                             : Colors.grey.shade700,
@@ -634,8 +644,8 @@ Widget _buildWorkerItemWithCompletion(Worker worker, Assignment assignment,
                       const SizedBox(width: 6),
                       Text(
                         _alimentacionEntregada
-                            ? 'Alimentación entregada'
-                            : 'Marcar alimentación',
+                            ? '$currentFoodType entregado'
+                            : 'Marcar $currentFoodType',
                         style: TextStyle(
                           fontSize: 12,
                           fontWeight: _alimentacionEntregada
@@ -655,6 +665,22 @@ Widget _buildWorkerItemWithCompletion(Worker worker, Assignment assignment,
       ),
     ),
   );
+}
+
+// Helper para obtener el icono adecuado según el tipo de comida
+IconData _getIconForFoodType(String foodType, bool isMarked) {
+  switch (foodType) {
+    case 'Desayuno':
+      return isMarked ? Icons.free_breakfast : Icons.free_breakfast_outlined;
+    case 'Almuerzo':
+      return isMarked ? Icons.restaurant : Icons.restaurant_outlined;
+    case 'Cena':
+      return isMarked ? Icons.dinner_dining : Icons.dinner_dining_outlined;
+    case 'Media noche':
+      return isMarked ? Icons.nightlight_round : Icons.nightlight_outlined;
+    default:
+      return isMarked ? Icons.restaurant : Icons.restaurant_outlined;
+  }
 }
 
 Widget buildFilterBar(

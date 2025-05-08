@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_neumorphic_plus/flutter_neumorphic.dart';
 import 'package:plannerop/store/areas.dart';
@@ -6,6 +8,7 @@ import 'package:plannerop/store/chargersOp.dart';
 import 'package:plannerop/store/clients.dart';
 import 'package:plannerop/store/faults.dart';
 import 'package:plannerop/store/task.dart';
+import 'package:plannerop/utils/backgroundDataLoader.dart';
 import 'package:plannerop/utils/toast.dart';
 import 'package:plannerop/widgets/quickActions.dart';
 import 'package:plannerop/widgets/recentOps.dart';
@@ -31,6 +34,8 @@ class _DashboardTabState extends State<DashboardTab> {
   // Variable para controlar si ya hemos iniciado las cargas
   bool _hasStartedLoading = false;
 
+  final BackgroundDataLoader _backgroundLoader = BackgroundDataLoader();
+
   // Sobreescribir para mantener el estado del widget entre cambios de tab
   @override
   bool get wantKeepAlive => true;
@@ -42,7 +47,9 @@ class _DashboardTabState extends State<DashboardTab> {
     bool isLoading = false;
     _isMounted = true;
 
-    // // Usar addPostFrameCallback para programar la carga después del primer frame
+    _startBackgroundLoading();
+
+    // Usar addPostFrameCallback para programar la carga después del primer frame
     // WidgetsBinding.instance.addPostFrameCallback((_) async {
     //   if (!isLoading) {
     //     isLoading = true;
@@ -62,8 +69,58 @@ class _DashboardTabState extends State<DashboardTab> {
     //   }
     // });
 
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _loadDataInBackground();
+    // WidgetsBinding.instance.addPostFrameCallback((_) {
+    //   _loadDataInBackground();
+    // });
+  }
+
+  void _startBackgroundLoading() {
+    // Estas cargas no dependen del estado del widget
+    _backgroundLoader.loadData('workers', () async {
+      final workersProvider =
+          Provider.of<WorkersProvider>(context, listen: false);
+      await workersProvider.fetchWorkersIfNeeded(context);
+      return;
+    });
+
+    _backgroundLoader.loadData('areas', () async {
+      final areasProvider = Provider.of<AreasProvider>(context, listen: false);
+      await areasProvider.fetchAreas(context);
+      return;
+    });
+
+    _backgroundLoader.loadData('assignments', () async {
+      final assignmentsProvider =
+          Provider.of<AssignmentsProvider>(context, listen: false);
+      await assignmentsProvider.loadAssignmentsWithPriority(context);
+      return;
+    });
+
+    _backgroundLoader.loadData('tasks', () async {
+      final tasksProvider = Provider.of<TasksProvider>(context, listen: false);
+      await tasksProvider.loadTasksIfNeeded(context);
+      return;
+    });
+
+    _backgroundLoader.loadData('clients', () async {
+      final clientsProvider =
+          Provider.of<ClientsProvider>(context, listen: false);
+      await clientsProvider.fetchClients(context);
+      return;
+    });
+
+    _backgroundLoader.loadData('chargers', () async {
+      final chargersProvider =
+          Provider.of<ChargersOpProvider>(context, listen: false);
+      await chargersProvider.fetchChargers(context);
+      return;
+    });
+
+    _backgroundLoader.loadData('faults', () async {
+      final faultsProvider =
+          Provider.of<FaultsProvider>(context, listen: false);
+      await faultsProvider.fetchFaults(context);
+      return;
     });
   }
 
@@ -74,30 +131,30 @@ class _DashboardTabState extends State<DashboardTab> {
     super.dispose();
   }
 
-  void _loadDataInBackground() async {
-    // Cargar datos esenciales primero
-    await Future.wait([
-      _loadAreas(),
-      _loadAssignments(),
-      _checkAndLoadWorkersIfNeeded(),
-    ]).catchError((error) {
-      debugPrint('Error durante la carga esencial: $error');
-    });
+  // void _loadDataInBackground() async {
+  //   // Cargar datos esenciales primero
+  //   await Future.wait([
+  //     _loadAreas(),
+  //     _loadAssignments(),
+  //     _checkAndLoadWorkersIfNeeded(),
+  //   ]).catchError((error) {
+  //     debugPrint('Error durante la carga esencial: $error');
+  //   });
 
-    // Luego cargar datos secundarios si el widget sigue montado
-    if (_isMounted) {
-      // dar prioridad altisima a la carga de trabajadores
-      Future.sync(() async {
-        await Future.wait([
-          _loadTask(),
-          _loadClients(),
-          _loadChargersOp(),
-        ]).catchError((error) {
-          debugPrint('Error durante la carga secundaria: $error');
-        });
-      });
-    }
-  }
+  //   // Luego cargar datos secundarios si el widget sigue montado
+  //   if (_isMounted) {
+  //     // dar prioridad altisima a la carga de trabajadores
+  //     Future.sync(() async {
+  //       await Future.wait([
+  //         _loadTask(),
+  //         _loadClients(),
+  //         _loadChargersOp(),
+  //       ]).catchError((error) {
+  //         debugPrint('Error durante la carga secundaria: $error');
+  //       });
+  //     });
+  //   }
+  // }
 
   Future<void> _loadChargersOp() async {
     // if (!mounted) return;
@@ -242,13 +299,20 @@ class _DashboardTabState extends State<DashboardTab> {
   }
 
   Future<void> _loadAssignments() async {
-    // Extraer el provider para usarlo independientemente del estado del widget
+    // 1. Verificar si el widget está montado al inicio
+    if (!_isMounted) return;
+
+    // 2. Usar un Completer para manejar el timeout
+    var timeoutCompleter = Completer<void>();
+    var hasTimedOut = false;
+
+    // 3. Extraer el provider para usarlo independientemente del estado del widget
     final assignmentsProvider =
         Provider.of<AssignmentsProvider>(context, listen: false);
     final hasExistingData = assignmentsProvider.assignments.isNotEmpty;
 
-    // CAMBIO 2: Solo actualizar UI si estamos montados
-    if (!hasExistingData && mounted) {
+    // 4. Solo actualizar UI si estamos montados
+    if (!hasExistingData && _isMounted) {
       setState(() {
         _isLoadingAssignments = true;
       });
@@ -257,25 +321,31 @@ class _DashboardTabState extends State<DashboardTab> {
       _isLoadingAssignments = true;
     }
 
-    // Configurar un timeout que funcione independientemente del estado montado
-    Future.delayed(const Duration(seconds: 10), () {
-      if (_isLoadingAssignments) {
-        // debugPrint('⚠️ Timeout en carga de asignaciones');
+    // 5. Configurar timeout con cancelación segura
+    var timeoutTimer = Timer(const Duration(seconds: 10), () {
+      if (_isMounted && _isLoadingAssignments) {
+        hasTimedOut = true;
         _isLoadingAssignments = false;
         assignmentsProvider.changeIsLoadingOff();
 
-        // Solo mostrar toast si estamos montados
-        if (mounted) {
+        if (_isMounted) {
           setState(() {});
           showAlertToast(
               context, 'La carga de datos está tomando demasiado tiempo');
+        }
+
+        if (!timeoutCompleter.isCompleted) {
+          timeoutCompleter.complete();
         }
       }
     });
 
     try {
-      // Cargar asignaciones con prioridad
+      // 6. Cargar datos con el provider (esto es independiente del estado UI)
       await assignmentsProvider.loadAssignmentsWithPriority(context);
+
+      // Cancelar el timeout ya que terminamos exitosamente
+      timeoutTimer.cancel();
 
       if (assignmentsProvider.assignments.isNotEmpty) {
         debugPrint(
@@ -284,18 +354,25 @@ class _DashboardTabState extends State<DashboardTab> {
         debugPrint('No se cargaron asignaciones o la lista está vacía');
       }
     } catch (e) {
+      // Cancelar el timeout en caso de error
+      timeoutTimer.cancel();
+
       debugPrint('Error al cargar asignaciones: $e');
 
-      if (mounted && !hasExistingData) {
+      // 7. Verificar estado de montado antes de mostrar errores en UI
+      if (_isMounted && !hasExistingData && !hasTimedOut) {
         showErrorToast(context, 'Error al cargar asignaciones.');
       }
     } finally {
-      // Actualizar estado independientemente del estado montado
+      // 8. Cancelar el timer para evitar memory leaks
+      timeoutTimer.cancel();
+
+      // 9. Actualizar estado independientemente del estado de UI
       _isLoadingAssignments = false;
       assignmentsProvider.changeIsLoadingOff();
 
-      // Solo actualizar UI si estamos montados
-      if (mounted) {
+      // 10. Solo actualizar UI si estamos montados y no ha ocurrido timeout
+      if (_isMounted && !hasTimedOut) {
         setState(() {});
       }
     }
@@ -429,6 +506,20 @@ class _DashboardTabState extends State<DashboardTab> {
     // Obtener la altura de la barra de estado
     final statusBarHeight = MediaQuery.of(context).viewPadding.top;
 
+    // Verificar si los datos principales están cargando o no han cargado
+    bool isLoadingMainData = _backgroundLoader.isLoading('workers') ||
+        _backgroundLoader.isLoading('assignments') ||
+        _backgroundLoader.isLoading('areas');
+
+    // El resto del código de build...
+
+    // Para mostrar el indicador de carga
+    if (_backgroundLoader.isLoading('workers') ||
+        _backgroundLoader.isLoading('assignments') ||
+        _backgroundLoader.isLoading('areas')) {
+      // Mostrar indicador de carga
+    }
+
     return Scaffold(
       backgroundColor: Colors.white,
       body: Column(
@@ -487,29 +578,43 @@ class _DashboardTabState extends State<DashboardTab> {
                             ),
                           ),
                         // Botón de actualización
+                        // IconButton(
+                        //   icon: const Icon(Icons.refresh, color: Colors.white),
+                        //   onPressed: _isLoadingAreas ||
+                        //           _isLoadingWorkers ||
+                        //           _isLoadingAssignments
+                        //       ? null
+                        //       : () async {
+                        //           setState(() {
+                        //             _isLoadingWorkers = true;
+                        //             _isLoadingAreas = true;
+                        //             _isLoadingAssignments = true;
+                        //           });
+                        //           // Al refrescar manualmente, forzamos la recarga de todo
+                        //           await _loadWorkers();
+                        //           await _loadAreas();
+                        //           await _loadAssignments();
+
+                        //           // Forzar actualización final
+                        //           setState(() {
+                        //             _isLoadingWorkers = false;
+                        //             _isLoadingAreas = false;
+                        //             _isLoadingAssignments = false;
+                        //           });
+                        //         },
+                        // ),
+
                         IconButton(
                           icon: const Icon(Icons.refresh, color: Colors.white),
-                          onPressed: _isLoadingAreas ||
-                                  _isLoadingWorkers ||
-                                  _isLoadingAssignments
+                          onPressed: isLoadingMainData
                               ? null
-                              : () async {
-                                  setState(() {
-                                    _isLoadingWorkers = true;
-                                    _isLoadingAreas = true;
-                                    _isLoadingAssignments = true;
-                                  });
-                                  // Al refrescar manualmente, forzamos la recarga de todo
-                                  await _loadWorkers();
-                                  await _loadAreas();
-                                  await _loadAssignments();
-
-                                  // Forzar actualización final
-                                  setState(() {
-                                    _isLoadingWorkers = false;
-                                    _isLoadingAreas = false;
-                                    _isLoadingAssignments = false;
-                                  });
+                              : () {
+                                  // Recargar datos en segundo plano
+                                  _startBackgroundLoading();
+                                  if (_isMounted) {
+                                    setState(
+                                        () {}); // Solo para forzar un rebuild
+                                  }
                                 },
                         ),
                       ],

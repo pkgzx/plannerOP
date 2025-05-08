@@ -23,8 +23,7 @@ class WorkerStatsCards extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final availableWorkers =
-        totalWorkers - assignedWorkers - disabledWorkers - retiredWorkers;
+    final availableWorkers = totalWorkers - assignedWorkers - disabledWorkers;
 
     final faultsProvider = Provider.of<FaultsProvider>(context);
 

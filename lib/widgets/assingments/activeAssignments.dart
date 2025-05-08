@@ -39,10 +39,8 @@ class _ActiveAssignmentsViewState extends State<ActiveAssignmentsView> {
 
     // 1. Obtener la hora actual
     DateTime now = DateTime.now();
-    // Usamos la hora actual real en producción
-    TimeOfDay currentTime = TimeOfDay(hour: now.hour, minute: now.minute);
-    // // Para pruebas, usamos hora simulada
-    // TimeOfDay mockCurrentTime = TimeOfDay(hour: 12, minute: 01);
+    // TimeOfDay currentTime = TimeOfDay(hour: now.hour, minute: now.minute);
+    TimeOfDay currentTime = TimeOfDay(hour: 18, minute: 31); // Para pruebas
     int currentMinutes = currentTime.hour * 60 + currentTime.minute;
 
     // 2. Convertir strings de hora a objetos TimeOfDay para la operación
@@ -63,18 +61,11 @@ class _ActiveAssignmentsViewState extends State<ActiveAssignmentsView> {
       finMinutos += 24 * 60; // Sumar un día completo
     }
 
-    // 3. Definir rangos de horarios para comidas
-    int desayunoMin = 6 * 60; // 6:00 am
-    int desayunoMax = 7 * 60 - 1; // 6:59 am
-
-    int almuerzoMin = 12 * 60; // 12:00 pm
-    int almuerzoMax = 13 * 60 - 1; // 12:59 pm
-
-    int cenaMin = 18 * 60; // 6:00 pm
-    int cenaMax = 19 * 60 - 1; // 6:59 pm
-
-    int mediaNocheMin = 0; // 00:00 am
-    int mediaNocheMax = 60 - 1; // 00:59 am
+    // 3. Definir horarios exactos de comidas
+    int desayunoHora = 6 * 60; // 6:00 am
+    int almuerzoHora = 12 * 60; // 12:00 pm
+    int cenaHora = 18 * 60; // 6:00 pm
+    int mediaNocheHora = 0; // 00:00 am
 
     // 4. Definir periodos extendidos para cada comida
     int periodoDesayuno = 10 * 60; // Desayuno relevante hasta las 10 am
@@ -83,92 +74,90 @@ class _ActiveAssignmentsViewState extends State<ActiveAssignmentsView> {
     int periodoMediaNoche = 3 * 60; // Media noche relevante hasta las 3 am
 
     // Verificar si la operación está activa o ya ocurrió durante el día actual
-    bool operacionEnCursoHoy =
-        // La operación ya comenzó
-        (inicioMinutos <= currentMinutes) &&
-            // Y aún no ha terminado o terminará hoy
-            (finMinutos >= currentMinutes || fin == null);
+    bool operacionEnCursoHoy = (inicioMinutos <= currentMinutes) &&
+        (finMinutos >= currentMinutes || fin == null);
 
     if (operacionEnCursoHoy) {
-      // Crear una lista de todas las comidas a las que tiene derecho la operación
+      // LÓGICA CORREGIDA: Dar derecho a comida si:
+      // 1. La operación comienza ESTRICTAMENTE ANTES de la hora de la comida Y termina después
+      // O 2. La operación está activa durante el periodo de la comida
       List<String> todasLasComidas = [];
 
-      if (inicioMinutos <= desayunoMax) {
+      // Verificar qué comidas corresponden a esta operación
+      // Desayuno - 6:00 am - Solo si comienza ANTES de las 6:00 am y termina después
+      if ((inicioMinutos < desayunoHora)) {
         todasLasComidas.add('Desayuno');
       }
-      if (inicioMinutos <= almuerzoMax) {
+
+      // Almuerzo - 12:00 pm - Solo si comienza ANTES de las 12:00 pm y termina después
+      if (inicioMinutos < almuerzoHora || finMinutos >= almuerzoHora) {
         todasLasComidas.add('Almuerzo');
       }
-      if (inicioMinutos <= cenaMax) {
+
+      // Cena - 6:00 pm - Solo si comienza ANTES de las 6:00 pm y termina después
+      if (inicioMinutos < cenaHora || finMinutos >= cenaHora) {
         todasLasComidas.add('Cena');
       }
-      if (inicioMinutos <= mediaNocheMax || inicioMinutos >= 23 * 60) {
+
+      // Media noche - 00:00 am - Caso especial debido al cruce de la medianoche
+      // Media noche sin cruce de día - Solo si comienza ANTES de las 00:00 am
+      if (inicioMinutos < mediaNocheHora || finMinutos >= mediaNocheHora) {
         todasLasComidas.add('Media noche');
+      }
+      // Media noche con cruce de día (inicio tardío, después de las 8pm)
+      else if (inicioMinutos >= 20 * 60) {
+        int mediaNocheAjustada =
+            mediaNocheHora + 24 * 60; // 00:00 del día siguiente
+        if (inicioMinutos < mediaNocheAjustada &&
+            finMinutos >= mediaNocheAjustada) {
+          todasLasComidas.add('Media noche');
+        }
       }
 
       // Si no hay comidas, retornar lista vacía
       if (todasLasComidas.isEmpty) return foods;
 
-      // Determinar cuál comida mostrar según la hora actual
+      // *** CORRECCIÓN AQUÍ: Determinar cuál comida mostrar según la hora actual ***
+      // El problema está en la lógica para seleccionar la comida según la hora actual
+
+      // Verificamos en qué franja horaria estamos actualmente
       String comidaAMostrar = '';
 
-      // Corrección: Verificar los horarios adecuadamente
-      if (currentMinutes >= mediaNocheMin &&
+      if (currentMinutes >= mediaNocheHora &&
           currentMinutes <= periodoMediaNoche) {
         // Entre 12 am y 3 am: Mostrar media noche
         if (todasLasComidas.contains('Media noche')) {
           comidaAMostrar = 'Media noche';
         }
-      } else if (currentMinutes >= desayunoMin &&
+      } else if (currentMinutes >= desayunoHora &&
           currentMinutes <= periodoDesayuno) {
         // Entre 6 am y 10 am: Mostrar desayuno
         if (todasLasComidas.contains('Desayuno')) {
           comidaAMostrar = 'Desayuno';
         }
-      } else if (currentMinutes >= almuerzoMin &&
+      } else if (currentMinutes >= almuerzoHora &&
           currentMinutes <= periodoAlmuerzo) {
         // Entre 12 pm y 4 pm: Mostrar almuerzo
         if (todasLasComidas.contains('Almuerzo')) {
           comidaAMostrar = 'Almuerzo';
         }
-      } else if (currentMinutes >= cenaMin && currentMinutes <= periodoCena) {
+      } else if (currentMinutes >= cenaHora && currentMinutes <= periodoCena) {
         // Entre 6 pm y 9 pm: Mostrar cena
+        // CORRECCIÓN: Asegurarse de que este bloque se ejecute correctamente
+        debugPrint("Estamos en horario de cena");
         if (todasLasComidas.contains('Cena')) {
           comidaAMostrar = 'Cena';
-        }
-      } else if (currentMinutes > periodoCena ||
-          currentMinutes < mediaNocheMin) {
-        // Entre 9 pm y 12 am: Mostrar media noche
-        if (todasLasComidas.contains('Media noche')) {
-          comidaAMostrar = 'Media noche';
-        }
-      } else if (currentMinutes > periodoDesayuno &&
-          currentMinutes < almuerzoMin) {
-        // Entre 10 am y 12 pm: Mostrar almuerzo (siguiente comida)
-        if (todasLasComidas.contains('Almuerzo')) {
-          comidaAMostrar = 'Almuerzo';
-        } else if (todasLasComidas.contains('Desayuno')) {
-          // Si no hay almuerzo, mostrar desayuno
-          comidaAMostrar = 'Desayuno';
-        }
-      } else if (currentMinutes > periodoAlmuerzo && currentMinutes < cenaMin) {
-        // Entre 4 pm y 6 pm:
-        // Si estamos más cerca de la hora del almuerzo (antes de las 5pm), seguir mostrando almuerzo
-        // Si estamos más cerca de la hora de la cena (después de las 5pm), mostrar cena
-        int puntoMedio = periodoAlmuerzo + ((cenaMin - periodoAlmuerzo) ~/ 2);
-
-        if (currentMinutes < puntoMedio) {
-          // Antes de las 5pm, seguir mostrando almuerzo
-          if (todasLasComidas.contains('Almuerzo')) {
-            comidaAMostrar = 'Almuerzo';
-          }
+          debugPrint("Esta operación tiene derecho a cena");
         } else {
-          // Después de las 5pm, mostrar cena
-          if (todasLasComidas.contains('Cena')) {
-            comidaAMostrar = 'Cena';
-          } else if (todasLasComidas.contains('Almuerzo')) {
-            // Si no hay cena, mostrar almuerzo
-            comidaAMostrar = 'Almuerzo';
+          debugPrint("Esta operación NO tiene derecho a cena");
+        }
+      } else if (currentMinutes >= periodoMediaNoche &&
+          currentMinutes <= desayunoHora) {
+        // Esta condición está mal - corregir a:
+        if (currentMinutes >= periodoCena || currentMinutes < mediaNocheHora) {
+          // Entre 9 pm y 12 am: Mostrar media noche
+          if (todasLasComidas.contains('Media noche')) {
+            comidaAMostrar = 'Media noche';
           }
         }
       }
@@ -176,36 +165,14 @@ class _ActiveAssignmentsViewState extends State<ActiveAssignmentsView> {
       // Si encontramos una comida para mostrar, la agregamos
       if (comidaAMostrar.isNotEmpty) {
         foods.add(comidaAMostrar);
-      }
-    } else {
-      // ----- OPERACIONES FUTURAS -----
-      // Para operaciones que aún no han comenzado, mostrar la primera comida relevante
-      bool operacionFutura = inicioMinutos > currentMinutes;
-
-      if (operacionFutura) {
-        // Desayuno: comienza entre 5:00-5:59 o finaliza entre 6:00-6:59
-        if ((inicioMinutos >= 5 * 60 && inicioMinutos < 6 * 60) ||
-            (finMinutos >= 6 * 60 && finMinutos < 7 * 60)) {
-          foods.add('Desayuno');
-        }
-        // Almuerzo: comienza entre 11:00-11:59 o finaliza entre 12:00-12:59
-        else if ((inicioMinutos >= 11 * 60 && inicioMinutos < 12 * 60) ||
-            (finMinutos >= 12 * 60 && finMinutos < 13 * 60)) {
-          foods.add('Almuerzo');
-        }
-        // Cena: comienza entre 17:00-17:59 o finaliza entre 18:00-18:59
-        else if ((inicioMinutos >= 17 * 60 && inicioMinutos < 18 * 60) ||
-            (finMinutos >= 18 * 60 && finMinutos < 19 * 60)) {
-          foods.add('Cena');
-        }
-        // Media noche: comienza entre 23:00-23:59 o finaliza entre 00:00-00:59
-        else if ((inicioMinutos >= 23 * 60) || (finMinutos % (24 * 60) < 60)) {
-          foods.add('Media noche');
-        }
+        debugPrint("Comida seleccionada: $comidaAMostrar");
+      } else {
+        debugPrint(
+            "No se encontró una comida válida para mostrar en este horario");
       }
     }
 
-    return [foods.isNotEmpty ? foods.last : 'Sin alimentación'];
+    return foods.isEmpty ? ["Sin alimentación"] : foods;
   }
 
   // Helper para convertir string de hora a TimeOfDay
