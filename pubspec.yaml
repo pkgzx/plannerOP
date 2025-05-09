@@ -38,6 +38,8 @@ dependencies:
   flutter_animated_splash: ^0.0.10
   lottie: 3.0.0
   syncfusion_flutter_xlsio: 27.2.5
+  flutter_secure_storage: ^9.1.0
+  encrypt: ^5.0.1 
 
   
 

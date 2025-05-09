@@ -1,8 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_neumorphic_plus/flutter_neumorphic.dart';
+import 'package:plannerop/pages/login.dart';
+import 'package:plannerop/store/areas.dart';
+import 'package:plannerop/store/assignments.dart';
+import 'package:plannerop/store/auth.dart';
+import 'package:plannerop/store/clients.dart';
+import 'package:plannerop/store/task.dart';
+import 'package:plannerop/store/user.dart';
+import 'package:plannerop/store/workers.dart';
 import 'dart:math' as math;
 
-import 'package:plannerop/utils/toast.dart'; // Para generar colores aleatorios
+import 'package:plannerop/utils/toast.dart';
+import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart'; // Para generar colores aleatorios
 
 class PerfilTab extends StatefulWidget {
   const PerfilTab({super.key});
@@ -84,10 +94,10 @@ class _PerfilTabState extends State<PerfilTab> {
     });
   }
 
-  // Método para mostrar diálogo de cerrar sesión
   void _showLogoutDialog() {
     showDialog(
       context: context,
+      barrierDismissible: false, // Evitar que se cierre al tocar fuera
       builder: (context) => AlertDialog(
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(12),
@@ -109,30 +119,93 @@ class _PerfilTabState extends State<PerfilTab> {
             ),
           ),
           NeumorphicButton(
-            style: NeumorphicStyle(
-              color: const Color(0xFFE53E3E),
-              depth: 1,
-              intensity: 0.8,
-              boxShape: NeumorphicBoxShape.roundRect(BorderRadius.circular(8)),
-            ),
-            child: const Text(
-              'Cerrar sesión',
-              style: TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.w600,
+              style: NeumorphicStyle(
+                color: const Color(0xFFE53E3E),
+                depth: 1,
+                intensity: 0.8,
+                boxShape:
+                    NeumorphicBoxShape.roundRect(BorderRadius.circular(8)),
               ),
-            ),
-            onPressed: () {
-              // Aquí irías a la pantalla de login o inicializarías la app
-              Navigator.of(context).pushNamedAndRemoveUntil(
-                '/login', // Reemplaza con tu ruta de login
-                (route) => false,
-              );
-            },
-          ),
+              child: const Text(
+                'Cerrar sesión',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              onPressed: () async {
+                // Mostrar loader mientras se cierra la sesión
+                Navigator.pop(context); // Cerrar el diálogo de confirmación
+
+                // Mostrar un indicador de carga
+                showDialog(
+                  context: context,
+                  barrierDismissible: false,
+                  builder: (context) => const Center(
+                    child: CircularProgressIndicator(),
+                  ),
+                );
+
+                try {
+                  // Limpiar todos los providers y datos almacenados
+                  final authProvider =
+                      Provider.of<AuthProvider>(context, listen: false);
+
+                  // Limpiar el UserProvider (descomentar y usar el método implementado)
+                  final userProvider =
+                      Provider.of<UserProvider>(context, listen: false);
+                  userProvider.clearUser();
+
+                  // Cerrar sesión en AuthProvider, que debería limpiar el almacenamiento
+                  await authProvider.logout();
+
+                  // Limpiar datos adicionales de SharedPreferences
+                  await _clearAllStoredData();
+
+                  // Verificar que la navegación es posible
+                  if (mounted) {
+                    // Cerrar el diálogo de carga
+                    Navigator.of(context).pop();
+
+                    // Navegar a la pantalla de login y eliminar TODAS las rutas anteriores
+                    Navigator.of(context).pushAndRemoveUntil(
+                      MaterialPageRoute(
+                          builder: (context) => const LoginPage()),
+                      (route) =>
+                          false, // Esto elimina todas las rutas anteriores
+                    );
+                  }
+                } catch (e) {
+                  debugPrint('Error al cerrar sesión: $e');
+                  // Cerrar el diálogo de carga si hay error
+                  if (mounted) {
+                    Navigator.of(context).pop();
+                    showErrorToast(context, 'Error al cerrar sesión: $e');
+                  }
+                }
+              }),
         ],
       ),
     );
+  }
+
+  // Método para limpiar todos los datos almacenados
+  Future<void> _clearAllStoredData() async {
+    try {
+      // Usar SharedPreferences directamente además del AuthStorageService
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.clear(); // Esto eliminará TODOS los datos (¡ten cuidado!)
+
+      // También puedes ser más selectivo:
+      // await prefs.remove('token');
+      // await prefs.remove('username');
+      // await prefs.remove('password');
+      // etc...
+
+      debugPrint('✅ Todos los datos de SharedPreferences eliminados');
+    } catch (e) {
+      debugPrint('❌ Error limpiando SharedPreferences: $e');
+    }
   }
 
   @override

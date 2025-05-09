@@ -194,8 +194,7 @@ class _ServiceTrendChartState extends State<ServiceTrendChart> {
         debugPrint(
             'AssignmentsProvider isLoading: ${assignmentsProvider.isLoading}');
         debugPrint('TasksProvider isLoading: ${tasksProvider.isLoading}');
-        debugPrint(
-            'Assignments count: ${assignmentsProvider.assignments.length}');
+      
         debugPrint('Tasks count: ${tasksProvider.tasks.length}');
 
         // Verificar si necesitamos cargar datos
@@ -206,10 +205,7 @@ class _ServiceTrendChartState extends State<ServiceTrendChart> {
             debugPrint('Procesando datos de asignaciones disponibles');
             _servicesData = processAssignmentData(
                 assignmentsProvider.assignments, tasksProvider.tasks);
-            for (var data in _servicesData) {
-              debugPrint(
-                  'Service: ${data.serviceName} - Workers: ${data.workerCount}');
-            }
+          
             _isLoading = false;
           }
           // Si no hay tareas, intentar cargarlas primero

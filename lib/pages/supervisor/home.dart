@@ -53,20 +53,20 @@ class _SupervisorHomeState extends State<SupervisorHome> {
     _lastVisitTimes[_selectedIndex] = DateTime.now();
   }
 
-  // Método para confirmar la salida
   Future<bool> _onWillPop() async {
     final now = DateTime.now();
 
-    // Si el usuario presiona atrás dos veces rápidamente (dentro de 2 segundos), cerrar la app
     if (_lastBackPressTime != null &&
         now.difference(_lastBackPressTime!) < const Duration(seconds: 2)) {
-      // Salir de la aplicación
       SystemNavigator.pop();
       return true;
     }
 
-    // Primera vez que presiona atrás, mostrar diálogo de confirmación
     _lastBackPressTime = now;
+
+    // Captura las referencias a los providers antes de mostrar el diálogo
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    final userProvider = Provider.of<UserProvider>(context, listen: false);
 
     final bool? shouldLogout = await showDialog<bool>(
       context: context,
@@ -76,13 +76,14 @@ class _SupervisorHomeState extends State<SupervisorHome> {
         actions: <Widget>[
           TextButton(
             onPressed: () {
-              Navigator.of(context).pop(false); // No cerrar sesión
+              Navigator.of(context).pop(false);
             },
             child: const Text('No'),
           ),
           TextButton(
-            onPressed: () {
-              Navigator.of(context).pop(true); // Sí cerrar sesión
+            onPressed: () async {
+              // IMPORTANTE: Primero cerramos el diálogo
+              Navigator.of(context).pop(true);
             },
             child: const Text('Sí'),
           ),
@@ -90,34 +91,58 @@ class _SupervisorHomeState extends State<SupervisorHome> {
       ),
     );
 
-    // Si el usuario confirmó que quiere cerrar sesión
     if (shouldLogout == true) {
-      // Cerrar sesión
-      final authProvider = Provider.of<AuthProvider>(context, listen: false);
-      authProvider.clearAccessToken();
-
-      // Navegar a la página de login y eliminar todas las rutas anteriores
+      // Mostrar un indicador de carga
       if (mounted) {
-        Navigator.of(context).pushAndRemoveUntil(
-          MaterialPageRoute(builder: (context) => const LoginPage()),
-          (Route<dynamic> route) => false,
+        showDialog(
+          context: context,
+          barrierDismissible: false,
+          builder: (dialogContext) => WillPopScope(
+            onWillPop: () async => false,
+            child: const Center(
+              child: CircularProgressIndicator(),
+            ),
+          ),
         );
       }
 
-      return true; // Permitir el pop
-    }
+      try {
+        // IMPORTANTE: Usamos la referencia capturada anteriormente
+        userProvider.clearUser();
+        await authProvider.logout();
 
-    // Mostrar mensaje al usuario
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Presiona atrás de nuevo para salir de la aplicación'),
-          duration: Duration(seconds: 2),
-        ),
-      );
+        // Una vez completado el logout, navegamos a la página de login
+        if (mounted) {
+          // IMPORTANTE: Usamos pushReplacement en lugar de pushAndRemoveUntil
+          // Esto evita problemas con el contexto al desmontar widgets
+          Navigator.of(context).pushReplacement(
+            MaterialPageRoute(builder: (context) => const LoginPage()),
+          );
+        }
+        return true;
+      } catch (e) {
+        debugPrint('Error al cerrar sesión: $e');
+        if (mounted) {
+          // Cerrar el loader si está visible
+          if (Navigator.canPop(context)) {
+            Navigator.of(context).pop();
+          }
+          showErrorToast(context, 'Error al cerrar sesión');
+        }
+        return false;
+      }
+    } else {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content:
+                Text('Presiona atrás de nuevo para salir de la aplicación'),
+            duration: Duration(seconds: 2),
+          ),
+        );
+      }
+      return false;
     }
-
-    return false; // No permitir el comportamiento predeterminado del botón atrás
   }
 
   void _onItemTapped(int index) {

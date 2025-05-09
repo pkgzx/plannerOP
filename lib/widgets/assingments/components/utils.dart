@@ -474,7 +474,8 @@ Widget _buildWorkerItemWithCompletion(Worker worker, Assignment assignment,
   // Si no hay tipo de comida válido o está fuera de horario, no mostrar botón
   bool showFoodButton = currentFoodType != null &&
       currentFoodType.isNotEmpty &&
-      currentFoodType != 'Sin alimentación';
+      currentFoodType != 'Sin alimentación' &&
+      currentFoodType != 'Sin alimentación actual';
 
   // Verificar y mostrar sola la alimentacion si esta dentro de la franja horaria
 
