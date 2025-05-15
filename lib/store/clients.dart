@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
 import 'package:plannerop/services/clients/clients.dart';
 import 'package:plannerop/core/model/client.dart';
 import 'package:plannerop/store/auth.dart';
@@ -36,10 +35,12 @@ class ClientsProvider with ChangeNotifier {
   }
 
   Client getClientById(int id) {
-    return _clients.firstWhere((client) => client.id == id);
+    return _clients.firstWhere((client) => client.id == id,
+        orElse: () => Client(id: 0, name: ''));
   }
 
   Client getClientByName(String name) {
-    return _clients.firstWhere((client) => client.name == name);
+    return _clients.firstWhere((client) => client.name == name,
+        orElse: () => Client(id: 0, name: ''));
   }
 }

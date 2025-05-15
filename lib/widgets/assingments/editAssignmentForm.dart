@@ -1,20 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_neumorphic_plus/flutter_neumorphic.dart';
 import 'package:intl/intl.dart';
-import 'package:plannerop/core/model/area.dart';
 import 'package:plannerop/core/model/assignment.dart';
 import 'package:plannerop/core/model/client.dart';
 import 'package:plannerop/core/model/worker.dart';
-import 'package:plannerop/store/areas.dart';
+import 'package:plannerop/core/model/workerGroup.dart';
 import 'package:plannerop/store/assignments.dart';
 import 'package:plannerop/store/clients.dart';
-import 'package:plannerop/store/task.dart';
 import 'package:plannerop/store/workers.dart';
 import 'package:plannerop/utils/toast.dart';
 import 'package:plannerop/widgets/assingments/date_time_fields.dart';
+import 'package:plannerop/widgets/assingments/selected_worker_list.dart';
 import 'package:provider/provider.dart';
-import 'package:plannerop/widgets/assingments/dropdown_field.dart';
-import 'package:plannerop/widgets/assingments/workerSelection.dart';
 
 class EditAssignmentForm extends StatefulWidget {
   final Assignment assignment;
@@ -29,10 +26,10 @@ class EditAssignmentForm extends StatefulWidget {
   }) : super(key: key);
 
   @override
-  _EditAssignmentFormState createState() => _EditAssignmentFormState();
+  EditAssignmentFormState createState() => EditAssignmentFormState();
 }
 
-class _EditAssignmentFormState extends State<EditAssignmentForm> {
+class EditAssignmentFormState extends State<EditAssignmentForm> {
   // Controladores
   late TextEditingController _areaController;
   late TextEditingController _taskController;
@@ -47,16 +44,19 @@ class _EditAssignmentFormState extends State<EditAssignmentForm> {
   // Estado de la edición
   late List<Worker> _selectedWorkers;
   bool _isShipArea = false;
+  late List<WorkerGroup> _selectedGroups;
 
   // Contadores para forzar la reconstrucción de los campos de fecha/hora
   int _dateUpdateCounter = 0;
   int _timeUpdateCounter = 0;
   int _endDateUpdateCounter = 0;
   int _endTimeUpdateCounter = 0;
-
   @override
   void initState() {
     super.initState();
+
+    // Inicializar grupos desde la asignación existente
+    _selectedGroups = List.from(widget.assignment.groups);
 
     // Inicializar controladores con los datos de la asignación
     _areaController = TextEditingController(text: widget.assignment.area);
@@ -89,6 +89,11 @@ class _EditAssignmentFormState extends State<EditAssignmentForm> {
     // Buscar el nombre del cliente después del build
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _initializeClientName();
+
+      // IMPORTANTE: Forzar sincronización de grupos al inicializar
+      if (_selectedGroups.isNotEmpty) {
+        _processGroupSchedules();
+      }
     });
   }
 
@@ -137,21 +142,17 @@ class _EditAssignmentFormState extends State<EditAssignmentForm> {
 
   @override
   Widget build(BuildContext context) {
-    // Proveedores necesarios para las selecciones
-    final areasProvider = Provider.of<AreasProvider>(context);
-    final tasksProvider = Provider.of<TasksProvider>(context);
     final clientsProvider = Provider.of<ClientsProvider>(context);
     final workersProvider = Provider.of<WorkersProvider>(context);
 
     var client = clientsProvider.getClientById(widget.assignment.clientId);
-
-    // Listas de opciones
-    final List<String> zones =
-        List.generate(10, (index) => 'Zona ${index + 1}');
+    if (client == null) {
+      client =
+          Client(id: widget.assignment.clientId, name: "Cliente no encontrado");
+    }
 
     return Container(
-      height: MediaQuery.of(context).size.height *
-          0.85, // Reducir un poco la altura
+      height: MediaQuery.of(context).size.height * 0.85,
       decoration: const BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
@@ -194,19 +195,35 @@ class _EditAssignmentFormState extends State<EditAssignmentForm> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Selector de trabajadores
-                  WorkerSelectionWidget(
+                  // Selector de trabajadores con soporte para grupos
+                  SelectedWorkersList(
                     selectedWorkers: _selectedWorkers,
-                    allWorkers: workersProvider.getWorkersAvailable(),
-                    deletedWorkers: widget.assignment.deletedWorkers,
-                    onSelectionChanged: (workers, deletedWorkers) {
+                    selectedGroups: _selectedGroups,
+                    availableWorkers: workersProvider.getWorkersAvailable(),
+                    onWorkersChanged: (workers) {
                       setState(() {
                         _selectedWorkers = workers;
-                        // Store deleted workers in the assignment
+                      });
+                    },
+                    onGroupsChanged: (groups) {
+                      setState(() {
+                        _selectedGroups = groups;
+                        // Al cambiar grupos, procesar las fechas y horas
+                        _processGroupSchedules();
+                      });
+                    },
+                    inEditMode: true, // Indicar que estamos en modo edición
+                    deletedWorkers: widget.assignment.deletedWorkers,
+                    onDeletedWorkersChanged: (deletedWorkers) {
+                      setState(() {
                         widget.assignment.deletedWorkers = deletedWorkers;
                       });
                     },
+                    // Agregar esta línea para sincronizar _workerGroups con selectedGroups
+                    initialGroups: _selectedGroups,
+                    assignmentId: widget.assignment.id,
                   ),
+
                   const SizedBox(height: 20),
 
                   // Campo de área (NO editable)
@@ -216,12 +233,20 @@ class _EditAssignmentFormState extends State<EditAssignmentForm> {
                     icon: Icons.location_on_outlined,
                   ),
 
-                  // Campo de motonave (NO editable - condicional)
+                  // Campo de motonave (editable solo si es área de buque)
                   if (_isShipArea)
-                    _buildNonEditableField(
-                      label: 'Nombre de Motonave',
-                      value: widget.assignment.motorship ?? 'No especificada',
-                      icon: Icons.directions_boat,
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 16.0),
+                      child: TextFormField(
+                        controller: _motorshipController,
+                        decoration: InputDecoration(
+                          labelText: 'Nombre de Motonave',
+                          prefixIcon: const Icon(Icons.directions_boat),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                        ),
+                      ),
                     ),
 
                   // Campos de fecha y hora de inicio (editables)
@@ -326,45 +351,42 @@ class _EditAssignmentFormState extends State<EditAssignmentForm> {
               ],
             ),
             child: Row(
+              mainAxisAlignment: MainAxisAlignment.end,
               children: [
-                Expanded(
-                  child: NeumorphicButton(
-                    style: NeumorphicStyle(
-                      depth: 2,
-                      intensity: 0.7,
+                NeumorphicButton(
+                  style: NeumorphicStyle(
+                    depth: 2,
+                    intensity: 0.7,
+                    color: const Color(0xFF718096),
+                    boxShape:
+                        NeumorphicBoxShape.roundRect(BorderRadius.circular(8)),
+                  ),
+                  onPressed: widget.onCancel,
+                  child: const Text(
+                    'Cancelar',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
                       color: Colors.white,
-                      boxShape: NeumorphicBoxShape.roundRect(
-                          BorderRadius.circular(8)),
-                    ),
-                    onPressed: widget.onCancel,
-                    child: const Text(
-                      'Cancelar',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        color: Color(0xFF718096),
-                        fontWeight: FontWeight.w600,
-                      ),
+                      fontWeight: FontWeight.w600,
                     ),
                   ),
                 ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: NeumorphicButton(
-                    style: NeumorphicStyle(
-                      depth: 2,
-                      intensity: 0.7,
-                      color: const Color(0xFF3182CE),
-                      boxShape: NeumorphicBoxShape.roundRect(
-                          BorderRadius.circular(8)),
-                    ),
-                    onPressed: () => _saveChanges(context),
-                    child: const Text(
-                      'Guardar Cambios',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.w600,
-                      ),
+                const SizedBox(width: 16),
+                NeumorphicButton(
+                  style: NeumorphicStyle(
+                    depth: 2,
+                    intensity: 0.7,
+                    color: const Color(0xFF3182CE),
+                    boxShape:
+                        NeumorphicBoxShape.roundRect(BorderRadius.circular(8)),
+                  ),
+                  onPressed: () => _saveChanges(context),
+                  child: const Text(
+                    'Guardar Cambios',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w600,
                     ),
                   ),
                 ),
@@ -376,7 +398,98 @@ class _EditAssignmentFormState extends State<EditAssignmentForm> {
     );
   }
 
-  // Nuevo método para crear campos no editables con el mismo estilo que los editables
+  void _processGroupSchedules() {
+    if (_selectedGroups.isEmpty) {
+      // Si no hay grupos, dejar los campos editables
+      return;
+    }
+
+    // Estructura para almacenar fechas y horas completas
+    DateTime? earliestStartDateTime;
+    DateTime? latestEndDateTime;
+
+    // Procesar cada grupo para encontrar los horarios extremos
+    for (var group in _selectedGroups) {
+      // Procesar fecha y hora de inicio juntas si ambas existen
+      if (group.startDate != null && group.startTime != null) {
+        try {
+          // Construir un DateTime combinando fecha y hora de inicio
+          final dateParts = DateTime.parse(group.startDate!);
+          final timeParts = group.startTime!.split(':');
+          final hours = int.parse(timeParts[0]);
+          final minutes = int.parse(timeParts[1]);
+
+          final combinedStartDateTime = DateTime(
+            dateParts.year,
+            dateParts.month,
+            dateParts.day,
+            hours,
+            minutes,
+          );
+
+          // Actualizar el valor mínimo si corresponde
+          if (earliestStartDateTime == null ||
+              combinedStartDateTime.isBefore(earliestStartDateTime)) {
+            earliestStartDateTime = combinedStartDateTime;
+          }
+        } catch (e) {
+          debugPrint('Error al combinar fecha/hora de inicio: $e');
+        }
+      }
+
+      // Procesar fecha y hora de fin juntas si ambas existen
+      if (group.endDate != null && group.endTime != null) {
+        try {
+          // Construir un DateTime combinando fecha y hora de fin
+          final dateParts = DateTime.parse(group.endDate!);
+          final timeParts = group.endTime!.split(':');
+          final hours = int.parse(timeParts[0]);
+          final minutes = int.parse(timeParts[1]);
+
+          final combinedEndDateTime = DateTime(
+            dateParts.year,
+            dateParts.month,
+            dateParts.day,
+            hours,
+            minutes,
+          );
+
+          // Actualizar el valor máximo si corresponde
+          if (latestEndDateTime == null ||
+              combinedEndDateTime.isAfter(latestEndDateTime)) {
+            latestEndDateTime = combinedEndDateTime;
+          }
+        } catch (e) {
+          debugPrint('Error al combinar fecha/hora de fin: $e');
+        }
+      }
+    }
+
+    // Actualizar los controladores con los valores encontrados
+    setState(() {
+      // Actualizar fecha y hora de inicio si se encontraron
+      if (earliestStartDateTime != null) {
+        _startDateController.text =
+            DateFormat('dd/MM/yyyy').format(earliestStartDateTime);
+
+        final hour = earliestStartDateTime.hour.toString().padLeft(2, '0');
+        final minute = earliestStartDateTime.minute.toString().padLeft(2, '0');
+        _startTimeController.text = '$hour:$minute';
+      }
+
+      // Actualizar fecha y hora de fin si se encontraron
+      if (latestEndDateTime != null) {
+        _endDateController.text =
+            DateFormat('dd/MM/yyyy').format(latestEndDateTime);
+
+        final hour = latestEndDateTime.hour.toString().padLeft(2, '0');
+        final minute = latestEndDateTime.minute.toString().padLeft(2, '0');
+        _endTimeController.text = '$hour:$minute';
+      }
+    });
+  }
+
+  // método para crear campos no editables con el mismo estilo que los editables
   Widget _buildNonEditableField({
     required String label,
     required String value,
@@ -452,6 +565,8 @@ class _EditAssignmentFormState extends State<EditAssignmentForm> {
       // Obtener providers
       final workersProvider =
           Provider.of<WorkersProvider>(context, listen: false);
+      final assignmentsProvider =
+          Provider.of<AssignmentsProvider>(context, listen: false);
 
       // Procesar fecha y hora
       final startDate =
@@ -478,6 +593,56 @@ class _EditAssignmentFormState extends State<EditAssignmentForm> {
       for (var worker in widget.assignment.workers) {
         if (!_selectedWorkers.any((w) => w.id == worker.id)) {
           removedWorkers.add(worker);
+        }
+      }
+
+      List<int> individualWorkerIds = [];
+      List<Map<String, dynamic>> groupsToConnect = [];
+
+      // Separar trabajadores individuales de los grupos
+      for (var worker in addedWorkers) {
+        // Verificar si el trabajador pertenece a algún grupo
+        bool isInGroup = false;
+
+        for (var group in _selectedGroups) {
+          if (group.workers.contains(worker.id)) {
+            isInGroup = true;
+            break;
+          }
+        }
+
+        // Si no está en ningún grupo, añadirlo como individual
+        if (!isInGroup) {
+          individualWorkerIds.add(worker.id);
+        }
+      }
+
+      // Procesar los grupos nuevos para el API
+      for (var group in _selectedGroups) {
+        // Verificar si es un grupo nuevo (no estaba en la asignación original)
+        bool isNewGroup = true;
+        for (var originalGroup in widget.assignment.groups) {
+          if (originalGroup.id == group.id) {
+            isNewGroup = false;
+            break;
+          }
+        }
+
+        if (isNewGroup) {
+          // Filtrar trabajadores que ya están añadidos individualmente
+          List<int> groupWorkerIds = group.workers
+              .where((id) => !individualWorkerIds.contains(id))
+              .toList();
+
+          if (groupWorkerIds.isNotEmpty) {
+            groupsToConnect.add({
+              "workerIds": groupWorkerIds,
+              "dateStart": group.startDate,
+              "dateEnd": group.endDate,
+              "timeStart": group.startTime,
+              "timeEnd": group.endTime
+            });
+          }
         }
       }
 
@@ -513,8 +678,9 @@ class _EditAssignmentFormState extends State<EditAssignmentForm> {
         clientId: widget.assignment.clientId, // No editable
         deletedWorkers:
             widget.assignment.deletedWorkers, // Include deleted workers
+        inChagers: widget.assignment.inChagers,
+        groups: _selectedGroups, // Añadir los grupos seleccionados
       );
-
       // Mostrar indicador de carga
       showDialog(
         context: context,
@@ -523,6 +689,19 @@ class _EditAssignmentFormState extends State<EditAssignmentForm> {
           child: CircularProgressIndicator(),
         ),
       );
+
+      // Si hay trabajadores para conectar, llamar a la nueva función
+      if (individualWorkerIds.isNotEmpty || groupsToConnect.isNotEmpty) {
+        assignmentsProvider
+            .connectWorkersToAssignment(individualWorkerIds, groupsToConnect,
+                context, widget.assignment.id!)
+            .then((success) {
+          if (!success) {
+            showErrorToast(
+                context, "Hubo un error al conectar nuevos trabajadores");
+          }
+        });
+      }
 
       // Llamar al callback con la asignación actualizada
       widget.onSave(updatedAssignment);

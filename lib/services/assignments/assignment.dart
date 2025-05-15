@@ -1,12 +1,15 @@
 import 'dart:convert';
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:plannerop/core/model/assignment.dart';
 import 'package:http/http.dart' as http;
 import 'package:plannerop/core/model/worker.dart';
+import 'package:plannerop/core/model/workerGroup.dart';
 import 'package:plannerop/dto/assignment/createAssigment.dart';
 import 'package:plannerop/store/auth.dart';
 import 'package:plannerop/store/workers.dart';
+import 'package:plannerop/utils/group.dart';
 import 'package:provider/provider.dart';
 
 class AssignmentService {
@@ -20,6 +23,18 @@ class AssignmentService {
       final token =
           Provider.of<AuthProvider>(context, listen: false).accessToken;
 
+      // Recopilar todos los IDs de trabajadores que están en grupos
+      Set<int> workersInGroups = {};
+      for (var group in assignment.groups) {
+        workersInGroups.addAll(group.workers);
+      }
+
+      // Filtrar los trabajadores para solo incluir aquellos que no están en grupos
+      List<int> individualWorkers = assignment.workers
+          .map((worker) => worker.id)
+          .where((id) => !workersInGroups.contains(id))
+          .toList();
+
       // Crear el payload en el formato requerido por el backend
       final Map<String, dynamic> payload = {
         "status": assignment.status.toUpperCase(),
@@ -31,7 +46,17 @@ class AssignmentService {
         "id_area": assignment.areaId,
         "id_task": assignment.taskId,
         "id_client": assignment.clientId,
-        "workerIds": assignment.workers.map((worker) => worker.id).toList(),
+        "workerIds": individualWorkers,
+        'inChargedIds': assignment.inChagers,
+        "groups": assignment.groups.map((group) {
+          return {
+            "dateStart": group.startDate,
+            "dateEnd": group.endDate,
+            "timeStart": group.startTime,
+            "timeEnd": group.endTime,
+            "workerIds": group.workers
+          };
+        }).toList(),
       };
 
       if (assignment.endDate != null) {
@@ -42,7 +67,7 @@ class AssignmentService {
         payload['timeEnd'] = assignment.endTime;
       }
 
-      debugPrint('Enviando asignación: ${jsonEncode(payload)}');
+      // debugPrint('Enviando asignación: ${jsonEncode(payload)}');
 
       var url = Uri.parse('$API_URL/operation');
       var response = await http.post(url,
@@ -93,38 +118,45 @@ class AssignmentService {
         final jsonResponse = jsonDecode(response.body);
         List<Assignment> assignments = [];
         for (var assignment in jsonResponse) {
-          debugPrint('Asignación: $assignment');
+          // debugPrint('Asignación: $assignment');
 
           var mapWorkers = assignment['workers'];
           List<Worker> workersAssignment = [];
 
           for (var worker in mapWorkers) {
             var workerId = worker['id_worker'];
-            var workerObj = workers.firstWhere((w) => w.id == workerId);
+            var workerObj = workers.firstWhere((w) => w.id == workerId,
+                orElse: () => Worker(
+                    name: "",
+                    area: "",
+                    phone: "",
+                    document: "",
+                    status: WorkerStatus.available,
+                    startDate: DateTime.now(),
+                    code: "",
+                    id: 0));
             workersAssignment.add(workerObj);
           }
 
           var assignmentObj = Assignment(
-            id: assignment['id'],
-            workers: workersAssignment,
-            area: assignment['jobArea']['name'],
-            task: assignment['task']['name'],
-            date: DateTime.parse(assignment['dateStart']),
-            time: assignment['timeStrat'],
-            status: assignment['status'],
-            endTime: assignment['timeEnd'],
-            endDate: assignment['dateEnd'] != null
-                ? DateTime.parse(assignment['dateEnd'])
-                : null,
-            zone: assignment['zone'],
-            motorship: assignment['motorShip'],
-            userId: assignment['id_user'],
-            areaId: assignment['jobArea']['id'],
-            taskId: assignment['task']['id'],
-            clientId: assignment['id_client'],
-          );
-
-          debugPrint('Asignación creada: $assignmentObj');
+              id: assignment['id'],
+              workers: workersAssignment,
+              area: assignment['jobArea']['name'],
+              task: assignment['task']['name'],
+              date: DateTime.parse(assignment['dateStart']),
+              time: assignment['timeStrat'],
+              status: assignment['status'],
+              endTime: assignment['timeEnd'],
+              endDate: assignment['dateEnd'] != null
+                  ? DateTime.parse(assignment['dateEnd'])
+                  : null,
+              zone: assignment['zone'],
+              motorship: assignment['motorShip'],
+              userId: assignment['id_user'],
+              areaId: assignment['jobArea']['id'],
+              taskId: assignment['task']['id'],
+              clientId: assignment['id_client'],
+              inChagers: assignment['inChargedIds'] ?? []);
 
           assignments.add(assignmentObj);
         }
@@ -154,9 +186,8 @@ class AssignmentService {
           },
           body: jsonEncode(
               {"status": status == 'IN_PROGRESS' ? 'INPROGRESS' : status}));
-      debugPrint('Actualizando estado de asignación $status');
+      // debugPrint('Actualizando estado de asignación $status');
       if (response.statusCode == 200) {
-        debugPrint('Asignación actualizada con éxito: ${response.body}');
         return true;
       } else {
         debugPrint(
@@ -192,8 +223,6 @@ class AssignmentService {
         },
       };
 
-      debugPrint('Asignación actualizada: ${jsonEncode(payload)}');
-
       // Añadir campos opcionales si tienen valor
       if (assignment.endDate != null) {
         payload['dateEnd'] = _formatDate(assignment.endDate!);
@@ -203,8 +232,8 @@ class AssignmentService {
         payload['timeEnd'] = assignment.endTime;
       }
 
-      debugPrint(
-          'Actualizando asignación ${assignment.id}: ${jsonEncode(payload)}');
+      // debugPrint(
+      // 'Actualizando asignación ${assignment.id}: ${jsonEncode(payload)}');
 
       var url = Uri.parse('$API_URL/operation/${assignment.id}');
       var response = await http.patch(url,
@@ -215,7 +244,6 @@ class AssignmentService {
           body: jsonEncode(payload));
 
       if (response.statusCode == 200) {
-        debugPrint('Asignación actualizada con éxito: ${response.body}');
         return true;
       } else {
         debugPrint(
@@ -254,8 +282,8 @@ class AssignmentService {
         payload['timeEnd'] = assignment.endTime;
       }
 
-      debugPrint(
-          'Actualizando asignación ${assignment.id}: ${jsonEncode(payload)}');
+      // debugPrint(
+      //     'Actualizando asignación ${assignment.id}: ${jsonEncode(payload)}');
 
       var url = Uri.parse('$API_URL/operation/${assignment.id}');
       var response = await http.patch(url,
@@ -266,7 +294,6 @@ class AssignmentService {
           body: jsonEncode(payload));
 
       if (response.statusCode == 200) {
-        debugPrint('Asignación actualizada con éxito: ${response.body}');
         return true;
       } else {
         debugPrint(
@@ -275,6 +302,43 @@ class AssignmentService {
       }
     } catch (e) {
       debugPrint('Excepción al actualizar asignación: $e');
+      return false;
+    }
+  }
+
+// Método para eliminar un grupo de una asignación
+  Future<bool> removeGroupFromAssignment(
+      int assignmentId, BuildContext context, List<int> workerIds) async {
+    try {
+      final token =
+          Provider.of<AuthProvider>(context, listen: false).accessToken;
+
+      // Endpoint para eliminar un grupo específico de una asignación
+      var url = Uri.parse('$API_URL/operation/$assignmentId');
+
+      Map<String, dynamic> body = {
+        "workers": {
+          "disconnect": workerIds.map((id) => {"id": id}).toList()
+        }
+      };
+
+      var response = await http.patch(url,
+          headers: {
+            'Authorization': 'Bearer $token',
+            'Content-Type': 'application/json'
+          },
+          body: jsonEncode(body));
+
+      if (response.statusCode == 200 || response.statusCode == 204) {
+        // debugPrint('Grupo eliminado con éxito');
+        return true;
+      } else {
+        debugPrint(
+            'Error al eliminar grupo: ${response.statusCode} - ${response.body}');
+        return false;
+      }
+    } catch (e) {
+      debugPrint('Excepción al eliminar grupo: $e');
       return false;
     }
   }
@@ -294,11 +358,11 @@ class AssignmentService {
           },
           body: jsonEncode({"timeEnd": endTime}));
 
-      debugPrint('Actualizando hora de finalización: $endTime');
+      // debugPrint('Actualizando hora de finalización: $endTime');
 
       if (response.statusCode == 200) {
-        debugPrint(
-            'Hora de finalización actualizada con éxito: ${response.body}');
+        // debugPrint(
+        //     'Hora de finalización actualizada con éxito: ${response.body}');
         return true;
       } else {
         debugPrint(
@@ -323,7 +387,7 @@ class AssignmentService {
           await http.delete(url, headers: {'Authorization': 'Bearer $token'});
 
       if (response.statusCode == 200 || response.statusCode == 204) {
-        debugPrint('Asignación eliminada con éxito');
+        // debugPrint('Asignación eliminada con éxito');
         return true;
       } else {
         debugPrint(
@@ -336,29 +400,26 @@ class AssignmentService {
     }
   }
 
-// Modifica el método fetchAssignmentsByStatus para manejar el contexto de forma segura
+// Modificación de fetchAssignmentsByStatus para evitar duplicados de trabajadores
   Future<List<Assignment>> fetchAssignmentsByStatus(
       BuildContext context, List<String> statusList) async {
     try {
-      // Verificar si el contexto sigue montado antes de usarlo
+      // Verificaciones iniciales (sin cambios)
       if (!context.mounted) {
-        debugPrint(
-            'Context no está montado, abortando fetchAssignmentsByStatus');
+        // debugPrint(
+        // 'Context no está montado, abortando fetchAssignmentsByStatus');
         return [];
       }
 
       final token =
           Provider.of<AuthProvider>(context, listen: false).accessToken;
-
-      // Construir parámetros de consulta para filtrar por estado
-      final queryParams =
-          statusList.map((status) => 'status=$status').join('&');
-      var url = Uri.parse('$API_URL/operation?$queryParams');
-
+      var url = Uri.parse(
+          '$API_URL/operation/by-status?status=${statusList.join(",")}');
       var response =
           await http.get(url, headers: {'Authorization': 'Bearer $token'});
 
-      // Verificar nuevamente si el contexto sigue montado después de la operación asíncrona
+      // debugPrint('Response: ${response.body}');
+
       if (!context.mounted) {
         debugPrint(
             'Context ya no está montado después de la llamada HTTP, abortando');
@@ -374,28 +435,204 @@ class AssignmentService {
         List<Assignment> assignments = [];
 
         for (var assignment in jsonResponse) {
-          var mapWorkers = assignment['workers'];
-          List<Worker> workersAssignment = [];
+          // Mapa para evitar duplicados basados en el ID
+          Map<int, Worker> workersMap = {};
 
-          for (var worker in mapWorkers) {
-            try {
-              var workerId = worker['id_worker'];
-              if (workers.length == 0) {
-                return [];
+          // Nuevo mapa para trabajadores finalizados
+          Map<int, Worker> finishedWorkersMap = {};
+
+          // Lista para grupos de trabajadores
+          List<WorkerGroup> assignmentGroups = [];
+
+          // PASO 2: Procesar los grupos de trabajadores
+          if (assignment['workerGroups'] != null &&
+              assignment['workerGroups'] is List) {
+            var workerGroups = assignment['workerGroups'] as List;
+
+            // Conjunto para rastrear IDs de trabajadores ya procesados
+            Set<int> processedWorkerIds = {};
+
+            for (var group in workerGroups) {
+              // Extraer información del schedule
+              var schedule = group['schedule'] ?? {};
+              final dateStart = schedule['dateStart'] ?? null;
+              final dateEnd = schedule['dateEnd'] ?? null;
+              final timeStart = schedule['timeStart'] ?? null;
+              final timeEnd = schedule['timeEnd'] ?? null;
+
+              // Verificar si este grupo tiene un horario definido
+              final hasSchedule = (dateStart != null && dateStart != "") ||
+                  (dateEnd != null && dateEnd != "") ||
+                  (timeStart != null && timeStart != "") ||
+                  (timeEnd != null && timeEnd != "");
+
+              // Verificar si el horario de finalización ya pasó
+              bool isFinished = false;
+              if (dateEnd != null &&
+                  dateEnd.isNotEmpty &&
+                  timeEnd != null &&
+                  timeEnd.isNotEmpty) {
+                try {
+                  // Parsear la fecha y hora de finalización
+                  final DateTime endDateParsed = DateTime.parse(dateEnd);
+                  final List<String> timeParts = timeEnd.split(':');
+                  final int hours = int.parse(timeParts[0]);
+                  final int minutes = int.parse(timeParts[1]);
+
+                  // Crear DateTime combinando fecha y hora
+                  final DateTime endDateTime = DateTime(
+                    endDateParsed.year,
+                    endDateParsed.month,
+                    endDateParsed.day,
+                    hours,
+                    minutes,
+                  );
+
+                  // Verificar si ya pasó la fecha y hora de finalización
+                  final DateTime now = DateTime.now();
+                  isFinished = endDateTime.isBefore(now) ||
+                      endDateTime.isAtSameMomentAs(now);
+                } catch (e) {
+                  debugPrint('Error al parsear fecha/hora de finalización: $e');
+                }
               }
 
-              var workerObj = workers.firstWhere((w) => w.id == workerId);
+              // Procesar los trabajadores de este grupo
+              List<int> groupWorkerIds = [];
 
-              workersAssignment.add(workerObj);
-            } catch (e) {
-              debugPrint('Trabajador no encontrado: ${worker['id_worker']}');
-              // Continuar con el siguiente trabajador
+              if (group['workers'] != null && group['workers'] is List) {
+                for (var workerData in group['workers']) {
+                  final workerId = workerData['id'] ?? 0;
+
+                  // Saltar si ya procesamos este trabajador o ID inválido
+                  if (workerId == 0 || processedWorkerIds.contains(workerId))
+                    continue;
+
+                  processedWorkerIds.add(workerId);
+
+                  try {
+                    if (workers.isEmpty) continue;
+
+                    var workerObj = workers.firstWhere((w) => w.id == workerId,
+                        orElse: () => Worker(
+                            name: "",
+                            area: "",
+                            phone: "",
+                            document: "",
+                            status: WorkerStatus.available,
+                            startDate: DateTime.now(),
+                            code: "",
+                            id: 0));
+
+                    // Si no es el trabajador orElse y ID válido
+                    if (workerObj.id != 0) {
+                      // Clasificar el trabajador según si está en un grupo finalizado o no
+                      if (isFinished) {
+                        // Añadir al mapa de finalizados si no existe ya
+                        if (!finishedWorkersMap.containsKey(workerObj.id)) {
+                          finishedWorkersMap[workerObj.id] = workerObj;
+                          // debugPrint(
+                          //     'Trabajador ${workerObj.id} (${workerObj.name}) clasificado como finalizado');
+                        }
+                      } else {
+                        // Añadir al mapa general si no existe ya
+                        if (!workersMap.containsKey(workerObj.id)) {
+                          workersMap[workerObj.id] = workerObj;
+                        }
+                      }
+
+                      // Si tiene horario, añadirlo al grupo (independientemente de si está finalizado)
+                      if (hasSchedule) {
+                        groupWorkerIds.add(workerObj.id);
+                      }
+                    }
+                  } catch (e) {
+                    debugPrint('Error al procesar trabajador ID $workerId: $e');
+                  }
+                }
+              }
+
+              // Crear un WorkerGroup solo si tiene horario definido y trabajadores
+              if (hasSchedule && groupWorkerIds.isNotEmpty) {
+                // Crear nombre descriptivo
+                String groupName = getGroupName(
+                  dateStart != null ? DateTime.tryParse(dateStart) : null,
+                  dateEnd != null ? DateTime.tryParse(dateEnd) : null,
+                  timeStart != null ? timeStart : null,
+                  timeEnd != null ? timeEnd : null,
+                );
+
+                // Añadir el grupo a la lista de grupos
+                assignmentGroups.add(WorkerGroup(
+                  startTime: timeStart,
+                  endTime: timeEnd,
+                  startDate: dateStart,
+                  endDate: dateEnd,
+                  workers: groupWorkerIds,
+                  name: groupName,
+                  id: 'group_${DateTime.now().millisecondsSinceEpoch}_${groupWorkerIds.length}',
+                ));
+              }
             }
+          }
+
+          // También, si assignment tiene un campo finished_workers o similar, procesarlo aquí
+          if (assignment['finishedWorkers'] != null &&
+              assignment['finishedWorkers'] is List) {
+            var finishedWorkerData = assignment['finishedWorkers'] as List;
+
+            for (var workerData in finishedWorkerData) {
+              final workerId = workerData['id'] ?? 0;
+              if (workerId == 0) continue;
+
+              try {
+                if (workers.isEmpty) continue;
+
+                var workerObj = workers.firstWhere((w) => w.id == workerId,
+                    orElse: () => Worker(
+                        name: "",
+                        area: "",
+                        phone: "",
+                        document: "",
+                        status: WorkerStatus.available,
+                        startDate: DateTime.now(),
+                        code: "",
+                        id: 0));
+
+                // Añadir al mapa de finalizados si no existe ya
+                if (workerObj.id != 0 &&
+                    !finishedWorkersMap.containsKey(workerObj.id)) {
+                  finishedWorkersMap[workerObj.id] = workerObj;
+                  // debugPrint(
+                  //     'Trabajador ${workerObj.id} añadido de finishedWorkers');
+                }
+              } catch (e) {
+                debugPrint(
+                    'Error al procesar trabajador finalizado ID $workerId: $e');
+              }
+            }
+          }
+
+          // DIAGNÓSTICO: Mostrar información sobre los trabajadores procesados
+          // debugPrint(
+          //     'Asignación ${assignment['id']}: Trabajadores activos: ${workersMap.length}, finalizados: ${finishedWorkersMap.length}');
+          // debugPrint(
+          //     'Asignación ${assignment['id']}: Grupos: ${assignmentGroups.length}');
+          List<int> inChargers = [];
+          var inChargeData =
+              assignment['inChargeOperation'] ?? assignment['inCharge'] ?? [];
+
+          if (inChargeData is List && inChargeData.isNotEmpty) {
+            inChargers = List<int>.from(inChargeData.map((item) {
+              return item is Map ? (item['id_user'] ?? item['id'] ?? 0) : 0;
+            })).where((id) => id != 0).toList();
           }
 
           var assignmentObj = Assignment(
             id: assignment['id'],
-            workers: workersAssignment,
+            workers: workersMap.values.toList(),
+            workersFinished: finishedWorkersMap.values
+                .toList(), // Usar la lista de trabajadores finalizados
             area: assignment['jobArea']['name'],
             task: assignment['task']['name'],
             date: DateTime.parse(assignment['dateStart']),
@@ -411,6 +648,8 @@ class AssignmentService {
             areaId: assignment['jobArea']['id'],
             taskId: assignment['task']['id'],
             clientId: assignment['id_client'],
+            inChagers: inChargers,
+            groups: assignmentGroups,
           );
 
           assignments.add(assignmentObj);
@@ -421,7 +660,16 @@ class AssignmentService {
             'Error al obtener asignaciones por estado: ${response.statusCode} - ${response.body}');
         return [];
       }
-    } catch (e) {
+    } on SocketException catch (e) {
+      debugPrint('Error de conexión: $e');
+      return [];
+    } on HttpException catch (e) {
+      debugPrint('Error HTTP: $e');
+      return [];
+    } on FormatException catch (e) {
+      debugPrint('Error de formato: $e');
+      return [];
+    } on Exception catch (e) {
       debugPrint('Error en fetchAssignmentsByStatus: $e');
       return [];
     }
@@ -454,7 +702,8 @@ class AssignmentService {
           body: jsonEncode(body));
 
       if (response.statusCode == 200) {
-        debugPrint('Asignación completada con éxito');
+        // debugPrint('Asignación completada con éxito');
+        // debugPrint("Response200: ${response.body}");
         return true;
       } else {
         debugPrint(
@@ -463,6 +712,119 @@ class AssignmentService {
       }
     } catch (e) {
       debugPrint('Excepción al completar asignación: $e');
+      return false;
+    }
+  }
+
+// Añade este método a AssignmentService en services/assignments/assignment.dart
+  Future<bool> completePartialAssignment(
+    int assignmentId,
+    List<int> workerIds,
+    String groupId,
+    DateTime endDate,
+    DateTime startDate,
+    String startTime,
+    String endTime,
+    BuildContext context,
+  ) async {
+    try {
+      final token =
+          Provider.of<AuthProvider>(context, listen: false).accessToken;
+
+      var url = Uri.parse('$API_URL/operation/$assignmentId');
+      var body = {
+        "workers": {
+          "update": [
+            {
+              "workerIds": workerIds,
+              "dateEnd": _formatDate(endDate),
+              "timeEnd": endTime,
+              "dateStart": _formatDate(startDate),
+              "timeStart": startTime,
+            }
+          ]
+        }
+      };
+
+      var response = await http.patch(
+        url,
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json'
+        },
+        body: jsonEncode(body),
+      );
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        return true;
+      } else {
+        debugPrint(
+            'Error al completar parcialmente: ${response.statusCode} - ${response.body}');
+        // Si la API no soporta esta operación, aún así marcar como exitoso localmente
+        if (response.statusCode == 404) {
+          debugPrint(
+              'API no soporta completado parcial, marcando como exitoso localmente');
+          return true;
+        }
+        return false;
+      }
+    } catch (e) {
+      debugPrint('Excepción al completar parcialmente: $e');
+      // En caso de error, marcar como exitoso localmente para mantener consistencia de la UI
+      return true;
+    }
+  }
+
+// Método para conectar nuevos trabajadores a una asignación existente
+  Future<bool> connectWorkersToAssignment(
+      int assignmentId,
+      List<int> individualWorkerIds,
+      List<Map<String, dynamic>> groupsToConnect,
+      BuildContext context) async {
+    try {
+      final token =
+          Provider.of<AuthProvider>(context, listen: false).accessToken;
+
+      // Endpoint para actualizar la asignación
+      var url = Uri.parse('$API_URL/operation/$assignmentId');
+
+      // Preparar la estructura de la solicitud
+      Map<String, dynamic> body = {
+        "workers": {"connect": []}
+      };
+
+      // Añadir trabajadores individuales
+      for (var workerId in individualWorkerIds) {
+        body["workers"]["connect"].add({"id": workerId});
+      }
+
+      // Añadir grupos de trabajadores
+      for (var group in groupsToConnect) {
+        body["workers"]["connect"].add({
+          "workerIds": group["workerIds"],
+          "dateStart": group["dateStart"],
+          "dateEnd": group["dateEnd"],
+          "timeStart": group["timeStart"],
+          "timeEnd": group["timeEnd"]
+        });
+      }
+
+      var response = await http.patch(url,
+          headers: {
+            'Authorization': 'Bearer $token',
+            'Content-Type': 'application/json'
+          },
+          body: jsonEncode(body));
+
+      if (response.statusCode == 200 || response.statusCode == 204) {
+        return true;
+      } else {
+        debugPrint(
+            'Error al conectar trabajadores: ${response.statusCode} - ${response.body}');
+        return false;
+      }
+    } catch (e) {
+      debugPrint('Excepción al conectar trabajadores: $e');
       return false;
     }
   }

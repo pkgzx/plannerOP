@@ -3,8 +3,11 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:plannerop/core/model/assignment.dart';
 import 'package:plannerop/core/model/worker.dart';
+import 'package:plannerop/core/model/workerGroup.dart';
 import 'package:plannerop/dto/assignment/createAssigment.dart';
 import 'package:plannerop/services/assignments/assignment.dart';
+import 'package:plannerop/store/workerGroup.dart';
+import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class AssignmentsProvider extends ChangeNotifier {
@@ -33,12 +36,207 @@ class AssignmentsProvider extends ChangeNotifier {
   }
 
   void changeIsLoadingOff() {
-    debugPrint('Cambiando isLoading a false');
     _isLoading = false;
     notifyListeners();
   }
 
+  // Actualizar el método completeGroupOrIndividual para incluir fecha y hora de inicio
+  Future<bool> completeGroupOrIndividual(
+    Assignment assignment,
+    List<Worker> workers,
+    String groupId,
+    DateTime endDate,
+    String endTime,
+    BuildContext context,
+  ) async {
+    // debugPrint('Completando grupo/individual: $groupId');
+
+    // Add a timeout to prevent UI from being stuck
+    bool hasCompleted = false;
+    Timer? timeoutTimer;
+
+    timeoutTimer = Timer(Duration(seconds: 15), () {
+      if (!hasCompleted) {
+        // debugPrint('Operation timed out - forcing state reset');
+        _isLoading = false;
+        _error = 'La operación tardó demasiado tiempo. Inténtalo de nuevo.';
+        notifyListeners();
+      }
+    });
+
+    try {
+      _error = null;
+      notifyListeners();
+
+      // Determinar fecha y hora de inicio según sea grupo o individual
+      DateTime startDate;
+      String startTime;
+
+      // Si es un grupo específico, buscar sus datos de inicio
+      if (groupId != "individual" && !groupId.startsWith("worker_")) {
+        // Buscar el grupo por ID
+        final group = assignment.groups.firstWhere(
+          (g) => g.id == groupId,
+          orElse: () => WorkerGroup(workers: [], name: "", id: ""),
+        );
+
+        // Si el grupo tiene fecha y hora de inicio, usarlas
+        if (group.startDate != null && group.startTime != null) {
+          startDate = DateTime.parse(group.startDate!);
+          startTime = group.startTime!;
+        } else {
+          // Si no tiene, usar los de la asignación principal
+          startDate = assignment.date;
+          startTime = assignment.time;
+        }
+      } else {
+        // Para trabajadores individuales o grupos genéricos, usar los de la asignación
+        startDate = assignment.date;
+        startTime = assignment.time;
+      }
+
+      // Si el grupo contiene todos los trabajadores de la asignación, completar la asignación entera
+      if (workers.length == assignment.workers.length) {
+        hasCompleted = true;
+        timeoutTimer.cancel();
+        return await completeAssignment(
+            assignment.id ?? 0, endDate, endTime, context);
+      }
+
+      // Obtener IDs de los trabajadores a completar
+      final List<int> workerIds = workers.map((w) => w.id).toList();
+
+      // Si es un grupo, usar sus IDs de trabajadores
+      var workerIdsToSend = groupId.startsWith("worker_")
+          ? [int.parse(groupId.split("_")[1])]
+          : workerIds;
+
+      // Si no, enviar petición para completar sólo este grupo/trabajador
+      final success = await _assignmentService.completePartialAssignment(
+        assignment.id ?? 0,
+        workerIdsToSend,
+        groupId,
+        endDate,
+        startDate,
+        startTime,
+        endTime,
+        context,
+      );
+
+      if (success) {
+        // Actualizar en la lista local - quitar estos trabajadores o grupos
+        final index = _assignments.indexWhere((a) => a.id == assignment.id);
+
+        if (index >= 0) {
+          // Obtener conjunto de IDs de los trabajadores completados
+          final completedWorkerIds = workers.map((w) => w.id).toSet();
+
+          // Filtrar los trabajadores que no se han completado
+          final remainingWorkers = _assignments[index]
+              .workers
+              .where((w) => !completedWorkerIds.contains(w.id))
+              .toList();
+
+          // debugPrint("Trabajadores restantes: ${remainingWorkers.length}");
+
+          // Si es un grupo, eliminarlo de la lista de grupos
+          if (groupId != "individual" && !groupId.startsWith("worker_")) {
+            // Crear una nueva lista de grupos sin el grupo completado
+            final updatedGroups = _assignments[index]
+                .groups
+                .where((g) => g.id != groupId)
+                .toList();
+
+            // Actualizar la asignación con los grupos actualizados
+            _assignments[index] = Assignment(
+              id: assignment.id,
+              workers: remainingWorkers,
+              area: assignment.area,
+              task: assignment.task,
+              date: assignment.date,
+              time: assignment.time,
+              supervisor: assignment.supervisor,
+              status: assignment.status,
+              endDate: assignment.endDate,
+              endTime: assignment.endTime,
+              zone: assignment.zone,
+              motorship: assignment.motorship,
+              userId: assignment.userId,
+              areaId: assignment.areaId,
+              taskId: assignment.taskId,
+              clientId: assignment.clientId,
+              inChagers: assignment.inChagers,
+              groups: updatedGroups, // Actualizar con la lista filtrada
+            );
+          } else {
+            // Si no es un grupo, solo actualizar la lista de trabajadores
+            _assignments[index] = Assignment(
+              id: assignment.id,
+              workers: remainingWorkers,
+              area: assignment.area,
+              task: assignment.task,
+              date: assignment.date,
+              time: assignment.time,
+              supervisor: assignment.supervisor,
+              status: assignment.status,
+              endDate: assignment.endDate,
+              endTime: assignment.endTime,
+              zone: assignment.zone,
+              motorship: assignment.motorship,
+              userId: assignment.userId,
+              areaId: assignment.areaId,
+              taskId: assignment.taskId,
+              clientId: assignment.clientId,
+              inChagers: assignment.inChagers,
+              groups: assignment.groups,
+            );
+          }
+
+          // Si no quedan trabajadores, marcar toda la asignación como completada
+          if (remainingWorkers.isEmpty) {
+            _assignments[index] = Assignment(
+              id: assignment.id,
+              workers: [],
+              area: assignment.area,
+              task: assignment.task,
+              date: assignment.date,
+              time: assignment.time,
+              supervisor: assignment.supervisor,
+              status: "COMPLETED",
+              endDate: endDate,
+              endTime: endTime,
+              zone: assignment.zone,
+              motorship: assignment.motorship,
+              userId: assignment.userId,
+              areaId: assignment.areaId,
+              taskId: assignment.taskId,
+              clientId: assignment.clientId,
+              inChagers: assignment.inChagers,
+              groups: [], // Vaciar los grupos
+            );
+          }
+        }
+        notifyListeners();
+      }
+
+      _isLoading = false;
+      hasCompleted = true;
+      timeoutTimer.cancel();
+      notifyListeners();
+      return success;
+    } catch (e) {
+      debugPrint('Error en completeGroupOrIndividual: $e');
+      _error = 'Error: $e';
+      _isLoading = false;
+      hasCompleted = true;
+      timeoutTimer.cancel();
+      notifyListeners();
+      return false;
+    }
+  }
+
   void _startRefreshTimer() {
+    // debugPrint('Iniciando temporizador de refresco...');
     _refreshTimer?.cancel();
     _refreshTimer = Timer.periodic(_refreshInterval, (timer) {
       if (_lastContext != null) {
@@ -52,6 +250,8 @@ class AssignmentsProvider extends ChangeNotifier {
   // Método para refrescar solo asignaciones activas
   Future<void> refreshActiveAssignments(BuildContext context) async {
     _lastContext = context;
+
+    // debugPrint('Refrescando asignaciones activas...');
 
     try {
       // Refrescar solo asignaciones activas y pendientes
@@ -76,13 +276,109 @@ class AssignmentsProvider extends ChangeNotifier {
     super.dispose();
   }
 
+  Future<bool> completeAssignment(
+      int id, DateTime endDate, String endTime, BuildContext context) async {
+    // debugPrint('Completando asignación...');
+    try {
+      final success = await _assignmentService.completeAssigment(
+          id, 'COMPLETED', endDate, endTime, context);
+
+      if (success) {
+        final index = _assignments.indexWhere((a) => a.id == id);
+        if (index >= 0) {
+          final currentAssignment = _assignments[index];
+          _assignments[index] = Assignment(
+            id: currentAssignment.id,
+            workers: currentAssignment.workers,
+            area: currentAssignment.area,
+            task: currentAssignment.task,
+            date: currentAssignment.date,
+            time: currentAssignment.time,
+            zone: currentAssignment.zone,
+            status: 'COMPLETED',
+            endDate: currentAssignment.endDate ?? endDate,
+            endTime: currentAssignment.endTime ?? endTime,
+            motorship: currentAssignment.motorship,
+            userId: currentAssignment.userId,
+            areaId: currentAssignment.areaId,
+            taskId: currentAssignment.taskId,
+            clientId: currentAssignment.clientId,
+            inChagers: currentAssignment.inChagers,
+          );
+          notifyListeners();
+        }
+      }
+
+      return success;
+    } catch (e) {
+      debugPrint('Error al completar la asignación: $e');
+      return false;
+    }
+  }
+
+// Añadir este método al provider de asignaciones
+  Future<bool> removeGroupFromAssignment(
+      List<int> workerIds, BuildContext context, int assigmentId) async {
+    try {
+      // Llamar al servicio para eliminar el grupo en el backend
+      final success = await _assignmentService.removeGroupFromAssignment(
+          assigmentId, context, workerIds);
+
+      if (success) {
+        // Si fue exitoso, actualizar la asignación local
+        final index = _assignments.indexWhere((a) => a.id == assigmentId);
+        if (index >= 0) {
+          // Crear una copia actualizada de la asignación sin el grupo
+          final updatedGroups = _assignments[index]
+              .groups
+              .where((g) => !workerIds.contains(g.id))
+              .toList();
+
+          // Actualizar la asignación
+          _assignments[index] = Assignment(
+            id: _assignments[index].id,
+            workers: _assignments[index].workers,
+            area: _assignments[index].area,
+            task: _assignments[index].task,
+            date: _assignments[index].date,
+            time: _assignments[index].time,
+            zone: _assignments[index].zone,
+            status: _assignments[index].status,
+            endDate: _assignments[index].endDate,
+            endTime: _assignments[index].endTime,
+            motorship: _assignments[index].motorship,
+            userId: _assignments[index].userId,
+            areaId: _assignments[index].areaId,
+            taskId: _assignments[index].taskId,
+            clientId: _assignments[index].clientId,
+            inChagers: _assignments[index].inChagers,
+            groups: updatedGroups,
+            deletedWorkers: _assignments[index].deletedWorkers,
+          );
+
+          notifyListeners();
+        }
+
+        return true;
+      } else {
+        _error = "Error al eliminar el grupo en el servidor";
+        return false;
+      }
+    } catch (e) {
+      debugPrint('Error en removeGroupFromAssignment: $e');
+      _error = 'Error: $e';
+      return false;
+    }
+  }
+
   Future<void> loadAssignments(BuildContext context) async {
+    // debugPrint('Cargando asignaciones...');
     _isLoading = true;
     _error = null; // Resetear error previo
     notifyListeners();
 
     try {
-      debugPrint('Intentando cargar asignaciones desde API...');
+      // debugPrint('Intentando cargar asignaciones desde API...');
       final assignments = await _assignmentService.fetchAssignments(context);
 
       // Limpiar lista existente
@@ -108,6 +404,7 @@ class AssignmentsProvider extends ChangeNotifier {
   }
 
   Future<void> _saveAssignments() async {
+    // debugPrint('Guardando asignaciones...');
     try {
       final prefs = await SharedPreferences.getInstance();
       final assignmentsJson = json.encode(
@@ -115,6 +412,34 @@ class AssignmentsProvider extends ChangeNotifier {
       await prefs.setString('assignments', assignmentsJson);
     } catch (e) {
       debugPrint('Error saving assignments: $e');
+    }
+  }
+
+// Añadir este método al provider de asignaciones
+  Future<bool> connectWorkersToAssignment(
+      List<int> individualWorkerIds,
+      List<Map<String, dynamic>> groupsToConnect,
+      BuildContext context,
+      int assignmentId) async {
+    try {
+      _isLoading = true;
+      _error = null;
+      notifyListeners();
+
+      // Llamar al servicio para conectar los trabajadores en el backend
+      final success = await _assignmentService.connectWorkersToAssignment(
+          assignmentId, individualWorkerIds, groupsToConnect, context);
+
+      _isLoading = false;
+      notifyListeners();
+
+      return success;
+    } catch (e) {
+      debugPrint('Error en connectWorkersToAssignment: $e');
+      _error = 'Error: $e';
+      _isLoading = false;
+      notifyListeners();
+      return false;
     }
   }
 
@@ -130,12 +455,15 @@ class AssignmentsProvider extends ChangeNotifier {
     required int zoneId,
     required int userId,
     required int clientId,
+    required List<int> chargerIds,
+    required List<WorkerGroup> groups,
     String? clientName,
     DateTime? endDate,
     String? endTime,
     String? motorship,
     BuildContext? context, // Necesario para el token
   }) async {
+    // debugPrint('Agregando asignación...');
     _isLoading = true;
     _error = null;
     notifyListeners();
@@ -156,6 +484,8 @@ class AssignmentsProvider extends ChangeNotifier {
         areaId: areaId,
         taskId: taskId,
         clientId: clientId,
+        inChagers: chargerIds,
+        groups: groups,
       );
 
       // Si tenemos contexto, intentamos enviar al backend
@@ -169,10 +499,15 @@ class AssignmentsProvider extends ChangeNotifier {
       // Si se envió con éxito al backend (o no hay contexto), guardamos localmente
       if (response.isSuccess) {
         _assignments.add(newAssignment);
+
         await _saveAssignments();
       } else {
         _error = "Error al crear la asignación en el servidor";
       }
+
+      WorkerGroupsProvider workerGroupsProvider =
+          Provider.of<WorkerGroupsProvider>(context!, listen: false);
+      workerGroupsProvider.groups.clear();
 
       _isLoading = false;
       notifyListeners();
@@ -188,6 +523,7 @@ class AssignmentsProvider extends ChangeNotifier {
 
   Future<void> updateAssignmentStatus(
       int id, String status, BuildContext context) async {
+    // debugPrint('Actualizando estado de la asignación...');
     final index = _assignments.indexWhere((a) => a.id == id);
     if (index >= 0) {
       final currentAssignment = _assignments[index];
@@ -207,9 +543,10 @@ class AssignmentsProvider extends ChangeNotifier {
         areaId: currentAssignment.areaId,
         taskId: currentAssignment.taskId,
         clientId: currentAssignment.clientId,
+        inChagers: currentAssignment.inChagers,
       );
 
-      debugPrint('Actualizando estado de la asignación en el backend...');
+      // debugPrint('Actualizando estado de la asignación en el backend...');
 
       await _assignmentService.updateStatusAssignment(id, status, context);
 
@@ -219,6 +556,7 @@ class AssignmentsProvider extends ChangeNotifier {
   }
 
   Future<void> updateAssignmentEndTime(int id, String endTime) async {
+    // debugPrint('Actualizando hora de finalización de la asignación...');
     final index = _assignments.indexWhere((a) => a.id == id);
     if (index >= 0) {
       final currentAssignment = _assignments[index];
@@ -238,6 +576,7 @@ class AssignmentsProvider extends ChangeNotifier {
         areaId: currentAssignment.areaId,
         taskId: currentAssignment.taskId,
         clientId: currentAssignment.clientId,
+        inChagers: currentAssignment.inChagers,
       );
       await _saveAssignments();
       notifyListeners();
@@ -251,8 +590,24 @@ class AssignmentsProvider extends ChangeNotifier {
   }
 
   Assignment? getAssignmentById(String id) {
+    // debugPrint('Obteniendo asignación por ID...');
     try {
-      return _assignments.firstWhere((a) => a.id == id);
+      return _assignments.firstWhere(
+        (a) => a.id == id,
+        orElse: () => Assignment(
+          workers: [],
+          area: "",
+          task: "",
+          date: DateTime.now(),
+          time: "",
+          zone: 0,
+          userId: 0,
+          areaId: 0,
+          taskId: 0,
+          clientId: 0,
+          inChagers: [],
+        ),
+      );
     } catch (e) {
       return null;
     }
@@ -261,6 +616,7 @@ class AssignmentsProvider extends ChangeNotifier {
   // Añadir este nuevo método al AssignmentsProvider
   Future<bool> updateAssignment(
       Assignment updatedAssignment, BuildContext context) async {
+    debugPrint('Actualizando asignación2...');
     try {
       _isLoading = true;
       _error = null;
@@ -295,6 +651,7 @@ class AssignmentsProvider extends ChangeNotifier {
 
 // Añadir a la clase AssignmentsProvider
   Future<void> loadAssignmentsWithPriority(BuildContext context) async {
+    // debugPrint('Cargando asignaciones con prioridad...');
     // No establecer isLoading = true si ya hay datos para evitar reconstrucciones innecesarias
     final hasExistingData = _assignments.isNotEmpty;
 
@@ -310,18 +667,14 @@ class AssignmentsProvider extends ChangeNotifier {
 
       // Actualizar primero las asignaciones de alta prioridad
       if (highPriorityAssignments.isNotEmpty) {
-        // Mantener asignaciones completadas y añadir/actualizar las de alta prioridad
-        final completedAssignments =
-            _assignments.where((a) => a.status == 'COMPLETED').toList();
-
         // Actualizar asignaciones actuales
         _updateAssignmentsList(highPriorityAssignments);
 
         // Notificar cambios para actualizar la UI inmediatamente
         if (!hasExistingData) {
           _isLoading = false;
-          notifyListeners();
         }
+        notifyListeners();
       }
 
       // Segunda fase: Cargar asignaciones completadas (baja prioridad) en segundo plano
@@ -340,6 +693,7 @@ class AssignmentsProvider extends ChangeNotifier {
 // Método auxiliar para cargar asignaciones completadas en segundo plano
   Future<void> _loadCompletedAssignmentsInBackground(
       BuildContext context) async {
+    // debugPrint('Cargando asignaciones completadas en segundo plano...');
     try {
       final completedAssignments = await _assignmentService
           .fetchAssignmentsByStatus(context, ['COMPLETED']);
@@ -368,36 +722,5 @@ class AssignmentsProvider extends ChangeNotifier {
         _assignments.add(newAssignment);
       }
     }
-  }
-
-  // Metodo para pasar a completado una asignación
-  Future<bool> completeAssignment(
-      int id, DateTime endDate, String endTime, BuildContext context) async {
-    final index = _assignments.indexWhere((a) => a.id == id);
-    if (index >= 0) {
-      final currentAssignment = _assignments[index];
-      _assignments[index] = Assignment(
-        id: currentAssignment.id,
-        workers: currentAssignment.workers,
-        area: currentAssignment.area,
-        task: currentAssignment.task,
-        date: currentAssignment.date,
-        time: currentAssignment.time,
-        zone: currentAssignment.zone,
-        status: 'COMPLETED',
-        endDate: currentAssignment.endDate ?? endDate,
-        endTime: currentAssignment.endTime ?? endTime,
-        motorship: currentAssignment.motorship,
-        userId: currentAssignment.userId,
-        areaId: currentAssignment.areaId,
-        taskId: currentAssignment.taskId,
-        clientId: currentAssignment.clientId,
-      );
-      notifyListeners();
-    }
-
-    // Actualizar en el backend
-    return await _assignmentService.completeAssigment(
-        id, 'COMPLETED', endDate, endTime, context);
   }
 }

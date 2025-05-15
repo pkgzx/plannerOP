@@ -5,13 +5,16 @@ import 'package:plannerop/core/model/area.dart';
 import 'package:plannerop/core/model/client.dart';
 import 'package:plannerop/core/model/task.dart';
 import 'package:plannerop/core/model/worker.dart';
+import 'package:plannerop/core/model/workerGroup.dart';
 import 'package:plannerop/store/areas.dart';
 import 'package:plannerop/store/assignments.dart';
 import 'package:plannerop/store/clients.dart';
 import 'package:plannerop/store/task.dart';
 import 'package:plannerop/store/user.dart';
 import 'package:plannerop/store/workers.dart';
+import 'package:plannerop/utils/neumophomic.dart';
 import 'package:plannerop/utils/toast.dart';
+import 'package:plannerop/widgets/assingments/inChargerSelection.dart';
 import 'package:provider/provider.dart';
 import './selected_worker_list.dart';
 import './assignment_form.dart';
@@ -21,10 +24,10 @@ class AddAssignmentDialog extends StatefulWidget {
   const AddAssignmentDialog({Key? key}) : super(key: key);
 
   @override
-  State<AddAssignmentDialog> createState() => _AddAssignmentDialogState();
+  State<AddAssignmentDialog> createState() => AddAssignmentDialogState();
 }
 
-class _AddAssignmentDialogState extends State<AddAssignmentDialog> {
+class AddAssignmentDialogState extends State<AddAssignmentDialog> {
   // Controladores para los campos de texto
   final _areaController = TextEditingController();
   final _startDateController = TextEditingController();
@@ -35,17 +38,20 @@ class _AddAssignmentDialogState extends State<AddAssignmentDialog> {
   final _endDateController = TextEditingController();
   final _endTimeController = TextEditingController();
   final _motorshipController = TextEditingController();
+  final _chargerController = TextEditingController();
+  bool _startDateLockedByGroup = false;
+  bool _startTimeLockedByGroup = false;
+  bool _endDateLockedByGroup = false;
+  bool _endTimeLockedByGroup = false;
 
   // Lista de trabajadores seleccionados
   List<Worker> _selectedWorkers = [];
+  List<WorkerGroup> _selectedGroups = [];
 
   // Lista completa de trabajadores (datos de ejemplo)
   final List<Worker> _allWorkers = [];
 
   List<Area> _areas = [];
-
-  // Boolean para controlar si estamos cargando las tareas
-  bool _isLoadingTasks = false;
 
   // Ahora usaremos TasksProvider para obtener la lista de tareas
   List<String> _currentTasks = [];
@@ -67,6 +73,7 @@ class _AddAssignmentDialogState extends State<AddAssignmentDialog> {
     final _endTimeController = TextEditingController();
     // Nuevo controlador para el nombre de la motonave
     final _motorshipController = TextEditingController();
+    final _chargerController = TextEditingController();
     super.dispose();
   }
 
@@ -80,12 +87,226 @@ class _AddAssignmentDialogState extends State<AddAssignmentDialog> {
     _loadTasks();
   }
 
+  // Método para procesar los horarios de grupos
+  void _processGroupSchedules() {
+    if (_selectedGroups.isEmpty) {
+      resetGroupScheduleLocks();
+      return;
+    }
+    // Estructura para almacenar fechas y horas completas
+    DateTime? earliestStartDateTime;
+    DateTime? latestEndDateTime;
+
+    // Procesar cada grupo para encontrar los horarios extremos
+    for (var group in _selectedGroups) {
+      // 1. Procesar fecha y hora de inicio juntas si ambas existen
+      if (group.startDate != null && group.startTime != null) {
+        try {
+          // Construir un DateTime combinando fecha y hora de inicio
+          final dateParts = DateTime.parse(group.startDate!);
+          final timeParts = group.startTime!.split(':');
+          final hours = int.parse(timeParts[0]);
+          final minutes = int.parse(timeParts[1]);
+
+          final combinedStartDateTime = DateTime(
+            dateParts.year,
+            dateParts.month,
+            dateParts.day,
+            hours,
+            minutes,
+          );
+
+          // Actualizar el valor mínimo si corresponde
+          if (earliestStartDateTime == null ||
+              combinedStartDateTime.isBefore(earliestStartDateTime)) {
+            earliestStartDateTime = combinedStartDateTime;
+          }
+        } catch (e) {
+          debugPrint('Error al combinar fecha/hora de inicio: $e');
+        }
+      }
+
+      // 2. Procesar fecha y hora de fin juntas si ambas existen
+      if (group.endDate != null && group.endTime != null) {
+        try {
+          // Construir un DateTime combinando fecha y hora de fin
+          final dateParts = DateTime.parse(group.endDate!);
+          final timeParts = group.endTime!.split(':');
+          final hours = int.parse(timeParts[0]);
+          final minutes = int.parse(timeParts[1]);
+
+          final combinedEndDateTime = DateTime(
+            dateParts.year,
+            dateParts.month,
+            dateParts.day,
+            hours,
+            minutes,
+          );
+
+          // Actualizar el valor máximo si corresponde
+          if (latestEndDateTime == null ||
+              combinedEndDateTime.isAfter(latestEndDateTime)) {
+            latestEndDateTime = combinedEndDateTime;
+          }
+        } catch (e) {
+          debugPrint('Error al combinar fecha/hora de fin: $e');
+        }
+      }
+
+      // 3. Casos especiales - manejar valores parciales
+      // Estos casos son para cuando un grupo solo tiene fecha sin hora o viceversa
+
+      // Caso: Solo fecha de inicio sin hora
+      if (group.startDate != null &&
+          group.startTime == null &&
+          earliestStartDateTime == null) {
+        try {
+          final startDate = DateTime.parse(group.startDate!);
+          // Establecer solo la parte de fecha (hora 00:00)
+          if (earliestStartDateTime == null) {
+            earliestStartDateTime = DateTime(startDate.year, startDate.month,
+                startDate.day, 0, 0 // Hora 00:00 por defecto
+                );
+          }
+        } catch (e) {
+          debugPrint('Error al procesar fecha de inicio sin hora: $e');
+        }
+      }
+
+      // Caso: Solo hora de inicio sin fecha
+      if (group.startTime != null &&
+          group.startDate == null &&
+          earliestStartDateTime == null) {
+        try {
+          final timeParts = group.startTime!.split(':');
+          final hours = int.parse(timeParts[0]);
+          final minutes = int.parse(timeParts[1]);
+
+          // Usar la fecha actual con la hora especificada
+          final now = DateTime.now();
+          final timeOnlyStart =
+              DateTime(now.year, now.month, now.day, hours, minutes);
+
+          if (earliestStartDateTime == null) {
+            earliestStartDateTime = timeOnlyStart;
+          }
+        } catch (e) {
+          debugPrint('Error al procesar hora de inicio sin fecha: $e');
+        }
+      }
+
+      // Caso: Solo fecha de fin sin hora
+      if (group.endDate != null &&
+          group.endTime == null &&
+          latestEndDateTime == null) {
+        try {
+          final endDate = DateTime.parse(group.endDate!);
+          // Establecer solo la parte de fecha (hora 23:59)
+          if (latestEndDateTime == null) {
+            latestEndDateTime = DateTime(endDate.year, endDate.month,
+                endDate.day, 23, 59 // Hora 23:59 por defecto para fin del día
+                );
+          }
+        } catch (e) {
+          debugPrint('Error al procesar fecha de fin sin hora: $e');
+        }
+      }
+
+      // Caso: Solo hora de fin sin fecha
+      if (group.endTime != null &&
+          group.endDate == null &&
+          latestEndDateTime == null) {
+        try {
+          final timeParts = group.endTime!.split(':');
+          final hours = int.parse(timeParts[0]);
+          final minutes = int.parse(timeParts[1]);
+
+          // Usar la fecha actual con la hora especificada
+          final now = DateTime.now();
+          final timeOnlyEnd =
+              DateTime(now.year, now.month, now.day, hours, minutes);
+
+          if (latestEndDateTime == null) {
+            latestEndDateTime = timeOnlyEnd;
+          }
+        } catch (e) {
+          debugPrint('Error al procesar hora de fin sin fecha: $e');
+        }
+      }
+    }
+
+    // Actualizar los controladores con los valores encontrados
+    setState(() {
+      // Procesar fecha y hora de inicio
+      if (earliestStartDateTime != null) {
+        // Fecha de inicio
+        _startDateController.text =
+            DateFormat('dd/MM/yyyy').format(earliestStartDateTime);
+        _startDateLockedByGroup = true;
+
+        // Hora de inicio
+        final hour = earliestStartDateTime.hour.toString().padLeft(2, '0');
+        final minute = earliestStartDateTime.minute.toString().padLeft(2, '0');
+        _startTimeController.text = '$hour:$minute';
+        _startTimeLockedByGroup = true;
+      } else {
+        _startDateLockedByGroup = false;
+        _startTimeLockedByGroup = false;
+      }
+
+      // Procesar fecha y hora de fin
+      if (latestEndDateTime != null) {
+        // Fecha de fin
+        _endDateController.text =
+            DateFormat('dd/MM/yyyy').format(latestEndDateTime);
+        _endDateLockedByGroup = true;
+
+        // Hora de fin
+        final hour = latestEndDateTime.hour.toString().padLeft(2, '0');
+        final minute = latestEndDateTime.minute.toString().padLeft(2, '0');
+        _endTimeController.text = '$hour:$minute';
+        _endTimeLockedByGroup = true;
+      } else {
+        _endDateLockedByGroup = false;
+        _endTimeLockedByGroup = false;
+      }
+    });
+  }
+
+// Método para resetear los bloqueos
+  void resetGroupScheduleLocks() {
+    setState(() {
+      // Desbloquear campos
+      _startDateLockedByGroup = false;
+      _startTimeLockedByGroup = false;
+      _endDateLockedByGroup = false;
+      _endTimeLockedByGroup = false;
+
+      // Limpiar valores de fecha y hora de finalización
+      // Para inicio, mantener la fecha y hora actuales como valores por defecto
+      if (_endDateController.text.isNotEmpty ||
+          _endTimeController.text.isNotEmpty) {
+        _endDateController.text = '';
+        _endTimeController.text = '';
+      }
+
+      // Para fecha y hora de inicio, establecer valores predeterminados si están vacíos
+      if (_startDateController.text.isEmpty) {
+        _startDateController.text =
+            DateFormat('dd/MM/yyyy').format(DateTime.now());
+      }
+
+      if (_startTimeController.text.isEmpty) {
+        _startTimeController.text = DateFormat('HH:mm').format(DateTime.now());
+      }
+
+      // debugPrint(
+      //     'Horarios desbloqueados y reiniciados - Se eliminaron todos los grupos');
+    });
+  }
+
   // Método para cargar tareas desde el API
   Future<void> _loadTasks() async {
-    setState(() {
-      _isLoadingTasks = true;
-    });
-
     try {
       final tasksProvider = Provider.of<TasksProvider>(context, listen: false);
 
@@ -109,13 +330,7 @@ class _AddAssignmentDialogState extends State<AddAssignmentDialog> {
 
       // Mostrar error
       showAlertToast(context, 'Error al cargar las tareas');
-    } finally {
-      if (mounted) {
-        setState(() {
-          _isLoadingTasks = false;
-        });
-      }
-    }
+    } finally {}
   }
 
   // Método para actualizar la lista de trabajadores seleccionados
@@ -123,6 +338,17 @@ class _AddAssignmentDialogState extends State<AddAssignmentDialog> {
     setState(() {
       _selectedWorkers = workers;
     });
+    // _processGroupSchedules();
+  }
+
+// Método para actualizar grupos, agregar este método
+  void updateSelectedGroups(List<WorkerGroup> groups) {
+    setState(() {
+      _selectedGroups = groups;
+    });
+
+    // Procesar horarios de grupos cuando cambian los grupos
+    _processGroupSchedules();
   }
 
   @override
@@ -178,9 +404,10 @@ class _AddAssignmentDialogState extends State<AddAssignmentDialog> {
                 selectedWorkers: _selectedWorkers,
                 onWorkersChanged: _updateSelectedWorkers,
                 availableWorkers: _allWorkers,
+                selectedGroups: _selectedGroups,
+                onGroupsChanged: updateSelectedGroups,
               ),
-
-              const SizedBox(height: 24),
+              const SizedBox(height: 12),
 
               // Formulario de asignación
               AssignmentForm(
@@ -197,6 +424,19 @@ class _AddAssignmentDialogState extends State<AddAssignmentDialog> {
                 endTimeController: _endTimeController,
                 showEndDateTime: true,
                 motorshipController: _motorshipController,
+                startDateLocked: _startDateLockedByGroup,
+                startTimeLocked: _startTimeLockedByGroup,
+                endDateLocked: _endDateLockedByGroup,
+                endTimeLocked: _endTimeLockedByGroup,
+              ),
+
+              const SizedBox(height: 24),
+
+              Container(
+                margin: const EdgeInsets.only(bottom: 16),
+                child: MultiChargerSelectionField(
+                  controller: _chargerController,
+                ),
               ),
 
               const SizedBox(height: 24),
@@ -228,12 +468,11 @@ class _AddAssignmentDialogState extends State<AddAssignmentDialog> {
                   ),
                   const SizedBox(width: 12),
                   NeumorphicButton(
-                    style: NeumorphicStyle(
-                      depth: 2,
-                      intensity: 0.6,
-                      color: const Color(0xFF3182CE),
-                      boxShape: NeumorphicBoxShape.roundRect(
-                          BorderRadius.circular(8)),
+                    style: neumorphicButtonStyle(
+                      color: _isSaving
+                          ? const Color(0xFF90CDF4)
+                          : const Color.fromARGB(255, 248, 248, 248),
+                      depth: _isSaving ? 0 : 2,
                     ),
                     onPressed: _isSaving
                         ? null
@@ -344,6 +583,12 @@ class _AddAssignmentDialogState extends State<AddAssignmentDialog> {
       return false;
     }
 
+    // Validación para campo encargados
+    if (_chargerController.text.isEmpty) {
+      showAlertToast(context, 'Por favor, selecciona al menos un encargado');
+      return false;
+    }
+
     try {
       // Obtener proveedores
       final workersProvider =
@@ -408,9 +653,34 @@ class _AddAssignmentDialogState extends State<AddAssignmentDialog> {
       final userProvider = Provider.of<UserProvider>(context, listen: false);
 
       // ID del usuario actual
-      final userId = userProvider.user.id ?? 1;
+      final userId = userProvider.user.id;
+// Dentro del método _validateFields, modifica cómo se procesan los chargerIds:
 
-      debugPrint('Datos de la asignación: $zoneNum');
+// Obtener los IDs de encargados del controlador
+      List<int> chargerIds = [];
+      if (_chargerController.text.isNotEmpty) {
+        try {
+          // El controlador contiene IDs separados por coma
+          final chargerIdStrings = _chargerController.text.split(',');
+          for (String idStr in chargerIdStrings) {
+            if (idStr.trim().isNotEmpty) {
+              final parsedId = int.parse(idStr.trim());
+              if (parsedId > 0) {
+                chargerIds.add(parsedId);
+              }
+            }
+          }
+
+          // Asegurarse de que los IDs estén impresos para debug
+          // debugPrint('Encargados seleccionados IDs: $chargerIds');
+        } catch (e) {
+          // En caso de error, ignorar pero imprimir
+          debugPrint('Error al procesar IDs de encargados: $e');
+          debugPrint('Texto en controller: ${_chargerController.text}');
+        }
+      }
+
+      // debugPrint('Datos de la asignación: $zoneNum');
       // Si la validación es exitosa, guardar la asignación
       final success = await assignmentsProvider.addAssignment(
         workers: _selectedWorkers,
@@ -430,12 +700,14 @@ class _AddAssignmentDialogState extends State<AddAssignmentDialog> {
         motorship: _areaController.text.toUpperCase() == 'BUQUE'
             ? _motorshipController.text
             : null,
+        chargerIds: chargerIds,
         context: context, // Pasar el contexto para el token
+        groups: _selectedGroups,
       );
 
       // Si hubo error al guardar
       if (!success) {
-        _showValidationError(
+        showValidationError(context,
             'Error al guardar la asignación: ${assignmentsProvider.error}');
         return false;
       }
@@ -451,13 +723,9 @@ class _AddAssignmentDialogState extends State<AddAssignmentDialog> {
       return true;
     } catch (e) {
       debugPrint('Error en _validateFields: $e');
-      _showValidationError('Error al procesar los datos: $e');
+      showValidationError(context, 'Error al procesar los datos: $e');
       return false;
     }
-  }
-
-  void _showValidationError(String message) {
-    showAlertToast(context, message);
   }
 
   void _showSuccessDialog(BuildContext context) {

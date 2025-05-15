@@ -3,6 +3,7 @@ import 'package:plannerop/core/model/assignment.dart';
 import 'package:plannerop/core/model/worker.dart';
 import 'package:intl/intl.dart';
 import 'package:plannerop/store/assignments.dart';
+import 'package:plannerop/utils/assignments.dart';
 import 'package:provider/provider.dart';
 
 class WorkerAssignmentsSection extends StatelessWidget {
@@ -82,14 +83,14 @@ class WorkerAssignmentsSection extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
-                  color: _getStatusColor(assignment.status).withOpacity(0.2),
+                  color: getStatusColor(assignment.status).withOpacity(0.2),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Text(
-                  assignment.status,
+                  getStatusFormatted(assignment.status),
                   style: TextStyle(
                     fontSize: 12,
-                    color: _getStatusColor(assignment.status),
+                    color: getStatusColor(assignment.status),
                     fontWeight: FontWeight.w600,
                   ),
                 ),
@@ -134,19 +135,19 @@ class WorkerAssignmentsSection extends StatelessWidget {
       ),
     );
   }
+}
 
-  Color _getStatusColor(String status) {
-    switch (status.toLowerCase()) {
-      case 'pendiente':
-        return Colors.orange;
-      case 'programada':
-        return Colors.blue;
-      case 'completada':
-        return Colors.green;
-      case 'cancelada':
-        return Colors.red;
-      default:
-        return Colors.grey;
-    }
+String getStatusFormatted(String status) {
+  switch (status.toUpperCase()) {
+    case 'PENDING':
+      return 'Pendiente';
+    case 'INPROGRESS':
+      return 'En Curso';
+    case 'COMPLETED':
+      return 'Completada';
+    case 'CANCELLED':
+      return 'Cancelada';
+    default:
+      return 'Desconocido';
   }
 }

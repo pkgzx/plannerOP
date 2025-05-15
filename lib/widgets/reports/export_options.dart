@@ -10,7 +10,7 @@ import 'package:plannerop/utils/toast.dart';
 import 'package:provider/provider.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:path_provider/path_provider.dart';
-import 'package:excel/excel.dart' hide Border;
+import 'package:syncfusion_flutter_xlsio/xlsio.dart' as xlsio;
 import 'package:flutter/painting.dart' show Border, BorderSide;
 
 class ExportOptions extends StatefulWidget {
@@ -141,7 +141,6 @@ class _ExportOptionsState extends State<ExportOptions> {
     });
   }
 
-  // Método para obtener información formateada de los assignments
   Future<void> _exportToExcel() async {
     try {
       // Notificar que estamos generando el Excel
@@ -150,64 +149,70 @@ class _ExportOptionsState extends State<ExportOptions> {
       // Obtener asignaciones filtradas
       final filteredAssignments = _getFilteredAssignments();
 
+      if (filteredAssignments.isEmpty) {
+        widget.onExport('No hay datos para exportar');
+        return;
+      }
+
       // Ordenar asignaciones por fecha para mejor organización
       filteredAssignments.sort((a, b) => a.date.compareTo(b.date));
 
-      // Crear un archivo Excel
-      final excel = Excel.createExcel();
-      if (excel.sheets.containsKey('Sheet1')) {
-        excel.delete('Sheet1');
-      }
+      // Crear un nuevo documento Excel con Syncfusion
+      final xlsio.Workbook workbook = xlsio.Workbook();
 
-      // Crear nuestra hoja personalizada
-      final Sheet sheet = excel['Reporte de Operaciones'];
+      // Obtener la primera hoja
+      final xlsio.Worksheet sheet = workbook.worksheets[0];
+      sheet.name = 'Reporte de Operaciones';
 
-      // Añadir título con formato
-      final titleCell =
-          sheet.cell(CellIndex.indexByColumnRow(columnIndex: 0, rowIndex: 0));
-      titleCell.value = _getReportTitle();
-      titleCell.cellStyle = CellStyle(
-        bold: true,
-        fontSize: 14,
-        fontColorHex: '#1A365D',
-      );
+      // Estilos reutilizables
+      final xlsio.Style titleStyle = workbook.styles.add('titleStyle');
+      titleStyle.bold = true;
+      titleStyle.fontSize = 14;
+      titleStyle.fontColor = '#2D3748';
 
-      // Determinar número total de columnas (ahora son 11)
-      final int totalColumns = 11;
+      final xlsio.Style headerStyle = workbook.styles.add('headerStyle');
+      headerStyle.bold = true;
+      headerStyle.backColor = '#2D3748';
+      headerStyle.fontColor = '#FFFFFF';
+      headerStyle.hAlign = xlsio.HAlignType.center;
 
-      // Combinar celdas para el título
-      sheet.merge(
-          CellIndex.indexByColumnRow(columnIndex: 0, rowIndex: 0),
-          CellIndex.indexByColumnRow(
-              columnIndex: totalColumns - 1, rowIndex: 0));
+      final xlsio.Style summaryHeaderStyle =
+          workbook.styles.add('summaryHeaderStyle');
+      summaryHeaderStyle.bold = true;
+      summaryHeaderStyle.fontSize = 12;
+      summaryHeaderStyle.backColor = '#E2E8F0';
 
-      // Fecha actual al inicio
-      int rowIndex = 1;
+      final xlsio.Style evenRowStyle = workbook.styles.add('evenRowStyle');
+      evenRowStyle.backColor = '#F7FAFC';
+
+      final xlsio.Style oddRowStyle = workbook.styles.add('oddRowStyle');
+      oddRowStyle.backColor = '#EDF2F7';
+
+      // 1. TÍTULO DEL REPORTE
+      sheet.getRangeByName('A1').setText(_getReportTitle());
+      sheet.getRangeByName('A1').cellStyle = titleStyle;
+
+      // Combinar celdas para el título (11 columnas)
+      sheet.getRangeByName('A1:K1').merge();
+
+      // 2. FECHA DEL REPORTE
+      int rowIndex = 2;
+      sheet.getRangeByName('A$rowIndex').setText('Fecha:');
       sheet
-          .cell(CellIndex.indexByColumnRow(columnIndex: 0, rowIndex: rowIndex))
-          .value = 'Fecha:';
-      sheet
-          .cell(CellIndex.indexByColumnRow(columnIndex: 1, rowIndex: rowIndex))
-          .value = DateFormat('dd/MM/yyyy').format(DateTime.now());
+          .getRangeByName('B$rowIndex')
+          .setText(DateFormat('dd/MM/yyyy').format(DateTime.now()));
       rowIndex++;
 
-      // RESUMEN
+      // 3. SECCIÓN DE RESUMEN
       rowIndex++;
-      final summaryTitleCell = sheet
-          .cell(CellIndex.indexByColumnRow(columnIndex: 0, rowIndex: rowIndex));
-      summaryTitleCell.value = 'RESUMEN';
-      summaryTitleCell.cellStyle = CellStyle(
-        bold: true,
-        fontSize: 12,
-        fontColorHex: '#1A365D',
-        backgroundColorHex: '#EDF2F7',
-      );
-      sheet.merge(
-          CellIndex.indexByColumnRow(columnIndex: 0, rowIndex: rowIndex),
-          CellIndex.indexByColumnRow(columnIndex: 2, rowIndex: rowIndex));
+      sheet.getRangeByName('A$rowIndex').setText('RESUMEN');
+      sheet.getRangeByName('A$rowIndex').cellStyle = summaryHeaderStyle;
+
+      // Combinar celdas para el título de resumen
+      sheet.getRangeByName('A$rowIndex:C$rowIndex').merge();
       rowIndex++;
 
-      // Estadísticas detalladas con normalización de estados
+      // 4. ESTADÍSTICAS
       int completedCount = filteredAssignments
           .where((a) => a.status.toUpperCase() == 'COMPLETED')
           .length;
@@ -221,121 +226,78 @@ class _ExportOptionsState extends State<ExportOptions> {
           .where((a) => a.status.toUpperCase() == 'CANCELED')
           .length;
 
+      // Total de operaciones
+      sheet.getRangeByName('A$rowIndex').setText('Total de operaciones:');
       sheet
-          .cell(CellIndex.indexByColumnRow(columnIndex: 0, rowIndex: rowIndex))
-          .value = 'Total de operaciones:';
-      sheet
-          .cell(CellIndex.indexByColumnRow(columnIndex: 1, rowIndex: rowIndex))
-          .value = filteredAssignments.length;
+          .getRangeByName('B$rowIndex')
+          .setNumber(filteredAssignments.length.toDouble());
       rowIndex++;
 
-      sheet
-          .cell(CellIndex.indexByColumnRow(columnIndex: 0, rowIndex: rowIndex))
-          .value = 'Completadas:';
-      sheet
-          .cell(CellIndex.indexByColumnRow(columnIndex: 1, rowIndex: rowIndex))
-          .value = completedCount;
+      // Completadas
+      sheet.getRangeByName('A$rowIndex').setText('Completadas:');
+      sheet.getRangeByName('B$rowIndex').setNumber(completedCount.toDouble());
       rowIndex++;
 
-      sheet
-          .cell(CellIndex.indexByColumnRow(columnIndex: 0, rowIndex: rowIndex))
-          .value = 'En curso:';
-      sheet
-          .cell(CellIndex.indexByColumnRow(columnIndex: 1, rowIndex: rowIndex))
-          .value = inProgressCount;
+      // En curso
+      sheet.getRangeByName('A$rowIndex').setText('En curso:');
+      sheet.getRangeByName('B$rowIndex').setNumber(inProgressCount.toDouble());
       rowIndex++;
 
-      sheet
-          .cell(CellIndex.indexByColumnRow(columnIndex: 0, rowIndex: rowIndex))
-          .value = 'Pendientes:';
-      sheet
-          .cell(CellIndex.indexByColumnRow(columnIndex: 1, rowIndex: rowIndex))
-          .value = pendingCount;
+      // Pendientes
+      sheet.getRangeByName('A$rowIndex').setText('Pendientes:');
+      sheet.getRangeByName('B$rowIndex').setNumber(pendingCount.toDouble());
       rowIndex++;
 
-      sheet
-          .cell(CellIndex.indexByColumnRow(columnIndex: 0, rowIndex: rowIndex))
-          .value = 'Canceladas:';
-      sheet
-          .cell(CellIndex.indexByColumnRow(columnIndex: 1, rowIndex: rowIndex))
-          .value = canceledCount;
+      // Canceladas
+      sheet.getRangeByName('A$rowIndex').setText('Canceladas:');
+      sheet.getRangeByName('B$rowIndex').setNumber(canceledCount.toDouble());
       rowIndex++;
 
-      // Añadir metadatos adicionales después del resumen
+      // 5. INFORMACIÓN DE FILTROS
       rowIndex++;
+
+      // Área
       if (widget.area != 'Todas') {
-        sheet
-            .cell(
-                CellIndex.indexByColumnRow(columnIndex: 0, rowIndex: rowIndex))
-            .value = 'Área:';
-        sheet
-            .cell(
-                CellIndex.indexByColumnRow(columnIndex: 1, rowIndex: rowIndex))
-            .value = widget.area;
+        sheet.getRangeByName('A$rowIndex').setText('Área:');
+        sheet.getRangeByName('B$rowIndex').setText(widget.area);
         rowIndex++;
       }
 
-      // Mostrar filtros adicionales en el reporte si están aplicados
+      // Zona
       if (widget.zone != null) {
-        sheet
-            .cell(
-                CellIndex.indexByColumnRow(columnIndex: 0, rowIndex: rowIndex))
-            .value = 'Zona:';
-        sheet
-            .cell(
-                CellIndex.indexByColumnRow(columnIndex: 1, rowIndex: rowIndex))
-            .value = widget.zone.toString();
+        sheet.getRangeByName('A$rowIndex').setText('Zona:');
+        sheet.getRangeByName('B$rowIndex').setText(widget.zone.toString());
         rowIndex++;
       }
 
+      // Motonave
       if (widget.motorship != null && widget.motorship!.isNotEmpty) {
-        sheet
-            .cell(
-                CellIndex.indexByColumnRow(columnIndex: 0, rowIndex: rowIndex))
-            .value = 'Motonave:';
-        sheet
-            .cell(
-                CellIndex.indexByColumnRow(columnIndex: 1, rowIndex: rowIndex))
-            .value = widget.motorship;
+        sheet.getRangeByName('A$rowIndex').setText('Motonave:');
+        sheet.getRangeByName('B$rowIndex').setText(widget.motorship!);
         rowIndex++;
       }
 
+      // Estado
       if (widget.status != null && widget.status!.isNotEmpty) {
-        sheet
-            .cell(
-                CellIndex.indexByColumnRow(columnIndex: 0, rowIndex: rowIndex))
-            .value = 'Estado:';
-        sheet
-            .cell(
-                CellIndex.indexByColumnRow(columnIndex: 1, rowIndex: rowIndex))
-            .value = widget.status;
+        sheet.getRangeByName('A$rowIndex').setText('Estado:');
+        sheet.getRangeByName('B$rowIndex').setText(widget.status!);
         rowIndex++;
       }
 
-      sheet
-          .cell(CellIndex.indexByColumnRow(columnIndex: 0, rowIndex: rowIndex))
-          .value = 'Período:';
-      sheet
-          .cell(CellIndex.indexByColumnRow(columnIndex: 1, rowIndex: rowIndex))
-          .value = _getDateRange();
+      // Período
+      sheet.getRangeByName('A$rowIndex').setText('Período:');
+      sheet.getRangeByName('B$rowIndex').setText(_getDateRange());
       rowIndex++;
 
+      // Generado
+      sheet.getRangeByName('A$rowIndex').setText('Generado:');
       sheet
-          .cell(CellIndex.indexByColumnRow(columnIndex: 0, rowIndex: rowIndex))
-          .value = 'Generado:';
-      sheet
-          .cell(CellIndex.indexByColumnRow(columnIndex: 1, rowIndex: rowIndex))
-          .value = DateFormat('dd/MM/yyyy HH:mm').format(DateTime.now());
+          .getRangeByName('B$rowIndex')
+          .setText(DateFormat('dd/MM/yyyy HH:mm').format(DateTime.now()));
       rowIndex++;
 
-      // Fila vacía antes de los datos
+      // 6. ENCABEZADOS DE LA TABLA
       rowIndex++;
-
-      // Variable para controlar la agrupación visual
-      int currentOperationOrder = 0;
-      int? lastOperationId;
-
-      // Añadir encabezados con orden mejorado
       final headerRow = rowIndex;
       List<String> headers = [
         'Fecha Inicial',
@@ -349,102 +311,169 @@ class _ExportOptionsState extends State<ExportOptions> {
         'Fecha Finalización',
         'Hora Finalización',
         'Estado',
+        'En Grupo'
       ];
 
+      // Escribir los encabezados
       for (int i = 0; i < headers.length; i++) {
-        final cell = sheet.cell(
-            CellIndex.indexByColumnRow(columnIndex: i, rowIndex: headerRow));
-        cell.value = headers[i];
-        cell.cellStyle = CellStyle(
-          bold: true,
-          backgroundColorHex: '#2C5282',
-          fontColorHex: '#FFFFFF',
-          horizontalAlign: HorizontalAlign.Center,
-        );
+        sheet.getRangeByIndex(headerRow, i + 1).setText(headers[i]);
+        sheet.getRangeByIndex(headerRow, i + 1).cellStyle = headerStyle;
       }
       rowIndex++;
 
-      // Añadir datos - UNA FILA POR CADA TRABAJADOR con agrupación visual por color
+      // 7. DATOS - UNA FILA POR CADA TRABAJADOR
+      int currentOperationOrder = 0;
+      int? lastOperationId;
+
       for (int assignmentIndex = 0;
           assignmentIndex < filteredAssignments.length;
           assignmentIndex++) {
         var data = filteredAssignments[assignmentIndex];
 
-        // Determinar si es una nueva operación
+        // Determinar si es una nueva operación para alternar colores
         bool isNewOperation = lastOperationId != data.id;
         if (isNewOperation) {
           lastOperationId = data.id;
-          // Solo incrementamos el contador de operación cuando cambia la operación
-          // para alternar colores entre diferentes operaciones
           currentOperationOrder++;
         }
 
-        // Color de fondo para filas de la misma operación - usamos el mismo color para toda la operación
-        final backgroundColor =
-            currentOperationOrder % 2 == 0 ? '#F7FAFC' : '#EDF2F7';
+        // Determinar estilo según orden de operación (par/impar)
+        final xlsio.Style rowStyle =
+            currentOperationOrder % 2 == 0 ? evenRowStyle : oddRowStyle;
 
         // Si no hay trabajadores, crear una fila con "Sin asignar"
         if (data.workers.isEmpty) {
-          _addRowWithData(
+          _addDataRow(
             sheet: sheet,
             rowIndex: rowIndex,
             data: data,
             workerName: 'Sin asignar',
             workerDocument: '-',
-            headers: headers,
-            backgroundColor: backgroundColor,
+            rowStyle: rowStyle,
           );
           rowIndex++;
         } else {
-          // Crear una fila individual para CADA trabajador
-          for (var worker in data.workers) {
-            String workerName = '';
-            String workerDocument = '';
+// Crear un mapa para almacenar la información de trabajadores y sus grupos
+          Map<int, Map<String, dynamic>> workerGroupInfo = {};
 
-            // Obtener nombre y documento según el tipo de datos
-            if (worker is Map<String, dynamic>) {
-              workerName = worker.name ?? '';
-              workerDocument = worker.document ?? '';
-            } else if (worker is Worker) {
-              workerName = worker.name;
-              workerDocument = worker.document;
+          // Procesar los grupos de la asignación para obtener información de fechas/horas por trabajador
+          for (var group in data.groups) {
+            for (var workerId in group.workers) {
+              workerGroupInfo[workerId] = {
+                'groupId': group.id,
+                'startDate': group.startDate,
+                'startTime': group.startTime,
+                'endDate': group.endDate,
+                'endTime': group.endTime,
+              };
+            }
+          }
+
+          // Crear una fila para CADA trabajador (sean individuales o de grupos)
+          for (var worker in data.workers) {
+            var groupData = workerGroupInfo[worker.id];
+
+            // Extraer fechas y horas (del grupo si existen, de la operación si no)
+            String startDateText = DateFormat('dd/MM/yyyy').format(data.date);
+            String startTimeText = data.time;
+            String endDateText = '';
+            String endTimeText = '';
+
+            if (groupData != null) {
+              // Usar datos del grupo si están disponibles
+              if (groupData['startDate'] != null &&
+                  groupData['startDate'].isNotEmpty) {
+                try {
+                  startDateText = DateFormat('dd/MM/yyyy')
+                      .format(DateTime.parse(groupData['startDate']));
+                } catch (e) {
+                  // Mantener fecha de la operación si hay error
+                }
+              }
+
+              if (groupData['startTime'] != null &&
+                  groupData['startTime'].isNotEmpty) {
+                startTimeText = groupData['startTime'];
+              }
+
+              if (groupData['endDate'] != null &&
+                  groupData['endDate'].isNotEmpty) {
+                try {
+                  endDateText = DateFormat('dd/MM/yyyy')
+                      .format(DateTime.parse(groupData['endDate']));
+                } catch (e) {
+                  // Usar fecha de fin de la operación como respaldo
+                  endDateText = data.endDate != null
+                      ? DateFormat('dd/MM/yyyy').format(data.endDate!)
+                      : '';
+                }
+              } else {
+                // Usar fecha de fin de la operación como respaldo
+                endDateText = data.endDate != null
+                    ? DateFormat('dd/MM/yyyy').format(data.endDate!)
+                    : '';
+              }
+
+              if (groupData['endTime'] != null &&
+                  groupData['endTime'].isNotEmpty) {
+                endTimeText = groupData['endTime'];
+              } else {
+                // Usar hora de fin de la operación como respaldo
+                endTimeText = data.endTime ?? '';
+              }
+            } else {
+              // Para trabajadores sin grupo, usar fechas/horas de la operación
+              endDateText = data.endDate != null
+                  ? DateFormat('dd/MM/yyyy').format(data.endDate!)
+                  : '';
+              endTimeText = data.endTime ?? '';
             }
 
-            // Añadir fila con datos en el nuevo orden
-            _addRowWithData(
-              sheet: sheet,
-              rowIndex: rowIndex,
-              data: data,
-              workerName: workerName,
-              workerDocument: workerDocument,
-              headers: headers,
-              backgroundColor: backgroundColor,
-            );
-
+            // Añadir la fila con la información adecuada
+            _addDataRowWithDates(
+                sheet: sheet,
+                rowIndex: rowIndex,
+                data: data,
+                workerName: worker.name,
+                workerDocument: worker.document,
+                startDate: startDateText,
+                startTime: startTimeText,
+                endDate: endDateText,
+                endTime: endTimeText,
+                rowStyle: rowStyle,
+                inGroup: groupData != null ? "Sí" : "No");
             rowIndex++;
           }
         }
       }
 
-      // Ajustar ancho de columnas para mejor visualización
-      sheet.setColWidth(0, 15); // Fecha Inicial
-      sheet.setColWidth(1, 12); // Hora Inicial
-      sheet.setColWidth(2, 25); // Nombre Completo
-      sheet.setColWidth(3, 15); // Documento
-      sheet.setColWidth(4, 15); // Área
-      sheet.setColWidth(5, 15); // Zona
-      sheet.setColWidth(6, 20); // Motonave
-      sheet.setColWidth(7, 30); // Tarea
-      sheet.setColWidth(8, 15); // Fecha Finalización
-      sheet.setColWidth(9, 12); // Hora Finalización
-      sheet.setColWidth(10, 15); // Estado
+      // 8. AJUSTAR ANCHOS DE COLUMNA
+      sheet.setColumnWidthInPixels(
+          1, 100); // Fecha Inicial (doble del ancho predeterminado)
+      sheet.setColumnWidthInPixels(2, 80);
+      sheet.setColumnWidthInPixels(3, 180);
+      sheet.setColumnWidthInPixels(4, 100);
+      sheet.setColumnWidthInPixels(5, 100);
+      sheet.setColumnWidthInPixels(6, 100);
+      sheet.setColumnWidthInPixels(7, 130);
+      sheet.setColumnWidthInPixels(8, 220);
+      sheet.setColumnWidthInPixels(9, 100);
+      sheet.setColumnWidthInPixels(10, 80);
+      sheet.setColumnWidthInPixels(11, 100);
 
-      // Guardar el archivo Excel
+      // 9. GUARDAR Y COMPARTIR
       final output = await getTemporaryDirectory();
       final String fileName =
           'reporte_${DateFormat('yyyyMMdd_HHmmss').format(DateTime.now())}.xlsx';
-      final file = File('${output.path}/$fileName');
-      await file.writeAsBytes(excel.encode()!);
+      final String filePath = '${output.path}/$fileName';
+
+      // Guardar archivo
+      final List<int> bytes = workbook.saveAsStream();
+      final File file = File(filePath);
+      await file.writeAsBytes(bytes, flush: true);
+
+      // Liberar recursos
+      workbook.dispose();
 
       // Compartir el archivo
       await Share.shareXFiles(
@@ -455,102 +484,169 @@ class _ExportOptionsState extends State<ExportOptions> {
 
       widget.onExport('Excel exportado correctamente');
     } catch (e) {
+      debugPrint('Error detallado al exportar Excel: $e');
       _showErrorSnackbar(e);
       widget.onExport('Error al exportar Excel');
     }
   }
 
-  // Método auxiliar para agregar una fila de datos al Excel
-  void _addRowWithData({
-    required Sheet sheet,
+// Método auxiliar para agregar una fila de datos
+  void _addDataRow({
+    required xlsio.Worksheet sheet,
     required int rowIndex,
     required Assignment data,
     required String workerName,
     required String workerDocument,
-    required List<String> headers,
-    required String backgroundColor,
+    required xlsio.Style rowStyle,
   }) {
-    int colIndex = 0;
+    int colIndex = 1; // Syncfusion comienza en 1, no en 0
 
     // Fecha Inicial
-    sheet.cell(
-        CellIndex.indexByColumnRow(columnIndex: colIndex++, rowIndex: rowIndex))
-      ..value = DateFormat('dd/MM/yyyy').format(data.date)
-      ..cellStyle = CellStyle(backgroundColorHex: backgroundColor);
+    sheet
+        .getRangeByIndex(rowIndex, colIndex)
+        .setText(DateFormat('dd/MM/yyyy').format(data.date));
+    sheet.getRangeByIndex(rowIndex, colIndex).cellStyle = rowStyle;
+    colIndex++;
 
     // Hora Inicial
-    sheet.cell(
-        CellIndex.indexByColumnRow(columnIndex: colIndex++, rowIndex: rowIndex))
-      ..value = data.time
-      ..cellStyle = CellStyle(backgroundColorHex: backgroundColor);
+    sheet.getRangeByIndex(rowIndex, colIndex).setText(data.time);
+    sheet.getRangeByIndex(rowIndex, colIndex).cellStyle = rowStyle;
+    colIndex++;
 
     // Nombre Completo
-    sheet.cell(
-        CellIndex.indexByColumnRow(columnIndex: colIndex++, rowIndex: rowIndex))
-      ..value = workerName
-      ..cellStyle = CellStyle(
-        textWrapping: TextWrapping.WrapText,
-        backgroundColorHex: backgroundColor,
-      );
+    sheet.getRangeByIndex(rowIndex, colIndex).setText(workerName);
+    sheet.getRangeByIndex(rowIndex, colIndex).cellStyle = rowStyle;
+    sheet.getRangeByIndex(rowIndex, colIndex).cellStyle.wrapText = true;
+    colIndex++;
 
     // Documento
-    sheet.cell(
-        CellIndex.indexByColumnRow(columnIndex: colIndex++, rowIndex: rowIndex))
-      ..value = workerDocument
-      ..cellStyle = CellStyle(backgroundColorHex: backgroundColor);
+    sheet.getRangeByIndex(rowIndex, colIndex).setText(workerDocument);
+    sheet.getRangeByIndex(rowIndex, colIndex).cellStyle = rowStyle;
+    colIndex++;
 
     // Área
-    sheet.cell(
-        CellIndex.indexByColumnRow(columnIndex: colIndex++, rowIndex: rowIndex))
-      ..value = data.area
-      ..cellStyle = CellStyle(backgroundColorHex: backgroundColor);
+    sheet.getRangeByIndex(rowIndex, colIndex).setText(data.area);
+    sheet.getRangeByIndex(rowIndex, colIndex).cellStyle = rowStyle;
+    colIndex++;
 
     // Zona
-    sheet.cell(
-        CellIndex.indexByColumnRow(columnIndex: colIndex++, rowIndex: rowIndex))
-      ..value = data.zone ?? 'N/A'
-      ..cellStyle = CellStyle(
-        textWrapping: TextWrapping.WrapText,
-        backgroundColorHex: backgroundColor,
-      );
+    sheet.getRangeByIndex(rowIndex, colIndex).setText("${data.zone}" ?? 'N/A');
+    sheet.getRangeByIndex(rowIndex, colIndex).cellStyle = rowStyle;
+    sheet.getRangeByIndex(rowIndex, colIndex).cellStyle.wrapText = true;
+    colIndex++;
 
     // Motonave
-    sheet.cell(
-        CellIndex.indexByColumnRow(columnIndex: colIndex++, rowIndex: rowIndex))
-      ..value = data.motorship ?? 'N/A'
-      ..cellStyle = CellStyle(
-        textWrapping: TextWrapping.WrapText,
-        backgroundColorHex: backgroundColor,
-      );
+    sheet.getRangeByIndex(rowIndex, colIndex).setText(data.motorship ?? 'N/A');
+    sheet.getRangeByIndex(rowIndex, colIndex).cellStyle = rowStyle;
+    sheet.getRangeByIndex(rowIndex, colIndex).cellStyle.wrapText = true;
+    colIndex++;
 
     // Tarea
-    sheet.cell(
-        CellIndex.indexByColumnRow(columnIndex: colIndex++, rowIndex: rowIndex))
-      ..value = data.task
-      ..cellStyle = CellStyle(
-        textWrapping: TextWrapping.WrapText,
-        backgroundColorHex: backgroundColor,
-      );
+    sheet.getRangeByIndex(rowIndex, colIndex).setText(data.task);
+    sheet.getRangeByIndex(rowIndex, colIndex).cellStyle = rowStyle;
+    sheet.getRangeByIndex(rowIndex, colIndex).cellStyle.wrapText = true;
+    colIndex++;
 
     // Fecha Finalización
-    sheet.cell(
-        CellIndex.indexByColumnRow(columnIndex: colIndex++, rowIndex: rowIndex))
-      ..value = data.endDate != null
-          ? DateFormat('dd/MM/yyyy').format(data.endDate!)
-          : ''
-      ..cellStyle = CellStyle(backgroundColorHex: backgroundColor);
+    String endDateText = data.endDate != null
+        ? DateFormat('dd/MM/yyyy').format(data.endDate!)
+        : '';
+    sheet.getRangeByIndex(rowIndex, colIndex).setText(endDateText);
+    sheet.getRangeByIndex(rowIndex, colIndex).cellStyle = rowStyle;
+    colIndex++;
 
     // Hora Finalización
-    sheet.cell(
-        CellIndex.indexByColumnRow(columnIndex: colIndex++, rowIndex: rowIndex))
-      ..value = data.endTime ?? ''
-      ..cellStyle = CellStyle(backgroundColorHex: backgroundColor);
+    sheet.getRangeByIndex(rowIndex, colIndex).setText(data.endTime ?? '');
+    sheet.getRangeByIndex(rowIndex, colIndex).cellStyle = rowStyle;
+    colIndex++;
 
     // Estado
-    sheet.cell(
-        CellIndex.indexByColumnRow(columnIndex: colIndex++, rowIndex: rowIndex))
-      ..value = _getHumanReadableStatus(data.status)
-      ..cellStyle = CellStyle(backgroundColorHex: backgroundColor);
+    sheet
+        .getRangeByIndex(rowIndex, colIndex)
+        .setText(_getHumanReadableStatus(data.status));
+    sheet.getRangeByIndex(rowIndex, colIndex).cellStyle = rowStyle;
+  }
+
+// Método mejorado para agregar una fila de datos con fechas y horas específicas
+  void _addDataRowWithDates({
+    required xlsio.Worksheet sheet,
+    required int rowIndex,
+    required Assignment data,
+    required String workerName,
+    required String workerDocument,
+    required String startDate,
+    required String startTime,
+    required String endDate,
+    required String endTime,
+    required xlsio.Style rowStyle,
+    required String inGroup,
+  }) {
+    int colIndex = 1; // Syncfusion comienza en 1, no en 0
+
+    // Fecha Inicial
+    sheet.getRangeByIndex(rowIndex, colIndex).setText(startDate);
+    sheet.getRangeByIndex(rowIndex, colIndex).cellStyle = rowStyle;
+    colIndex++;
+
+    // Hora Inicial
+    sheet.getRangeByIndex(rowIndex, colIndex).setText(startTime);
+    sheet.getRangeByIndex(rowIndex, colIndex).cellStyle = rowStyle;
+    colIndex++;
+
+    // Nombre Completo
+    sheet.getRangeByIndex(rowIndex, colIndex).setText(workerName);
+    sheet.getRangeByIndex(rowIndex, colIndex).cellStyle = rowStyle;
+    sheet.getRangeByIndex(rowIndex, colIndex).cellStyle.wrapText = true;
+    colIndex++;
+
+    // Documento
+    sheet.getRangeByIndex(rowIndex, colIndex).setText(workerDocument);
+    sheet.getRangeByIndex(rowIndex, colIndex).cellStyle = rowStyle;
+    colIndex++;
+
+    // Área
+    sheet.getRangeByIndex(rowIndex, colIndex).setText(data.area);
+    sheet.getRangeByIndex(rowIndex, colIndex).cellStyle = rowStyle;
+    colIndex++;
+
+    // Zona
+    sheet.getRangeByIndex(rowIndex, colIndex).setText("${data.zone}");
+    sheet.getRangeByIndex(rowIndex, colIndex).cellStyle = rowStyle;
+    sheet.getRangeByIndex(rowIndex, colIndex).cellStyle.wrapText = true;
+    colIndex++;
+
+    // Motonave
+    sheet.getRangeByIndex(rowIndex, colIndex).setText(data.motorship ?? 'N/A');
+    sheet.getRangeByIndex(rowIndex, colIndex).cellStyle = rowStyle;
+    sheet.getRangeByIndex(rowIndex, colIndex).cellStyle.wrapText = true;
+    colIndex++;
+
+    // Tarea
+    sheet.getRangeByIndex(rowIndex, colIndex).setText(data.task);
+    sheet.getRangeByIndex(rowIndex, colIndex).cellStyle = rowStyle;
+    sheet.getRangeByIndex(rowIndex, colIndex).cellStyle.wrapText = true;
+    colIndex++;
+
+    // Fecha Finalización
+    sheet.getRangeByIndex(rowIndex, colIndex).setText(endDate);
+    sheet.getRangeByIndex(rowIndex, colIndex).cellStyle = rowStyle;
+    colIndex++;
+
+    // Hora Finalización
+    sheet.getRangeByIndex(rowIndex, colIndex).setText(endTime);
+    sheet.getRangeByIndex(rowIndex, colIndex).cellStyle = rowStyle;
+    colIndex++;
+
+    // Estado
+    sheet
+        .getRangeByIndex(rowIndex, colIndex)
+        .setText(_getHumanReadableStatus(data.status));
+    sheet.getRangeByIndex(rowIndex, colIndex).cellStyle = rowStyle;
+    colIndex++;
+
+    // Añadir columna indicando si está en grupo
+    sheet.getRangeByIndex(rowIndex, colIndex).setText(inGroup);
+    sheet.getRangeByIndex(rowIndex, colIndex).cellStyle = rowStyle;
   }
 
   // Método auxiliar para generar el título del reporte con todos los filtros

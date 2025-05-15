@@ -261,7 +261,7 @@ class _WorkerDetailsSectionState extends State<WorkerDetailsSection> {
         break;
       case 'falta':
       default:
-        dialogTitle = 'Registrar Falta';
+        dialogTitle = 'Registrar Ausencia';
         accentColor = Colors.amber;
         headerIcon = Icons.event_busy_outlined;
         break;

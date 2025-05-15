@@ -41,6 +41,12 @@ class WorkersProvider with ChangeNotifier {
   int get totalWorkerWithoutRetired =>
       _workers.where((w) => w.status != WorkerStatus.deactivated).length;
 
+  List<Worker> get workersWithoutRetiredAndDisabled => _workers
+      .where((w) =>
+          w.status != WorkerStatus.deactivated &&
+          w.status != WorkerStatus.incapacitated)
+      .toList();
+
   int get totalWorkers => _workers.length;
 
   List<Worker> getWorkersAvailable() {
@@ -60,7 +66,19 @@ class WorkersProvider with ChangeNotifier {
       _workers.where((w) => w.status == WorkerStatus.available).length;
 
   Worker getWorkerById(int id) {
-    return _workers.firstWhere((w) => w.id == id);
+    return _workers.firstWhere((w) => w.id == id,
+        orElse: () => Worker(
+              id: 0,
+              name: '',
+              area: '',
+              phone: '',
+              document: '',
+              status: WorkerStatus.available,
+              startDate: DateTime.now(),
+              code: '',
+              failures: 0,
+              idArea: 0,
+            ));
   }
 
   // Registrar falta con descripción y actualizar el contador
@@ -106,6 +124,7 @@ class WorkersProvider with ChangeNotifier {
             type: FaultType.INASSISTANCE,
             id: 0, // El ID lo asignará la API
             worker: worker,
+            createdAt: DateTime.now(),
           ));
         }
 
@@ -158,7 +177,7 @@ class WorkersProvider with ChangeNotifier {
         }
 
         // Además de actualizar el worker, crear un registro de falta para el FaultsProvider
-        if (description != null && description.isNotEmpty) {
+        if (description.isNotEmpty) {
           final faultsProvider =
               Provider.of<FaultsProvider>(context, listen: false);
           faultsProvider.addFault(Fault(
@@ -166,6 +185,7 @@ class WorkersProvider with ChangeNotifier {
             type: FaultType.INASSISTANCE,
             id: 0, // El ID lo asignará la API
             worker: worker,
+            createdAt: DateTime.now(),
           ));
         }
 
@@ -180,6 +200,7 @@ class WorkersProvider with ChangeNotifier {
           type: FaultType.ABANDONMENT,
           id: 0, // El ID lo asignará la API
           worker: worker,
+          createdAt: DateTime.now(),
         ));
 
         return true;
@@ -231,7 +252,7 @@ class WorkersProvider with ChangeNotifier {
         }
 
         // Además de actualizar el worker, crear un registro de falta para el FaultsProvider
-        if (description != null && description.isNotEmpty) {
+        if (description.isNotEmpty) {
           final faultsProvider =
               Provider.of<FaultsProvider>(context, listen: false);
           faultsProvider.addFault(Fault(
@@ -239,6 +260,7 @@ class WorkersProvider with ChangeNotifier {
             type: FaultType.INASSISTANCE,
             id: 0, // El ID lo asignará la API
             worker: worker,
+            createdAt: DateTime.now(),
           ));
         }
 
@@ -253,6 +275,7 @@ class WorkersProvider with ChangeNotifier {
           type: FaultType.IRRESPECTFUL,
           id: 0, // El ID lo asignará la API
           worker: worker,
+          createdAt: DateTime.now(),
         ));
 
         return true;
@@ -279,14 +302,14 @@ class WorkersProvider with ChangeNotifier {
     notifyListeners();
 
     try {
-      debugPrint('Cargando trabajadores desde API (primera vez)...');
+      // debugPrint('Cargando trabajadores desde API (primera vez)...');
       final FetchWorkersDto result = await _workerService.fetchWorkers(context);
 
       if (result.isSuccess && result.workers.isNotEmpty) {
         _workers.clear();
         _workers.addAll(result.workers);
-        debugPrint(
-            'Datos iniciales cargados correctamente: ${_workers.length} trabajadores');
+        // debugPrint(
+        //     'Datos iniciales cargados correctamente: ${_workers.length} trabajadores');
       } else {
         _hasError = true;
         _errorMessage =
@@ -364,7 +387,7 @@ class WorkersProvider with ChangeNotifier {
       // Llamar al servicio para actualizar en la API
       final success = await _workerService.updateWorker(newWorker, context);
       if (success) {
-        debugPrint('Trabajador actualizado correctamente en la API');
+        // debugPrint('Trabajador actualizado correctamente en la API');
         // Actualizar en la lista local
         final index = _workers.indexWhere((w) => w.id == oldWorker.id);
         if (index >= 0) {
@@ -522,7 +545,7 @@ class WorkersProvider with ChangeNotifier {
     try {
       // Llamar al servicio para actualizar el estado en el backend
       final success = await _workerService.updateWorkerStatus(
-          worker.id, "ASSIGNED", context);
+          worker.id, "assigned", context);
 
       if (success) {
         // Actualizar estado localmente

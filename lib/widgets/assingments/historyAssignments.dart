@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_neumorphic_plus/flutter_neumorphic.dart';
 import 'package:plannerop/core/model/assignment.dart';
-import 'package:plannerop/core/model/worker.dart';
+import 'package:plannerop/utils/assignments.dart';
+import 'package:plannerop/widgets/assingments/components/buildWorkerItem.dart';
 import 'package:plannerop/widgets/assingments/emptyState.dart';
 import 'package:plannerop/store/assignments.dart';
 import 'package:provider/provider.dart';
@@ -124,7 +125,20 @@ class _HistoryAssignmentsViewState extends State<HistoryAssignmentsView> {
           return const Center(child: CircularProgressIndicator());
         }
 
-        final completedAssignments = provider.completedAssignments;
+        // Obtener todas las asignaciones y ordenarlas por fecha más reciente
+        final allCompletedAssignments = provider.completedAssignments;
+
+        // Ordenar las asignaciones por fecha de finalización (más reciente primero)
+        allCompletedAssignments.sort((a, b) {
+          return (b.endDate ?? DateTime.now())
+              .compareTo(a.endDate ?? DateTime.now());
+        });
+
+        // Limitar a 30 asignaciones más recientes
+        final completedAssignments = allCompletedAssignments.length > 30
+            ? allCompletedAssignments.sublist(0, 30)
+            : allCompletedAssignments;
+
         final filteredAssignments = _filterAssignments(completedAssignments);
         final uniqueAreas = _getUniqueAreas(completedAssignments);
 
@@ -351,117 +365,6 @@ class _HistoryAssignmentsViewState extends State<HistoryAssignmentsView> {
               },
             ),
           ),
-        ),
-        const SizedBox(height: 16),
-
-        // Filtro de rango de fechas
-        const Text(
-          'Rango de Fechas',
-          style: TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.w600,
-            color: Color(0xFF4A5568),
-          ),
-        ),
-        const SizedBox(height: 8),
-        Row(
-          children: [
-            Expanded(
-              child: InkWell(
-                onTap: () async {
-                  final DateTime? picked = await showDatePicker(
-                    context: context,
-                    initialDate: _startDate ?? DateTime.now(),
-                    firstDate: DateTime(2020),
-                    lastDate: DateTime.now(),
-                  );
-                  if (picked != null) {
-                    setState(() {
-                      _startDate = picked;
-                      // Si la fecha de inicio es posterior a la fecha de fin, actualizar la fecha de fin
-                      if (_endDate != null && _startDate!.isAfter(_endDate!)) {
-                        _endDate = _startDate;
-                      }
-                    });
-                  }
-                },
-                child: Container(
-                  padding:
-                      const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-                  decoration: BoxDecoration(
-                    border: Border.all(color: const Color(0xFFE2E8F0)),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Row(
-                    children: [
-                      const Icon(
-                        Icons.calendar_today,
-                        size: 16,
-                        color: Color(0xFF718096),
-                      ),
-                      const SizedBox(width: 8),
-                      Text(
-                        _startDate == null
-                            ? 'Desde'
-                            : DateFormat('dd/MM/yyyy').format(_startDate!),
-                        style: TextStyle(
-                          color: _startDate == null
-                              ? const Color(0xFF718096)
-                              : const Color(0xFF2D3748),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-            const SizedBox(width: 8),
-            Expanded(
-              child: InkWell(
-                onTap: () async {
-                  final DateTime? picked = await showDatePicker(
-                    context: context,
-                    initialDate: _endDate ?? DateTime.now(),
-                    firstDate: _startDate ?? DateTime(2020),
-                    lastDate: DateTime.now(),
-                  );
-                  if (picked != null) {
-                    setState(() {
-                      _endDate = picked;
-                    });
-                  }
-                },
-                child: Container(
-                  padding:
-                      const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-                  decoration: BoxDecoration(
-                    border: Border.all(color: const Color(0xFFE2E8F0)),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Row(
-                    children: [
-                      const Icon(
-                        Icons.calendar_today,
-                        size: 16,
-                        color: Color(0xFF718096),
-                      ),
-                      const SizedBox(width: 8),
-                      Text(
-                        _endDate == null
-                            ? 'Hasta'
-                            : DateFormat('dd/MM/yyyy').format(_endDate!),
-                        style: TextStyle(
-                          color: _endDate == null
-                              ? const Color(0xFF718096)
-                              : const Color(0xFF2D3748),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-          ],
         ),
         const SizedBox(height: 16),
 
@@ -719,10 +622,7 @@ class _HistoryAssignmentsViewState extends State<HistoryAssignmentsView> {
                                   worker.name.hashCode %
                                       Colors.primaries.length],
                               child: Text(
-                                worker.name
-                                    .toString()
-                                    .substring(0, 1)
-                                    .toUpperCase(),
+                                worker.name[0],
                                 style: const TextStyle(
                                   color: Colors.white,
                                   fontWeight: FontWeight.bold,
@@ -754,237 +654,136 @@ class _HistoryAssignmentsViewState extends State<HistoryAssignmentsView> {
   }
 
   void _showAssignmentDetails(BuildContext context, Assignment assignment) {
-    showModalBottomSheet(
+    showAssignmentDetails(
       context: context,
-      backgroundColor: Colors.transparent,
-      isScrollControlled: true,
-      builder: (context) {
-        return Container(
-          height: MediaQuery.of(context).size.height * 0.85,
-          decoration: const BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Header
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(20),
-                decoration: BoxDecoration(
-                  color: const Color(0xFF38A169).withOpacity(0.1),
-                  borderRadius:
-                      const BorderRadius.vertical(top: Radius.circular(20)),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      assignment: assignment,
+      statusColor: const Color(0xFF38A169),
+      statusText: "Completada",
+      workersBuilder: (assignment, context) {
+        // Build workers groups if any
+        List<Widget> sections = [];
+
+        if (assignment.groups.any((group) {
+          final groupWorkers = assignment.workers
+              .where((w) => group.workers.contains(w.id))
+              .toList();
+          return groupWorkers.isNotEmpty;
+        })) {
+          sections.add(
+            buildDetailSection(
+              title: 'Grupos de Trabajadores',
+              children: assignment.groups
+                  .map((group) {
+                    // Process each group...
+                    final groupWorkers = assignment.workers
+                        .where((w) => group.workers.contains(w.id))
+                        .toList();
+
+                    if (groupWorkers.isEmpty) return Container();
+
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text(
-                          'Detalles de la Asignación',
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                            color: Color(0xFF2D3748),
+                        // Group header
+                        Container(
+                          padding: const EdgeInsets.all(10),
+                          margin: const EdgeInsets.only(bottom: 10),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFE6FFFA),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Expanded(
+                                child: Text(
+                                  group.name,
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.w600,
+                                    color: Color(0xFF2D3748),
+                                  ),
+                                ),
+                              ),
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 8, vertical: 4),
+                                decoration: BoxDecoration(
+                                  color: Colors.white,
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: Text(
+                                  '${groupWorkers.length} trabajadores',
+                                  style: const TextStyle(
+                                    fontSize: 12,
+                                    color: Color(0xFF4A5568),
+                                  ),
+                                ),
+                              ),
+                            ],
                           ),
                         ),
-                        IconButton(
-                          icon: const Icon(Icons.close),
-                          onPressed: () => Navigator.pop(context),
+
+                        // Workers list
+                        Padding(
+                          padding: const EdgeInsets.all(10),
+                          child: Column(
+                            children: groupWorkers
+                                .map((worker) =>
+                                    buildWorkerItem(worker, context))
+                                .toList(),
+                          ),
                         ),
                       ],
-                    ),
-                    Text(
-                      assignment.task,
-                      style: const TextStyle(
-                        fontSize: 16,
-                        color: Color(0xFF38A169),
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-
-              Expanded(
-                child: SingleChildScrollView(
-                  padding: const EdgeInsets.all(20),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // Assignment information
-                      _buildDetailSection(
-                        title: 'Información',
-                        items: [
-                          DetailItem(
-                            icon: Icons.room_outlined,
-                            label: 'Área:',
-                            value: assignment.area,
-                          ),
-                          DetailItem(
-                            icon: Icons.calendar_today_outlined,
-                            label: 'Fecha programada:',
-                            value: DateFormat('dd/MM/yyyy')
-                                .format(assignment.date),
-                          ),
-                          DetailItem(
-                            icon: Icons.schedule_outlined,
-                            label: 'Hora programada:',
-                            value: assignment.time,
-                          ),
-                          DetailItem(
-                            label: 'Hora de finalización:',
-                            value: assignment.endTime ?? 'No especificada',
-                            icon: Icons.timer_outlined,
-                          ),
-                          DetailItem(
-                            icon: Icons.check_circle_outline,
-                            label: 'Completada el:',
-                            value: DateFormat('dd/MM/yyyy HH:mm')
-                                .format(assignment.endDate ?? DateTime.now()),
-                          ),
-                        ],
-                      ),
-
-                      const SizedBox(height: 24),
-
-                      // Workers section
-                      const Text(
-                        'Trabajadores Asignados',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          color: Color(0xFF2D3748),
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-
-                      // Workers list
-                      ...assignment.workers.map((worker) {
-                        return _buildWorkerItem(worker);
-                      }),
-                    ],
-                  ),
-                ),
-              ),
-            ],
-          ),
-        );
-      },
-    );
-  }
-
-  Widget _buildDetailSection({
-    required String title,
-    required List<DetailItem> items,
-  }) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          title,
-          style: const TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.bold,
-            color: Color(0xFF2D3748),
-          ),
-        ),
-        const SizedBox(height: 12),
-        ...items.map((item) {
-          return Padding(
-            padding: const EdgeInsets.only(bottom: 12),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Icon(
-                  item.icon,
-                  size: 16,
-                  color: const Color(0xFF718096),
-                ),
-                const SizedBox(width: 8),
-                SizedBox(
-                  width: 120,
-                  child: Text(
-                    item.label,
-                    style: const TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                      color: Color(0xFF4A5568),
-                    ),
-                  ),
-                ),
-                Expanded(
-                  child: Text(
-                    item.value,
-                    style: const TextStyle(
-                      fontSize: 14,
-                      color: Color(0xFF2D3748),
-                    ),
-                  ),
-                ),
-              ],
+                    );
+                  })
+                  .where((widget) => widget != Container())
+                  .toList(),
             ),
           );
-        }).toList(),
-      ],
-    );
-  }
+        }
 
-  Widget _buildWorkerItem(Worker worker) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 16),
-      child: Container(
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          color: const Color(0xFFF7FAFC),
-          borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: const Color(0xFFE2E8F0)),
-        ),
-        child: Row(
-          children: [
-            // Avatar
-            CircleAvatar(
-              backgroundColor: Colors
-                  .primaries[worker.name.hashCode % Colors.primaries.length],
-              radius: 20,
-              child: Text(
-                worker.name.toString().substring(0, 1).toUpperCase(),
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
+        // Add individual workers section
+        final Set<int> groupedWorkerIds = {};
+        for (var group in assignment.groups) {
+          groupedWorkerIds.addAll(group.workers);
+        }
+
+        final individualWorkers = assignment.workers
+            .where((worker) => !groupedWorkerIds.contains(worker.id))
+            .toList();
+
+        if (individualWorkers.isNotEmpty) {
+          sections.add(
+            buildDetailSection(
+              title: 'Trabajadores Individuales',
+              children: individualWorkers
+                  .map((worker) => buildWorkerItem(worker, context))
+                  .toList(),
             ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    worker.name.toString(),
-                    style: const TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                      color: Color(0xFF2D3748),
-                    ),
-                  ),
-                  if (worker.area.isNotEmpty)
-                    Text(
-                      worker.area.toString(),
-                      style: const TextStyle(
-                        fontSize: 12,
-                        color: Color(0xFF718096),
-                      ),
-                    ),
-                ],
-              ),
+          );
+        }
+
+        // Add finished workers section if applicable
+        if (assignment.workersFinished.isNotEmpty) {
+          sections.add(
+            buildDetailSection(
+              title: 'Trabajadores Finalizados',
+              children: assignment.workersFinished
+                  .map((worker) => buildWorkerItem(
+                        worker,
+                        context,
+                        // isFinished: true,
+                      ))
+                  .toList(),
             ),
-          ],
-        ),
-      ),
+          );
+        }
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: sections,
+        );
+      },
     );
   }
 }

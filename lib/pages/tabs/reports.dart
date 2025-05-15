@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_neumorphic_plus/flutter_neumorphic.dart';
 import 'package:intl/intl.dart';
 import 'package:plannerop/core/model/assignment.dart';
-import 'package:plannerop/store/areas.dart';
 import 'package:plannerop/store/assignments.dart';
 import 'package:plannerop/utils/toast.dart';
 import 'package:plannerop/widgets/reports/charts/area_chart.dart';
@@ -29,8 +28,15 @@ class _ReportesTabState extends State<ReportesTab> {
   int? _selectedZone; // Filtro de zona
   String? _selectedMotorship; // Filtro de motonave
   String? _selectedStatus; // Filtro de estado
-  DateTime _startDate = DateTime.now().subtract(const Duration(days: 7));
-  DateTime _endDate = DateTime.now();
+  DateTime _startDate = DateTime.now() // llevar a las 00:00
+      .subtract(Duration(hours: DateTime.now().hour))
+      .subtract(Duration(minutes: DateTime.now().minute));
+  DateTime _endDate = DateTime.now()
+      .add(Duration(days: 1))
+      .subtract(Duration(hours: DateTime.now().hour))
+      .subtract(Duration(minutes: DateTime.now().minute))
+      .subtract(Duration(seconds: DateTime.now().second));
+  // llevar a las 23:59
 
   bool _isFiltering = false;
   bool _isExporting = false;
@@ -154,14 +160,6 @@ class _ReportesTabState extends State<ReportesTab> {
     });
   }
 
-  // Obtener el ícono para el gráfico seleccionado
-  IconData _getSelectedChartIcon() {
-    final selectedOption = _chartOptions.firstWhere(
-        (option) => option['title'] == _selectedChart,
-        orElse: () => _chartOptions[0]);
-    return selectedOption['icon'];
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -221,7 +219,7 @@ class _ReportesTabState extends State<ReportesTab> {
             if (_isExporting)
               ExportOptions(
                 periodName: _selectedPeriod,
-                startDate: _startDate,
+                startDate: _startDate.subtract(Duration(days: 1)),
                 endDate: _endDate,
                 area: _selectedArea,
                 zone: _selectedZone,
@@ -249,8 +247,11 @@ class _ReportesTabState extends State<ReportesTab> {
                   ? _buildSelectedChart()
                   : ReportDataTable(
                       periodName: _selectedPeriod,
-                      startDate: _startDate,
-                      endDate: _endDate,
+                      startDate: DateTime(_startDate.year, _startDate.month,
+                              _startDate.day, 0, 0, 0)
+                          .subtract(Duration(days: 1)),
+                      endDate: DateTime(_endDate.year, _endDate.month,
+                          _endDate.day, 23, 59, 59),
                       area: _selectedArea,
                       zone: _selectedZone,
                       motorship: _selectedMotorship,
@@ -304,18 +305,18 @@ class _ReportesTabState extends State<ReportesTab> {
                 fontSize: 16,
                 fontWeight: FontWeight.w500,
               ),
-              selectedItemBuilder: (context) {
-                return _chartOptions.map((item) {
-                  return Row(
-                    children: [
-                      Icon(_getSelectedChartIcon(),
-                          color: const Color(0xFF4299E1), size: 20),
-                      const SizedBox(width: 12),
-                      Text(_selectedChart),
-                    ],
-                  );
-                }).toList();
-              },
+              // selectedItemBuilder: (context) {
+              //   return _chartOptions.map((item) {
+              //     return Row(
+              //       children: [
+              //         Icon(_getSelectedChartIcon(),
+              //             color: const Color(0xFF4299E1), size: 20),
+              //         const SizedBox(width: 12),
+              //         Text(_selectedChart),
+              //       ],
+              //     );
+              //   }).toList();
+              // },
               onChanged: (String? newValue) {
                 if (newValue != null) {
                   setState(() {
@@ -486,7 +487,7 @@ class _ReportesTabState extends State<ReportesTab> {
     String dateRange;
     if (_selectedPeriod == "Personalizado") {
       dateRange =
-          "${DateFormat('dd/MM/yyyy').format(_startDate.add(Duration(days: 1)))} - ${DateFormat('dd/MM/yyyy').format(_endDate)}";
+          "${DateFormat('dd/MM/yyyy').format(_startDate)} - ${DateFormat('dd/MM/yyyy').format(_endDate)}";
     } else {
       dateRange = _selectedPeriod;
     }
@@ -497,9 +498,9 @@ class _ReportesTabState extends State<ReportesTab> {
     activeFilters.add("Periodo: $dateRange");
     if (_selectedArea != 'Todas') activeFilters.add("Área: $_selectedArea");
     if (_selectedZone != null) activeFilters.add("Zona: $_selectedZone");
-    debugPrint('Zona++: $_selectedZone');
-    if (_selectedMotorship != null)
+    if (_selectedMotorship != null) {
       activeFilters.add("Motonave: $_selectedMotorship");
+    }
     if (_selectedStatus != null) activeFilters.add("Estado: $_selectedStatus");
 
     return Container(

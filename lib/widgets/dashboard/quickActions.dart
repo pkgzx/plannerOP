@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_neumorphic_plus/flutter_neumorphic.dart';
-import 'package:plannerop/pages/supervisor/tabs/asignaciones.dart';
-import 'package:plannerop/pages/supervisor/tabs/reports.dart';
+import 'package:plannerop/pages/tabs/assigments.dart';
+import 'package:plannerop/pages/tabs/reports.dart';
 import 'package:plannerop/widgets/assingments/addAssignmentDialog.dart';
 
 class QuickActions extends StatelessWidget {

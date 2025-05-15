@@ -3,6 +3,7 @@ import 'package:plannerop/core/model/area.dart';
 import 'package:plannerop/core/model/worker.dart';
 import 'package:intl/intl.dart';
 import 'package:plannerop/store/areas.dart';
+import 'package:plannerop/utils/assignments.dart';
 
 // Import necesario para el método min
 import 'dart:math' as Math;
@@ -443,22 +444,6 @@ class _WorkerEditDialogState extends State<WorkerEditDialog> {
   }
 
   Widget _buildStatusDropdown() {
-    // Obtener color según el estado
-    Color getStatusColor(String status) {
-      switch (status) {
-        case WorkerStatus.available:
-          return Colors.green;
-        case WorkerStatus.assigned:
-          return Colors.amber;
-        case WorkerStatus.incapacitated:
-          return Colors.purple;
-        case WorkerStatus.deactivated:
-          return Colors.grey;
-        default:
-          return Colors.blue;
-      }
-    }
-
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [

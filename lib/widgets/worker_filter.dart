@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:plannerop/core/model/worker.dart';
 
 enum WorkerFilter { all, available, assigned, disabled, retired, faults }
 

@@ -507,7 +507,8 @@ class _WorkerAddDialogState extends State<WorkerAddDialog> {
                                 name: nameController.text.trim(),
                                 area: areas
                                     .firstWhere(
-                                        (area) => area.id == selectedArea)
+                                        (area) => area.id == selectedArea,
+                                        orElse: () => Area(id: 0, name: ''))
                                     .name,
                                 idArea: selectedArea ?? 0,
                                 phone: phoneController.text.trim(),

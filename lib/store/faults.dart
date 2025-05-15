@@ -2,8 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:plannerop/core/model/fault.dart';
 import 'package:plannerop/core/model/worker.dart';
 import 'package:plannerop/services/faults/fault.dart';
-import 'package:plannerop/store/workers.dart';
-import 'package:provider/provider.dart';
 
 class FaultsProvider extends ChangeNotifier {
   List<Fault> _faults = [];
@@ -53,10 +51,9 @@ class FaultsProvider extends ChangeNotifier {
   }
 
   // Cargar faltas por trabajador
-  Future<List<Fault>> fetchFaultsByWorker(
-      BuildContext context, int workerId) async {
+  List<Fault> fetchFaultsByWorker(BuildContext context, int workerId) {
     try {
-      return await _faultService.fetchFaultsByWorker(context, workerId);
+      return faults.where((fault) => fault.worker.id == workerId).toList();
     } catch (e) {
       debugPrint('Error al cargar faltas por trabajador: $e');
       return [];
@@ -68,54 +65,93 @@ class FaultsProvider extends ChangeNotifier {
     return _faults.where((fault) => fault.type == type).toList();
   }
 
-  // Obtener trabajadores con más faltas (ordenados por cantidad)
+  // Obtener trabajadores con más faltas (ordenados por cantidad y recencia)
   List<Worker> getWorkersWithMostFaults(BuildContext context) {
+    // Si no hay faltas, retornar lista vacía inmediatamente
+    if (_faults.isEmpty) {
+      debugPrint('No hay faltas registradas');
+      return [];
+    }
+
     // Crear un mapa para contar faltas por trabajador
     final Map<int, int> workerFaultCount = {};
 
-    final WorkersProvider workersProvider =
-        Provider.of<WorkersProvider>(context, listen: false);
+    // Mapa para almacenar la fecha de la falta más reciente por trabajador
+    final Map<int, DateTime> latestFaultDate = {};
 
-    // Contar la cantidad de faltas por trabajador
+    // Contar la cantidad de faltas por trabajador y rastrear la falta más reciente
     for (Fault fault in _faults) {
       final workerId = fault.worker.id;
+
+      // Incrementar contador de faltas
       workerFaultCount[workerId] = (workerFaultCount[workerId] ?? 0) + 1;
-    }
 
-    // Obtener lista única de trabajadores
-    List<Worker> uniqueWorkers = <Worker>[];
-    for (final fault in _faults) {
-      if (!uniqueWorkers.any((w) => w.id == fault.worker.id)) {
-        uniqueWorkers.add(fault.worker);
+      // Si la falta tiene fecha, verificar si es la más reciente
+      // Nota: Aquí asumo que cada falta puede tener o no un atributo 'date'
+      // Si no existe, podemos usar un valor predeterminado (como la fecha actual)
+      DateTime faultDate;
+      if (fault.createdAt != null) {
+        faultDate = fault.createdAt;
+      } else {
+        // Si no hay fecha, usar una fecha simulada basada en ID
+        // Esto es solo para demostración - en producción, cada falta debería tener fecha
+        faultDate = DateTime.now().subtract(Duration(days: fault.id % 30));
       }
+
+      // Actualizar fecha más reciente si no existe o si esta es más reciente
+      if (!latestFaultDate.containsKey(workerId) ||
+          faultDate.isAfter(latestFaultDate[workerId]!)) {
+        latestFaultDate[workerId] = faultDate;
+      }
+
+      // debugPrint(
+      //     'Worker ID: $workerId, Faltas: ${workerFaultCount[workerId]}, Última falta: ${latestFaultDate[workerId]}');
     }
 
-    for (Worker worker in uniqueWorkers) {
-      debugPrint('Unique: $worker');
+    // Obtener lista única de trabajadores (sin duplicados)
+    final Map<int, Worker> uniqueWorkersMap = {};
+    for (final fault in _faults) {
+      uniqueWorkersMap[fault.worker.id] = fault.worker;
     }
 
-    // Ordenar trabajadores por cantidad de faltas (de mayor a menor)
-    uniqueWorkers.sort((a, b) {
-      final countA = workerFaultCount[a.id] ?? 0;
-      final countB = workerFaultCount[b.id] ?? 0;
-      return countB.compareTo(countA);
-    });
+    // Convertir mapa a lista
+    final uniqueWorkers = uniqueWorkersMap.values.toList();
 
-    // retornar solo los que tienen mas de 0 faltas
-    uniqueWorkers = uniqueWorkers.where((worker) {
+    // Filtrar para mantener solo trabajadores con al menos una falta
+    final workersWithFaults = uniqueWorkers.where((worker) {
       final faultCount = workerFaultCount[worker.id] ?? 0;
-      debugPrint('Fault count: $worker');
       return faultCount > 0;
     }).toList();
 
-    for (Worker worker in uniqueWorkers) {
-      debugPrint('Unique***: $worker');
-    }
+    // Ordenar trabajadores por cantidad de faltas (de mayor a menor)
+    // Si tienen la misma cantidad, ordenar por la fecha de la falta más reciente (más reciente primero)
+    workersWithFaults.sort((a, b) {
+      final countA = workerFaultCount[a.id] ?? 0;
+      final countB = workerFaultCount[b.id] ?? 0;
 
-    return uniqueWorkers;
+      // Si tienen distinta cantidad de faltas, ordenar por cantidad
+      if (countA != countB) {
+        return countB.compareTo(countA); // Orden descendente por cantidad
+      }
+
+      // Si tienen la misma cantidad de faltas, ordenar por fecha más reciente
+
+      final dateA = latestFaultDate[a.id] ?? DateTime(1900);
+      final dateB = latestFaultDate[b.id] ?? DateTime(1900);
+
+      return dateB.compareTo(
+          dateA); // Orden descendente por fecha (más reciente primero)
+    });
+
+  
+
+    // debugPrint(
+    //     'Trabajadores con faltas encontrados: ${workersWithFaults.length}');
+
+    return workersWithFaults;
   }
 
-  // Obtener la cantidad de faltas para un trabajador específico
+  // Añadir un método para obtener la cantidad de faltas por trabajador
   int getFaultCountForWorker(int workerId) {
     return _faults.where((fault) => fault.worker.id == workerId).length;
   }

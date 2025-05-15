@@ -3,7 +3,6 @@ import 'package:flutter_neumorphic_plus/flutter_neumorphic.dart';
 import 'package:provider/provider.dart';
 import 'package:plannerop/store/assignments.dart';
 import 'package:plannerop/store/workers.dart';
-import 'package:plannerop/core/model/worker.dart';
 
 class Cifras extends StatelessWidget {
   const Cifras({super.key});
@@ -13,7 +12,6 @@ class Cifras extends StatelessWidget {
     return Consumer2<AssignmentsProvider, WorkersProvider>(
       builder: (context, assignmentsProvider, workersProvider, child) {
         // Calculamos las cifras necesarias
-        final int totalAssignments = assignmentsProvider.assignments.length;
         final int pendingAssignments =
             assignmentsProvider.pendingAssignments.length;
         final int activeAssignments =
