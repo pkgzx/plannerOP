@@ -2,11 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:plannerop/core/model/worker.dart';
 import 'package:plannerop/utils/toast.dart';
 
-Widget buildWorkerItem(Worker worker, BuildContext context,
-    {bool isDeleted = false,
-    bool? alimentacionEntregada, // Añadir parámetro opcional
-    Function(bool)? onAlimentacionChanged // Callback para notificar cambios
-    }) {
+Widget buildWorkerItem(
+  Worker worker,
+  BuildContext context, {
+  bool isDeleted = false,
+  bool? alimentacionEntregada, // Añadir parámetro opcional
+  Function(bool)? onAlimentacionChanged, // Callback para notificar cambios
+  bool? isFinished = false, // Añadir parámetro opcional
+}) {
   // Usar el valor proporcionado o defaultear a false
   final bool _alimentacionEntregada = alimentacionEntregada ?? false;
 
@@ -63,48 +66,49 @@ Widget buildWorkerItem(Worker worker, BuildContext context,
             ),
           ),
 
-          // Botón para marcar alimentación - SIEMPRE VISIBLE
-          TextButton.icon(
-            onPressed: () {
-              // Notificar cambio si hay callback
-              if (onAlimentacionChanged != null) {
-                onAlimentacionChanged(!_alimentacionEntregada);
-                showSuccessToast(context,
-                    "Alimentación ${_alimentacionEntregada ? 'no entregada' : 'entregada'}");
-              }
-            },
-            icon: Icon(
-              _alimentacionEntregada
-                  ? Icons.restaurant
-                  : Icons.restaurant_outlined,
-              color: _alimentacionEntregada ? Colors.green : Colors.grey,
-              size: 18,
-            ),
-            label: Text(
-              _alimentacionEntregada ? 'Entregada' : 'Pendiente',
-              style: TextStyle(
-                color: _alimentacionEntregada ? Colors.green : Colors.grey[700],
-                fontSize: 12,
-                fontWeight: _alimentacionEntregada
-                    ? FontWeight.bold
-                    : FontWeight.normal,
+          if (!(isFinished ?? false))
+            TextButton.icon(
+              onPressed: () {
+                // Notificar cambio si hay callback
+                if (onAlimentacionChanged != null) {
+                  onAlimentacionChanged(!_alimentacionEntregada);
+                  showSuccessToast(context,
+                      "Alimentación ${_alimentacionEntregada ? 'no entregada' : 'entregada'}");
+                }
+              },
+              icon: Icon(
+                _alimentacionEntregada
+                    ? Icons.restaurant
+                    : Icons.restaurant_outlined,
+                color: _alimentacionEntregada ? Colors.green : Colors.grey,
+                size: 18,
               ),
-            ),
-            style: TextButton.styleFrom(
-              backgroundColor: _alimentacionEntregada
-                  ? Colors.green.withOpacity(0.1)
-                  : Colors.grey.withOpacity(0.05),
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-                side: BorderSide(
-                  color: _alimentacionEntregada
-                      ? Colors.green
-                      : Colors.grey.shade300,
+              label: Text(
+                _alimentacionEntregada ? 'Entregada' : 'Pendiente',
+                style: TextStyle(
+                  color:
+                      _alimentacionEntregada ? Colors.green : Colors.grey[700],
+                  fontSize: 12,
+                  fontWeight: _alimentacionEntregada
+                      ? FontWeight.bold
+                      : FontWeight.normal,
                 ),
               ),
-            ),
-          )
+              style: TextButton.styleFrom(
+                backgroundColor: _alimentacionEntregada
+                    ? Colors.green.withOpacity(0.1)
+                    : Colors.grey.withOpacity(0.05),
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  side: BorderSide(
+                    color: _alimentacionEntregada
+                        ? Colors.green
+                        : Colors.grey.shade300,
+                  ),
+                ),
+              ),
+            )
         ],
       ),
     ),

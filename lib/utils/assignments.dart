@@ -3,7 +3,10 @@ import 'package:flutter_neumorphic_plus/flutter_neumorphic.dart';
 import 'package:intl/intl.dart';
 import 'package:plannerop/core/model/assignment.dart';
 import 'package:plannerop/core/model/user.dart';
+import 'package:plannerop/store/assignments.dart';
 import 'package:plannerop/store/chargersOp.dart';
+import 'package:plannerop/store/workers.dart';
+import 'package:plannerop/utils/toast.dart';
 import 'package:plannerop/widgets/assingments/components/buildWorkerItem.dart';
 import 'package:plannerop/widgets/assingments/components/utils.dart';
 import 'package:provider/provider.dart';
@@ -289,4 +292,127 @@ Color getStatusColor(String status) {
     default:
       return Colors.grey;
   }
+}
+
+// Método para mostrar el diálogo de cancelación (agregarlo si no existe)
+void showCancelDialog(
+    BuildContext context, Assignment assignment, AssignmentsProvider provider) {
+  bool isProcessing = false;
+
+  showDialog(
+    context: context,
+    barrierDismissible: false,
+    builder: (BuildContext dialogContext) {
+      return StatefulBuilder(
+        builder: (context, setDialogState) {
+          return AlertDialog(
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            title: const Text('Cancelar asignación'),
+            content: const Text(
+              '¿Estás seguro de que deseas cancelar esta asignación?',
+              style: TextStyle(color: Color(0xFF718096)),
+            ),
+            actions: [
+              TextButton(
+                onPressed:
+                    isProcessing ? null : () => Navigator.pop(dialogContext),
+                style: TextButton.styleFrom(
+                  foregroundColor: isProcessing
+                      ? const Color(0xFFCBD5E0)
+                      : const Color(0xFF718096),
+                ),
+                child: const Text('No'),
+              ),
+              NeumorphicButton(
+                style: NeumorphicStyle(
+                  depth: isProcessing ? 0 : 2,
+                  intensity: 0.7,
+                  color: isProcessing
+                      ? const Color(0xFFFED7D7)
+                      : const Color(0xFFF56565),
+                  boxShape:
+                      NeumorphicBoxShape.roundRect(BorderRadius.circular(8)),
+                ),
+                onPressed: isProcessing
+                    ? null
+                    : () async {
+                        setDialogState(() {
+                          isProcessing = true;
+                        });
+
+                        try {
+                          debugPrint('Cancelando asignación ${assignment.id}');
+
+                          // Aquí iría la llamada a la API para cancelar
+                          final success = await provider.updateAssignmentStatus(
+                              assignment.id ?? 0, 'CANCELED', context);
+
+                          final workersProvider = Provider.of<WorkersProvider>(
+                              context,
+                              listen: false);
+                          for (var worker in assignment.workers) {
+                            workersProvider.releaseWorkerObject(
+                                worker, context);
+                          }
+
+                          Navigator.pop(dialogContext);
+                          showSuccessToast(
+                              context, 'Asignación cancelada exitosamente');
+                        } catch (e) {
+                          debugPrint('Error al cancelar asignación: $e');
+
+                          if (context.mounted) {
+                            setDialogState(() {
+                              isProcessing = false;
+                            });
+                            showErrorToast(
+                                context, 'Error al cancelar asignación: $e');
+                          }
+                        }
+                      },
+                child: Container(
+                  width: 100,
+                  height: 36,
+                  child: Center(
+                    child: isProcessing
+                        ? Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: const [
+                              SizedBox(
+                                width: 16,
+                                height: 16,
+                                child: CircularProgressIndicator(
+                                  valueColor: AlwaysStoppedAnimation<Color>(
+                                      Colors.white),
+                                  strokeWidth: 2,
+                                ),
+                              ),
+                              SizedBox(width: 8),
+                              Text(
+                                'Procesando',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: 13,
+                                ),
+                              ),
+                            ],
+                          )
+                        : const Text(
+                            'Sí, cancelar',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                  ),
+                ),
+              ),
+            ],
+          );
+        },
+      );
+    },
+  );
 }
