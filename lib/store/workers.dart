@@ -41,6 +41,12 @@ class WorkersProvider with ChangeNotifier {
   int get totalWorkerWithoutRetired =>
       _workers.where((w) => w.status != WorkerStatus.deactivated).length;
 
+  List<Worker> get workersWithoutRetiredAndDisabled => _workers
+      .where((w) =>
+          w.status != WorkerStatus.deactivated &&
+          w.status != WorkerStatus.incapacitated)
+      .toList();
+
   int get totalWorkers => _workers.length;
 
   List<Worker> getWorkersAvailable() {
@@ -171,7 +177,7 @@ class WorkersProvider with ChangeNotifier {
         }
 
         // Además de actualizar el worker, crear un registro de falta para el FaultsProvider
-        if (description != null && description.isNotEmpty) {
+        if (description.isNotEmpty) {
           final faultsProvider =
               Provider.of<FaultsProvider>(context, listen: false);
           faultsProvider.addFault(Fault(
@@ -246,7 +252,7 @@ class WorkersProvider with ChangeNotifier {
         }
 
         // Además de actualizar el worker, crear un registro de falta para el FaultsProvider
-        if (description != null && description.isNotEmpty) {
+        if (description.isNotEmpty) {
           final faultsProvider =
               Provider.of<FaultsProvider>(context, listen: false);
           faultsProvider.addFault(Fault(

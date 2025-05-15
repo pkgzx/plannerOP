@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:http/http.dart' as http;
@@ -94,7 +95,16 @@ class WorkerService {
         debugPrint('Error en API: ${response.statusCode} - ${response.body}');
         return FetchWorkersDto(workers: [], isSuccess: false);
       }
-    } catch (e) {
+    } on SocketException catch (e) {
+      debugPrint('Error de conexión: $e');
+      return FetchWorkersDto(workers: [], isSuccess: false);
+    } on HttpException catch (e) {
+      debugPrint('Error HTTP: $e');
+      return FetchWorkersDto(workers: [], isSuccess: false);
+    } on FormatException catch (e) {
+      debugPrint('Error de formato: $e');
+      return FetchWorkersDto(workers: [], isSuccess: false);
+    } on Exception catch (e) {
       debugPrint('Error en fetchWorkers: $e');
       return FetchWorkersDto(workers: [], isSuccess: false);
     }

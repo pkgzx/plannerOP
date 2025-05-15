@@ -468,8 +468,6 @@ Widget _buildWorkerItemWithCompletion(Worker worker, Assignment assignment,
     }) {
   // Usar el valor proporcionado o defaultear a false
   final bool _alimentacionEntregada = alimentacionEntregada ?? false;
-  final FeedingProvider feedingsProvider =
-      Provider.of<FeedingProvider>(context, listen: false);
 
   // Si no hay tipo de comida válido o está fuera de horario, no mostrar botón
   bool showFoodButton = currentFoodType != null &&

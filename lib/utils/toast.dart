@@ -178,3 +178,7 @@ void showInfoToast(BuildContext context, String message) {
     toastDuration: const Duration(seconds: 3),
   );
 }
+
+void showValidationError(BuildContext context, String message) {
+  showAlertToast(context, message);
+}

@@ -14,7 +14,7 @@ import 'pages/login.dart';
 import 'package:provider/provider.dart';
 import 'package:plannerop/store/workers.dart';
 import 'package:flutter_animated_splash/flutter_animated_splash.dart';
-import 'package:plannerop/utils/DataManager.dart';
+import 'package:plannerop/utils/dataManager.dart';
 
 Future<void> main() async {
   // Asegúrate de inicializar Flutter
@@ -55,7 +55,6 @@ class _AppState extends State<App> {
 
     // Inicializar el DataManager después del primer frame
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      final authProvider = Provider.of<AuthProvider>(context, listen: false);
       DataManager().loadDataAfterAuthentication(context);
     });
   }

@@ -12,6 +12,7 @@ import 'package:plannerop/store/clients.dart';
 import 'package:plannerop/store/task.dart';
 import 'package:plannerop/store/user.dart';
 import 'package:plannerop/store/workers.dart';
+import 'package:plannerop/utils/neumophomic.dart';
 import 'package:plannerop/utils/toast.dart';
 import 'package:plannerop/widgets/assingments/inChargerSelection.dart';
 import 'package:provider/provider.dart';
@@ -52,9 +53,6 @@ class AddAssignmentDialogState extends State<AddAssignmentDialog> {
 
   List<Area> _areas = [];
 
-  // Boolean para controlar si estamos cargando las tareas
-  bool _isLoadingTasks = false;
-
   // Ahora usaremos TasksProvider para obtener la lista de tareas
   List<String> _currentTasks = [];
 
@@ -62,8 +60,6 @@ class AddAssignmentDialogState extends State<AddAssignmentDialog> {
 
   // variable para controlar el estado de carga
   bool _isSaving = false;
-
-  String _schedulingMode = 'global';
 
   @override
   void dispose() {
@@ -92,13 +88,11 @@ class AddAssignmentDialogState extends State<AddAssignmentDialog> {
   }
 
   // Método para procesar los horarios de grupos
-
   void _processGroupSchedules() {
     if (_selectedGroups.isEmpty) {
       resetGroupScheduleLocks();
       return;
     }
-
     // Estructura para almacenar fechas y horas completas
     DateTime? earliestStartDateTime;
     DateTime? latestEndDateTime;
@@ -277,16 +271,6 @@ class AddAssignmentDialogState extends State<AddAssignmentDialog> {
         _endTimeLockedByGroup = false;
       }
     });
-
-    // // Registro de depuración para ver qué valores se han establecido
-    // debugPrint('Horarios procesados:');
-    // debugPrint(
-    //     'Inicio: ${_startDateController.text} ${_startTimeController.text}');
-    // debugPrint('Fin: ${_endDateController.text} ${_endTimeController.text}');
-    // debugPrint(
-    //     'Bloqueos: Start Date: $_startDateLockedByGroup, Start Time: $_startTimeLockedByGroup');
-    // debugPrint(
-    //     'Bloqueos: End Date: $_endDateLockedByGroup, End Time: $_endTimeLockedByGroup');
   }
 
 // Método para resetear los bloqueos
@@ -323,10 +307,6 @@ class AddAssignmentDialogState extends State<AddAssignmentDialog> {
 
   // Método para cargar tareas desde el API
   Future<void> _loadTasks() async {
-    setState(() {
-      _isLoadingTasks = true;
-    });
-
     try {
       final tasksProvider = Provider.of<TasksProvider>(context, listen: false);
 
@@ -350,13 +330,7 @@ class AddAssignmentDialogState extends State<AddAssignmentDialog> {
 
       // Mostrar error
       showAlertToast(context, 'Error al cargar las tareas');
-    } finally {
-      if (mounted) {
-        setState(() {
-          _isLoadingTasks = false;
-        });
-      }
-    }
+    } finally {}
   }
 
   // Método para actualizar la lista de trabajadores seleccionados
@@ -494,12 +468,11 @@ class AddAssignmentDialogState extends State<AddAssignmentDialog> {
                   ),
                   const SizedBox(width: 12),
                   NeumorphicButton(
-                    style: NeumorphicStyle(
-                      depth: 2,
-                      intensity: 0.6,
-                      color: const Color(0xFF3182CE),
-                      boxShape: NeumorphicBoxShape.roundRect(
-                          BorderRadius.circular(8)),
+                    style: neumorphicButtonStyle(
+                      color: _isSaving
+                          ? const Color(0xFF90CDF4)
+                          : const Color.fromARGB(255, 248, 248, 248),
+                      depth: _isSaving ? 0 : 2,
                     ),
                     onPressed: _isSaving
                         ? null
@@ -734,7 +707,7 @@ class AddAssignmentDialogState extends State<AddAssignmentDialog> {
 
       // Si hubo error al guardar
       if (!success) {
-        _showValidationError(
+        showValidationError(context,
             'Error al guardar la asignación: ${assignmentsProvider.error}');
         return false;
       }
@@ -750,13 +723,9 @@ class AddAssignmentDialogState extends State<AddAssignmentDialog> {
       return true;
     } catch (e) {
       debugPrint('Error en _validateFields: $e');
-      _showValidationError('Error al procesar los datos: $e');
+      showValidationError(context, 'Error al procesar los datos: $e');
       return false;
     }
-  }
-
-  void _showValidationError(String message) {
-    showAlertToast(context, message);
   }
 
   void _showSuccessDialog(BuildContext context) {

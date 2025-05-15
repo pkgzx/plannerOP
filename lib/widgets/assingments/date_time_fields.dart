@@ -381,7 +381,7 @@ class _TimeFieldState extends State<TimeField> {
 
         // Obligar actualización de UI si es necesario
         if (context is StatefulElement) {
-          (context.state as State).setState(() {});
+          (context.state).setState(() {});
         }
 
         debugPrint('Hora guardada: ${widget.controller.text}');

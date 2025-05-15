@@ -4,7 +4,6 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 
 import 'package:plannerop/dto/auth/signin.dart';
-import 'package:plannerop/utils/DataManager.dart';
 
 class SigninService extends ChangeNotifier {
   final String API_URL = dotenv.get('API_URL');

@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:plannerop/core/model/assignment.dart';
@@ -659,7 +660,16 @@ class AssignmentService {
             'Error al obtener asignaciones por estado: ${response.statusCode} - ${response.body}');
         return [];
       }
-    } catch (e) {
+    } on SocketException catch (e) {
+      debugPrint('Error de conexión: $e');
+      return [];
+    } on HttpException catch (e) {
+      debugPrint('Error HTTP: $e');
+      return [];
+    } on FormatException catch (e) {
+      debugPrint('Error de formato: $e');
+      return [];
+    } on Exception catch (e) {
       debugPrint('Error en fetchAssignmentsByStatus: $e');
       return [];
     }

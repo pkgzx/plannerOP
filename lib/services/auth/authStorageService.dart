@@ -3,8 +3,6 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:encrypt/encrypt.dart' as encrypt;
 import 'package:flutter/material.dart';
 import 'package:jwt_decoder/jwt_decoder.dart';
-import 'package:plannerop/store/auth.dart';
-import 'package:provider/provider.dart';
 
 class AuthStorageService {
   static final AuthStorageService _instance = AuthStorageService._internal();
@@ -16,7 +14,7 @@ class AuthStorageService {
   // Instancia de almacenamiento seguro
   final FlutterSecureStorage _secureStorage = const FlutterSecureStorage();
 
-  // Clave de encriptación (idealmente, esta clave debería ser generada y almacenada de forma segura)
+  // Clave de encriptación
   late final encrypt.Key _encryptionKey;
   late final encrypt.IV _iv;
 

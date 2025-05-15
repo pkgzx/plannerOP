@@ -61,7 +61,8 @@ class _WorkerSelectionDialogState extends State<WorkerSelectionDialog> {
 
     // De lo contrario, obtener de WorkersProvider
     final workersProvider = Provider.of<WorkersProvider>(context);
-    return workersProvider.getWorkersAvailable();
+    // return workersProvider.getWorkersAvailable();
+    return workersProvider.workersWithoutRetiredAndDisabled;
   }
 
 // También corrige este método para que considere correctamente los trabajadores seleccionados:
@@ -134,6 +135,8 @@ class _WorkerSelectionDialogState extends State<WorkerSelectionDialog> {
   Widget build(BuildContext context) {
     final filteredWorkers = _getFilteredWorkers(context);
     final areas = _getAreas(context);
+    debugPrint("Filtered workers: $filteredWorkers");
+    debugPrint("Length filtered workers: ${filteredWorkers.length}");
 
     return Dialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),

@@ -1,12 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_neumorphic_plus/flutter_neumorphic.dart';
 import 'package:intl/intl.dart';
-import 'package:plannerop/core/model/user.dart';
 import 'package:plannerop/store/areas.dart';
 import 'package:plannerop/store/chargersOp.dart';
 import 'package:plannerop/store/workers.dart';
+import 'package:plannerop/utils/assignments.dart';
 import 'package:plannerop/utils/toast.dart';
-import 'package:plannerop/widgets/assingments/components/buildWorkerItem.dart';
 import 'package:plannerop/widgets/assingments/components/utils.dart';
 import 'package:plannerop/widgets/assingments/editAssignmentForm.dart';
 import 'package:provider/provider.dart';
@@ -336,287 +335,84 @@ class _PendingAssignmentsViewState extends State<PendingAssignmentsView> {
   }
 
   void _showAssignmentDetails(BuildContext context, Assignment assignment) {
-    final assignmentsProvider =
-        Provider.of<AssignmentsProvider>(context, listen: false);
+    final provider = Provider.of<AssignmentsProvider>(context, listen: false);
 
-    final inChargersFormat =
-        Provider.of<ChargersOpProvider>(context, listen: false)
-            .chargers
-            .where((charger) => assignment.inChagers.contains(charger.id))
-            .map((charger) {
-      return User(
-        id: charger.id,
-        name: charger.name,
-        cargo: charger.cargo,
-        dni: charger.dni,
-        phone: charger.phone,
-      );
-    }).toList();
-
-    showModalBottomSheet(
+    showAssignmentDetails(
       context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (context) {
-        return Stack(
-          children: [
-            Container(
-              height: MediaQuery.of(context).size.height * 0.85,
-              decoration: const BoxDecoration(
+      assignment: assignment,
+      statusColor: const Color(0xFFF6AD55),
+      statusText: "Pendiente",
+      workersBuilder: (assignment, context) =>
+          buildWorkersSection(assignment, context, setState: setState),
+      actionsBuilder: (context, assignment) => [
+        // Edit button
+        Expanded(
+          child: NeumorphicButton(
+            style: NeumorphicStyle(
+              depth: 2,
+              intensity: 0.7,
+              color: Colors.white,
+              boxShape: NeumorphicBoxShape.roundRect(BorderRadius.circular(8)),
+            ),
+            onPressed: () {
+              Navigator.pop(context);
+              // Show edit dialog
+              showEditAssignmentForm(context, assignment);
+            },
+            child: const Text(
+              'Editar',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: Color(0xFF3182CE),
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(width: 12),
+        // Start button
+        Expanded(
+          child: NeumorphicButton(
+            style: NeumorphicStyle(
+              depth: 2,
+              intensity: 0.7,
+              color: const Color(0xFF3182CE),
+              boxShape: NeumorphicBoxShape.roundRect(BorderRadius.circular(8)),
+            ),
+            onPressed: () {
+              Navigator.pop(context);
+              _showStartDialog(context, assignment, provider);
+            },
+            child: const Text(
+              'Iniciar',
+              textAlign: TextAlign.center,
+              style: TextStyle(
                 color: Colors.white,
-                borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Header
-                  Container(
-                    padding: const EdgeInsets.all(20),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFF6AD55).withOpacity(0.1),
-                      borderRadius:
-                          const BorderRadius.vertical(top: Radius.circular(20)),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Expanded(
-                              child: Text(
-                                assignment.task,
-                                style: const TextStyle(
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.bold,
-                                  color: Color(0xFF2D3748),
-                                ),
-                              ),
-                            ),
-                            IconButton(
-                              icon: const Icon(Icons.close),
-                              onPressed: () => Navigator.pop(context),
-                            ),
-                          ],
-                        ),
-                        Row(
-                          children: [
-                            const Icon(
-                              Icons.room_outlined,
-                              size: 16,
-                              color: Color(0xFFF6AD55),
-                            ),
-                            const SizedBox(width: 4),
-                            Text(
-                              assignment.area,
-                              style: const TextStyle(
-                                fontSize: 14,
-                                color: Color(0xFFF6AD55),
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-
-                  // Content
-                  Expanded(
-                    child: SingleChildScrollView(
-                      padding: const EdgeInsets.all(20),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          _buildDetailsSection(
-                            title: 'Detalles de la asignación',
-                            children: [
-                              buildDetailRow(
-                                  'Fecha',
-                                  DateFormat('dd/MM/yyyy')
-                                      .format(assignment.date)),
-                              buildDetailRow('Hora', assignment.time),
-                              buildDetailRow('Estado', 'Pendiente'),
-                              if (assignment.endTime != null)
-                                buildDetailRow('Hora de finalización',
-                                    assignment.endTime ?? 'No especificada'),
-                              if (assignment.endDate != null)
-                                buildDetailRow(
-                                    'Fecha de finalización',
-                                    DateFormat('dd/MM/yyyy')
-                                        .format(assignment.endDate!)),
-                              buildDetailRow('Zona', 'Zona ${assignment.zone}'),
-                              if (assignment.motorship != "")
-                                buildDetailRow(
-                                    'Motonave', assignment.motorship ?? ''),
-                            ],
-                          ),
-                          const SizedBox(height: 20),
-                          buildWorkersSection(assignment, context,
-                              setState: setState),
-                          const SizedBox(height: 20),
-                          assignment.deletedWorkers.map(
-                            (worker) {
-                              return buildWorkerItem(worker, context);
-                            },
-                          ).isNotEmpty
-                              ? _buildDetailsSection(
-                                  title: 'Trabajadores eliminados',
-                                  children: assignment.deletedWorkers.map(
-                                    (worker) {
-                                      return buildWorkerItem(worker, context,
-                                          isDeleted: true);
-                                    },
-                                  ).toList(),
-                                )
-                              : const SizedBox(),
-                          const SizedBox(height: 20),
-
-                          // cargar los encargados de la operacion
-                          _buildDetailsSection(
-                            title: 'Encargados de la operación',
-                            children: inChargersFormat.map((charger) {
-                              return buildInChargerItem(charger);
-                            }).toList(),
-                          ),
-                          const SizedBox(height: 60),
-                        ],
-                      ),
-                    ),
-                  ),
-
-                  // Action buttons
-                  Container(
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.05),
-                          blurRadius: 10,
-                          offset: const Offset(0, -5),
-                        ),
-                      ],
-                    ),
-                    child: Row(
-                      children: [
-                        Expanded(
-                          child: NeumorphicButton(
-                            style: NeumorphicStyle(
-                              depth: 2,
-                              intensity: 0.7,
-                              color: Colors.white,
-                              boxShape: NeumorphicBoxShape.roundRect(
-                                  BorderRadius.circular(8)),
-                            ),
-                            onPressed: () {
-                              Navigator.pop(context);
-
-                              showDialog(
-                                context: context,
-                                builder: (BuildContext context) {
-                                  return Dialog(
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(20),
-                                    ),
-                                    child: Container(
-                                      constraints: BoxConstraints(
-                                        maxWidth:
-                                            MediaQuery.of(context).size.width *
-                                                0.9,
-                                        maxHeight:
-                                            MediaQuery.of(context).size.height *
-                                                0.9,
-                                      ),
-                                      child: EditAssignmentForm(
-                                        assignment: assignment,
-                                        onSave: (updatedAssignment) {
-                                          assignmentsProvider.updateAssignment(
-                                              updatedAssignment, context);
-                                          showSuccessToast(context,
-                                              'Asignación actualizada');
-                                          Navigator.pop(context);
-                                          Navigator.pop(context);
-                                        },
-                                        onCancel: () => Navigator.pop(context),
-                                      ),
-                                    ),
-                                  );
-                                },
-                              );
-                            },
-                            child: const Text(
-                              'Editar',
-                              textAlign: TextAlign.center,
-                              style: TextStyle(
-                                color: Color(0xFF3182CE),
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Consumer<AssignmentsProvider>(
-                              builder: (context, provider, child) {
-                            return NeumorphicButton(
-                              style: NeumorphicStyle(
-                                depth: 2,
-                                intensity: 0.7,
-                                color: const Color(0xFF3182CE),
-                                boxShape: NeumorphicBoxShape.roundRect(
-                                    BorderRadius.circular(8)),
-                              ),
-                              onPressed: () {
-                                Navigator.pop(context);
-                                _showStartDialog(context, assignment, provider);
-                              },
-                              child: const Text(
-                                'Iniciar',
-                                textAlign: TextAlign.center,
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                            );
-                          }),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
+                fontWeight: FontWeight.w600,
               ),
             ),
-
-            // Botón flotante de cancelar en la esquina inferior derecha
-            Positioned(
-              right: 20,
-              bottom: 90, // Colocado encima de los botones principales
-              child: NeumorphicButton(
-                style: NeumorphicStyle(
-                  depth: 4,
-                  intensity: 0.8,
-                  color: const Color(0xFFF56565),
-                  boxShape: NeumorphicBoxShape.circle(),
-                  shadowDarkColor: const Color(0xFFC53030).withOpacity(0.4),
-                ),
-                padding: const EdgeInsets.all(16),
-                onPressed: () {
-                  Navigator.pop(context);
-                  _showCancelDialog(context, assignment, assignmentsProvider);
-                },
-                // garbage icon
-                child: const Icon(
-                  Icons.delete_outline,
-                  color: Colors.white,
-                  size: 28,
-                ),
-              ),
-            ),
-          ],
-        );
-      },
+          ),
+        ),
+      ],
+      floatingActionBuilder: (context, assignment) => NeumorphicButton(
+        style: NeumorphicStyle(
+          depth: 4,
+          intensity: 0.8,
+          color: const Color(0xFFF56565),
+          boxShape: NeumorphicBoxShape.circle(),
+          shadowDarkColor: const Color(0xFFC53030).withOpacity(0.4),
+        ),
+        padding: const EdgeInsets.all(16),
+        onPressed: () {
+          Navigator.pop(context);
+          _showCancelDialog(context, assignment, provider);
+        },
+        child: const Icon(
+          Icons.delete_outline,
+          color: Colors.white,
+          size: 28,
+        ),
+      ),
     );
   }
 
@@ -860,25 +656,6 @@ class _PendingAssignmentsViewState extends State<PendingAssignmentsView> {
           },
         );
       },
-    );
-  }
-
-  Widget _buildDetailsSection(
-      {required String title, required List<Widget> children}) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          title,
-          style: const TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.bold,
-            color: Color(0xFF2D3748),
-          ),
-        ),
-        const SizedBox(height: 12),
-        ...children,
-      ],
     );
   }
 }

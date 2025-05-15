@@ -1,13 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_neumorphic_plus/flutter_neumorphic.dart';
+import 'package:plannerop/core/model/task.dart';
 import 'package:plannerop/core/model/worker.dart';
 import 'package:plannerop/core/model/assignment.dart';
 import 'package:plannerop/core/model/workerGroup.dart';
 import 'package:plannerop/store/assignments.dart';
+import 'package:plannerop/store/task.dart';
 import 'package:plannerop/store/workerGroup.dart';
 import 'package:plannerop/store/workers.dart';
 import 'package:plannerop/utils/group.dart';
 import 'package:plannerop/utils/toast.dart';
+import 'package:plannerop/utils/worker_utils.dart';
 import 'package:plannerop/widgets/assingments/editAssignmentForm.dart';
 import 'package:provider/provider.dart';
 import 'worker_selection_dialog.dart';
@@ -96,7 +99,9 @@ class _SelectedWorkersListState extends State<SelectedWorkersList> {
         .where((assignment) =>
             assignment.date.isAfter(DateTime.now().subtract(Duration(days: 2))))
         .toList();
-    final availableWorkers = workersProvider.getWorkersAvailable();
+
+    // final availableWorkers = workersProvider.getWorkersAvailable();
+    final availableWorkers = workersProvider.workersWithoutRetiredAndDisabled;
 
     // Mapa para acumular las horas por trabajador
     Map<int, double> hoursMap = {};
@@ -130,14 +135,17 @@ class _SelectedWorkersListState extends State<SelectedWorkersList> {
 
     debugPrint('Total hours calculated: ${hoursMap.length}');
 
-    // Filtrar trabajadores disponibles que tengan menos de 12 horas trabajadas
-    final filteredWorkers = availableWorkers.where((worker) {
-      // Si el trabajador no está en el mapa o tiene menos de 12 horas, está disponible
-      return !hoursMap.containsKey(worker.id) ||
-          (hoursMap[worker.id] ?? 0) < 12.0;
-    }).toList();
+    final filteredWorkers =
+        availableWorkers; // Usar todos los trabajadores sin filtrar por horas
 
-    debugPrint('Filtered workers: ${filteredWorkers.length}');
+    // Filtrar trabajadores disponibles que tengan menos de 12 horas trabajadas
+    // final filteredWorkers = availableWorkers.where((worker) {
+    //   // Si el trabajador no está en el mapa o tiene menos de 12 horas, está disponible
+    //   return !hoursMap.containsKey(worker.id) ||
+    //       (hoursMap[worker.id] ?? 0) < 12.0;
+    // }).toList();
+
+    debugPrint('Filtered workers2: ${filteredWorkers.length}');
 
     final Set<int> selectedWorkerIds =
         widget.selectedWorkers.map((w) => w.id).toSet();
@@ -148,9 +156,11 @@ class _SelectedWorkersListState extends State<SelectedWorkersList> {
           !selectedWorkerIds.contains(worker.id);
     }).toList();
 
+    /* TODO depronto mas tarde volver a habilitar lo de que no puede estar en dos operaciones*/
+
     setState(() {
       _workerHours = hoursMap;
-      _filteredWorkers = availableForSelection;
+      _filteredWorkers = filteredWorkers;
       _isCalculatingHours = false;
     });
   }
@@ -295,6 +305,7 @@ class _SelectedWorkersListState extends State<SelectedWorkersList> {
     String? endTime;
     DateTime? startDate;
     DateTime? endDate;
+    List<int> selectedServiceIds = [];
 
     // 1. Primero mostrar diálogo para seleccionar horarios
     bool continueToSelection = await showDialog<bool>(
@@ -302,6 +313,11 @@ class _SelectedWorkersListState extends State<SelectedWorkersList> {
           builder: (context) => AlertDialog(
             title: const Text('Definir horario común'),
             content: StatefulBuilder(builder: (context, setState) {
+              // Obtener el TasksProvider para acceder a la lista de tareas/servicios
+              final tasksProvider =
+                  Provider.of<TasksProvider>(context, listen: false);
+              final List<Task> availableTasks = tasksProvider.tasks;
+
               return SingleChildScrollView(
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
@@ -588,6 +604,68 @@ class _SelectedWorkersListState extends State<SelectedWorkersList> {
                         ),
                       ),
                     ),
+
+                    const SizedBox(height: 12),
+                    // Nuevo selector de servicios
+                    const Text(
+                      'Selecciona los servicios para este grupo:',
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+
+                    Container(
+                      constraints: BoxConstraints(
+                        maxHeight: 150,
+                      ),
+                      decoration: BoxDecoration(
+                        border: Border.all(color: Colors.grey[300]!),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: SingleChildScrollView(
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: availableTasks.map((task) {
+                            final isSelected =
+                                selectedServiceIds.contains(task.id);
+
+                            return CheckboxListTile(
+                              title: Text(
+                                task.name,
+                                style: TextStyle(fontSize: 13),
+                              ),
+                              value: isSelected,
+                              dense: true,
+                              onChanged: (value) {
+                                if (value == true) {
+                                  setState(() {
+                                    selectedServiceIds.add(task.id);
+                                  });
+                                } else {
+                                  setState(() {
+                                    selectedServiceIds.remove(task.id);
+                                  });
+                                }
+                              },
+                            );
+                          }).toList(),
+                        ),
+                      ),
+                    ),
+                    // Si no hay servicios seleccionados, mostrar mensaje
+                    if (selectedServiceIds.isEmpty)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 8.0),
+                        child: Text(
+                          'Selecciona al menos un servicio',
+                          style: TextStyle(
+                            color: Colors.red[700],
+                            fontSize: 12,
+                          ),
+                        ),
+                      ),
                   ],
                 ),
               );
@@ -996,7 +1074,8 @@ class _SelectedWorkersListState extends State<SelectedWorkersList> {
                             leading: Stack(
                               children: [
                                 CircleAvatar(
-                                  backgroundColor: _getColorForWorker(worker),
+                                  backgroundColor:
+                                      WorkerUtils.getColorForWorker(worker),
                                   radius: 16,
                                   child: Text(
                                     worker.name.isNotEmpty
@@ -1171,20 +1250,5 @@ class _SelectedWorkersListState extends State<SelectedWorkersList> {
           ),
       ],
     );
-  }
-
-  // Obtener un color consistente para cada trabajador basado en su ID
-  Color _getColorForWorker(Worker worker) {
-    final List<Color> colors = [
-      Colors.blue,
-      Colors.red,
-      Colors.green,
-      Colors.orange,
-      Colors.purple,
-      Colors.teal,
-      Colors.indigo,
-    ];
-    final int index = worker.id % colors.length;
-    return colors[index];
   }
 }

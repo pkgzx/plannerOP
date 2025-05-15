@@ -8,8 +8,8 @@ String getGroupName(DateTime? startDate, DateTime? endDate, String? startTime,
   // Determinar si las fechas son diferentes
   bool hasDifferentDates = startDate != null &&
       endDate != null &&
-      DateFormat('yyyy-MM-dd').format(startDate!) !=
-          DateFormat('yyyy-MM-dd').format(endDate!);
+      DateFormat('yyyy-MM-dd').format(startDate) !=
+          DateFormat('yyyy-MM-dd').format(endDate);
 
   // Caso 1: Tiene todos los campos de horario (fecha y hora de inicio y fin)
   if (startDate != null &&
@@ -19,20 +19,20 @@ String getGroupName(DateTime? startDate, DateTime? endDate, String? startTime,
     if (hasDifferentDates) {
       // Fechas diferentes: mostrar ambas fechas completas con horas
       groupName =
-          'Grupo ${DateFormat('dd/MM').format(startDate!)} $startTime - ${DateFormat('dd/MM').format(endDate!)} $endTime';
+          'Grupo ${DateFormat('dd/MM').format(startDate)} $startTime - ${DateFormat('dd/MM').format(endDate)} $endTime';
     } else {
       // Misma fecha: mostrar fecha una vez con ambas horas
       groupName =
-          'Grupo ${DateFormat('dd/MM').format(startDate!)} $startTime-$endTime';
+          'Grupo ${DateFormat('dd/MM').format(startDate)} $startTime-$endTime';
     }
   }
   // Caso 2: Solo tiene fechas (sin horas)
   else if (startDate != null && endDate != null) {
     if (hasDifferentDates) {
       groupName =
-          'Grupo ${DateFormat('dd/MM').format(startDate!)} - ${DateFormat('dd/MM').format(endDate!)}';
+          'Grupo ${DateFormat('dd/MM').format(startDate)} - ${DateFormat('dd/MM').format(endDate)}';
     } else {
-      groupName = 'Grupo ${DateFormat('dd/MM').format(startDate!)}';
+      groupName = 'Grupo ${DateFormat('dd/MM').format(startDate)}';
     }
   }
   // Caso 3: Solo tiene horas (sin fechas)

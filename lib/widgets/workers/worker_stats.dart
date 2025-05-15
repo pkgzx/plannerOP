@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:plannerop/pages/supervisor/tabs/worker_filter.dart';
+import 'package:plannerop/widgets/worker_filter.dart';
 import 'package:plannerop/store/faults.dart';
 import 'package:provider/provider.dart';
 
