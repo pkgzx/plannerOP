@@ -13,7 +13,6 @@ class FaultService {
 
   // Método para obtener todas las faltas desde la API
   Future<List<Fault>> fetchFaults(BuildContext context) async {
-    debugPrint('fetchFaults llamado**********+');
     try {
       if (!context.mounted) {
         debugPrint('Context no está montado, abortando fetchFaults');
@@ -47,7 +46,6 @@ class FaultService {
               return [];
             }
 
-            debugPrint('Procesando falta: $fault');
             // Buscar el worker asociado a esta falta
             final workerId = fault['id_worker'] ?? fault['id_worker'];
             final worker = workers.firstWhere((w) => w.id == workerId,

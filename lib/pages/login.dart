@@ -1,15 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_neumorphic_plus/flutter_neumorphic.dart';
-import 'package:jwt_decoder/jwt_decoder.dart';
 import 'package:lottie/lottie.dart';
-import 'package:plannerop/core/model/user.dart';
-import 'package:plannerop/dto/auth/signin.dart';
-import 'package:plannerop/pages/supervisor/home.dart';
-import 'package:plannerop/services/auth/signin.dart';
-import 'package:plannerop/store/auth.dart';
-import 'package:plannerop/store/user.dart';
-import 'package:plannerop/utils/toast.dart';
-import 'package:provider/provider.dart';
+import 'package:plannerop/hooks/auth/useLogin.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -24,7 +16,7 @@ class _LoginPageState extends State<LoginPage> {
   final TextEditingController _passwordController = TextEditingController();
   final FocusNode _usernameFocusNode = FocusNode();
   final FocusNode _passwordFocusNode = FocusNode();
-  final SigninService _signinService = SigninService();
+  bool _isLoading = false;
 
   void _onFocusChange() {
     setState(() {});
@@ -35,6 +27,11 @@ class _LoginPageState extends State<LoginPage> {
     super.initState();
     _usernameFocusNode.addListener(_onFocusChange);
     _passwordFocusNode.addListener(_onFocusChange);
+
+    // Intentar auto-login al iniciar la página
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      tryAutoLogin(mounted, setState, _isLoading, context);
+    });
   }
 
   @override
@@ -48,108 +45,16 @@ class _LoginPageState extends State<LoginPage> {
     super.dispose();
   }
 
-  Future<void> _login() async {
-    if (_formKey.currentState!.validate()) {
-      // Variable para controlar si el diálogo está mostrado
-      bool dialogIsOpen = true;
-
-      // Mantener una referencia al contexto del diálogo
-      BuildContext? dialogContextRef;
-
-      // Mostrar indicador de carga
-      showDialog(
-        context: context,
-        barrierDismissible: false,
-        builder: (BuildContext dialogContext) {
-          // Guardar la referencia al contexto del diálogo
-          dialogContextRef = dialogContext;
-
-          return WillPopScope(
-            onWillPop: () async => false, // Prevenir cierre con el botón atrás
-            child: const Center(
-              child: CircularProgressIndicator(
-                valueColor: AlwaysStoppedAnimation<Color>(Colors.blue),
-              ),
-            ),
-          );
-        },
-      );
-
-      // Función para cerrar el diálogo de manera segura
-      void closeDialog() {
-        if (dialogIsOpen && mounted && dialogContextRef != null) {
-          Navigator.of(dialogContextRef!).pop();
-          dialogIsOpen = false;
-        }
-      }
-
-      // Configurar un timeout para cerrar el diálogo después de 10 segundos
-      Future.delayed(const Duration(seconds: 10), () {
-        if (dialogIsOpen) {
-          closeDialog();
-          showAlertToast(
-              context, 'La operación está tardando demasiado tiempo');
-          debugPrint(
-              '⚠️ Timeout de login activado - Diálogo cerrado por timeout');
-        }
-      });
-
-      try {
-        debugPrint('🔒 Iniciando proceso de login...');
-
-        final ResSigninDto response = await _signinService.signin(
-          _usernameController.text,
-          _passwordController.text,
-        );
-
-        // Cerrar el diálogo de carga si aún está abierto
-        closeDialog();
-        debugPrint('✅ Login completado - Diálogo cerrado normalmente');
-
-        if (response.isSuccess) {
-          if (!mounted) return;
-
-          // Resto del código para iniciar sesión exitosa...
-          final authProvider =
-              Provider.of<AuthProvider>(context, listen: false);
-          authProvider.setAccessToken(response.accessToken);
-
-          final decodedToken = JwtDecoder.decode(response.accessToken);
-
-          final userProvider =
-              Provider.of<UserProvider>(context, listen: false);
-          userProvider.setUser(User(
-            name: decodedToken['username'],
-            id: decodedToken['id'],
-            dni: decodedToken['dni'],
-            phone: decodedToken['phone'],
-            cargo: decodedToken['occupation'],
-          ));
-
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(builder: (context) => const SupervisorHome()),
-          );
-        } else {
-          if (!mounted) return;
-          showErrorToast(context, 'Usuario o contraseña incorrectos');
-        }
-      } catch (e) {
-        debugPrint('❌ Error en login: $e');
-
-        // Cerrar el diálogo de carga si hay error y está abierto
-        closeDialog();
-        debugPrint('⚠️ Login fallido - Diálogo cerrado por error');
-
-        if (mounted) {
-          showErrorToast(context, 'Error de conexión: $e');
-        }
-      }
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
+    // Si está cargando (intentando auto-login), mostrar spinner
+    if (_isLoading) {
+      return const Scaffold(
+        body: Center(
+          child: CircularProgressIndicator(),
+        ),
+      );
+    }
     return Scaffold(
       body: SafeArea(
         child: Column(
@@ -233,7 +138,13 @@ class _LoginPageState extends State<LoginPage> {
                       NeumorphicButton(
                         onPressed: () async {
                           if (_formKey.currentState!.validate()) {
-                            await _login();
+                            await login(
+                              _formKey,
+                              context,
+                              mounted,
+                              _usernameController.text,
+                              _passwordController.text,
+                            );
                           }
                         },
                         style: NeumorphicStyle(

@@ -1,10 +1,12 @@
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:plannerop/core/model/user.dart';
 import 'package:http/http.dart' as http;
 import 'package:plannerop/store/auth.dart';
+import 'package:plannerop/utils/toast.dart';
 import 'package:provider/provider.dart';
 
 class ChargersopService {
@@ -25,9 +27,7 @@ class ChargersopService {
 
       if (response.statusCode == 200) {
         final List<dynamic> chargers = jsonDecode(response.body);
-        for (var charger in chargers) {
-          print('charger: $charger');
-        }
+        debugPrint(chargers.toString());
         return chargers
             .where((charger) =>
                 charger['occupation'] == 'SUPERVISOR' ||
@@ -37,7 +37,13 @@ class ChargersopService {
       } else {
         throw Exception('Failed to load chargers');
       }
-    } catch (e) {
+    } on SocketException catch (e) {
+      showErrorToast(context, 'No Internet connection');
+      return [];
+    } on HttpException catch (e) {
+      showErrorToast(context, 'Failed to load chargers');
+      return [];
+    } on FormatException catch (e) {
       print(e);
       throw Exception('Failed to load chargers');
     }

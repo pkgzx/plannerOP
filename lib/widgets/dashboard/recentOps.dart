@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_neumorphic_plus/flutter_neumorphic.dart';
-import 'package:plannerop/core/model/worker.dart';
 import 'package:plannerop/store/clients.dart';
+import 'package:plannerop/utils/worker_utils.dart';
+import 'package:plannerop/widgets/assingments/emptyState.dart';
 import 'package:provider/provider.dart';
 import 'package:plannerop/store/assignments.dart';
 import 'package:plannerop/core/model/assignment.dart';
@@ -153,30 +154,12 @@ class RecentOps extends StatelessWidget {
   }
 
   Widget _buildEmptyState() {
-    return const Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            Icons.assignment_outlined,
-            size: 48,
-            color: Color(0xFFCBD5E0),
-          ),
-          SizedBox(height: 16),
-          Text(
-            'No hay operaciones recientes',
-            style: TextStyle(
-              color: Color(0xFF718096),
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-        ],
-      ),
+    return EmptyState(
+      message: 'No hay operaciones recientes',
     );
   }
 
   // Reemplaza el método _showAssignmentDetails existente con este nuevo método:
-
   void _showAssignmentDetails(BuildContext context, Assignment assignment) {
     // Determinar el estado de la operación y sus colores
     String estado;
@@ -441,7 +424,8 @@ class RecentOps extends StatelessWidget {
                                           CircleAvatar(
                                             radius: 18,
                                             backgroundColor:
-                                                _getColorForWorker(worker.name),
+                                                WorkerUtils.getColorForWorker(
+                                                    worker),
                                             child: Text(
                                               worker.name.isNotEmpty
                                                   ? worker.name
@@ -641,85 +625,5 @@ class RecentOps extends StatelessWidget {
     final client = clientsProvider.getClientById(clientId);
 
     return client?.name ?? 'Cliente no encontrado';
-  }
-
-  // Color para el avatar del trabajador basado en su nombre
-  Color _getColorForWorker(String name) {
-    final List<Color> colors = [
-      const Color(0xFF4299E1), // azul
-      const Color(0xFF48BB78), // verde
-      const Color(0xFFED8936), // naranja
-      const Color(0xFF9F7AEA), // púrpura
-      const Color(0xFFF56565), // rojo
-      const Color(0xFFECC94B), // amarillo
-    ];
-
-    return colors[name.hashCode % colors.length];
-  }
-
-  // Obtener texto de estado para el trabajador
-  String _getStatusText(WorkerStatus status) {
-    switch (status) {
-      case WorkerStatus.available:
-        return 'DISPONIBLE';
-      case WorkerStatus.assigned:
-        return 'ASIGNADO';
-      case WorkerStatus.incapacitated:
-        return 'INCAPACIDAD';
-      case WorkerStatus.deactivated:
-        return 'RETIRADO';
-      default:
-        return 'DESCONOCIDO';
-    }
-  }
-
-  // Obtener color para el estado del trabajador
-  Color _getStatusColor(String status) {
-    switch (status.toUpperCase()) {
-      case 'AVAILABLE':
-        return const Color(0xFF48BB78);
-      case 'ASSIGNED':
-        return const Color(0xFF4299E1);
-      case 'INCAPACITATED':
-        return const Color(0xFFF56565);
-      case 'DEACTIVATED':
-        return const Color(0xFF718096);
-      default:
-        return const Color(0xFF718096);
-    }
-  }
-
-  Widget _buildInfoRow({
-    required IconData icon,
-    required String label,
-    required String value,
-  }) {
-    return Row(
-      children: [
-        Icon(
-          icon,
-          size: 16,
-          color: const Color(0xFF718096),
-        ),
-        const SizedBox(width: 8),
-        Text(
-          '$label:',
-          style: const TextStyle(
-            fontWeight: FontWeight.w600,
-            color: Color(0xFF4A5568),
-          ),
-        ),
-        const SizedBox(width: 4),
-        Expanded(
-          child: Text(
-            value,
-            style: const TextStyle(
-              color: Color(0xFF2D3748),
-            ),
-            overflow: TextOverflow.ellipsis,
-          ),
-        ),
-      ],
-    );
   }
 }

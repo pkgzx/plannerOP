@@ -1,9 +1,11 @@
 import 'package:plannerop/core/model/user.dart';
 import 'package:plannerop/core/model/worker.dart';
+import 'package:plannerop/core/model/workerGroup.dart';
 
 class Assignment {
   int? id;
   final List<Worker> workers;
+  List<Worker> workersFinished = [];
   final List<int> inChagers;
   final String area;
   final String task;
@@ -19,7 +21,10 @@ class Assignment {
   final int areaId;
   final int taskId;
   final int clientId;
+  DateTime? createdAt;
+  DateTime? updatedAt;
   List<Worker> deletedWorkers = [];
+  List<WorkerGroup> groups = [];
 
   set endTime(String? endTime) {
     this.endTime = endTime;
@@ -32,7 +37,7 @@ class Assignment {
   Assignment({
     this.id,
     required this.workers,
-    this.inChagers = const [],
+    required this.inChagers,
     required this.area,
     required this.task,
     required this.date,
@@ -48,6 +53,11 @@ class Assignment {
     required this.areaId,
     required this.taskId,
     required this.clientId,
+    this.createdAt,
+    this.updatedAt,
+    this.groups = const [],
+    this.workersFinished = const [],
+    // required this.groups,
   });
 
   Map<String, dynamic> toJson() {
@@ -90,6 +100,8 @@ class Assignment {
       taskId: json['task']['id'],
       clientId: json['id_client'],
       inChagers: json['chagers'], // ! NOT WORKING
+      createdAt: DateTime.parse(json['createAt']),
+      updatedAt: DateTime.parse(json['updateAt']),
     );
   }
 }

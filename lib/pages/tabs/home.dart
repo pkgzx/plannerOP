@@ -1,40 +1,31 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_neumorphic_plus/flutter_neumorphic.dart';
-import 'package:plannerop/core/model/user.dart';
 import 'package:plannerop/pages/login.dart';
-import 'package:plannerop/pages/supervisor/tabs/dashboard.dart';
-import 'package:plannerop/pages/supervisor/tabs/asignaciones.dart';
-import 'package:plannerop/pages/supervisor/tabs/reports.dart';
-import 'package:plannerop/pages/supervisor/tabs/workers.dart';
+import 'package:plannerop/pages/tabs/assigments.dart';
+import 'package:plannerop/pages/tabs/dashboard.dart';
+import 'package:plannerop/pages/tabs/reports.dart';
+import 'package:plannerop/pages/tabs/workers.dart';
+
 import 'package:plannerop/store/auth.dart';
 import 'package:plannerop/store/user.dart';
 import 'package:provider/provider.dart';
 import 'package:plannerop/store/assignments.dart';
-import 'package:plannerop/utils/toast.dart'; // Asegúrate de que exista este archivo
+import 'package:plannerop/utils/toast.dart';
 
-class SupervisorHome extends StatefulWidget {
-  const SupervisorHome({super.key});
+class Home extends StatefulWidget {
+  const Home({super.key});
 
   @override
-  _SupervisorHomeState createState() => _SupervisorHomeState();
+  _HomeState createState() => _HomeState();
 }
 
-class _SupervisorHomeState extends State<SupervisorHome> {
+class _HomeState extends State<Home> {
   int _selectedIndex = 0;
-  int _previousIndex = 0;
   DateTime? _lastBackPressTime;
 
-  // Usar claves globales para mantener el estado de cada tab
-  final List<GlobalKey> _tabKeys = [
-    GlobalKey(),
-    GlobalKey(),
-    GlobalKey(),
-    GlobalKey()
-  ];
-
   // Registrar la última vez que se visitó cada tab
-  Map<int, DateTime> _lastVisitTimes = {};
+  final Map<int, DateTime> _lastVisitTimes = {};
 
   // Crear tabs dinámicamente con claves para controlar su estado
   late final List<Widget> _widgetOptions;
@@ -44,30 +35,30 @@ class _SupervisorHomeState extends State<SupervisorHome> {
     super.initState();
     // Inicializar los widgets con sus claves
     _widgetOptions = [
-      DashboardTab(key: _tabKeys[0]),
-      AsignacionesTab(key: _tabKeys[1]),
-      ReportesTab(key: _tabKeys[2]),
-      WorkersTab(key: _tabKeys[3]),
+      DashboardTab(),
+      AsignacionesTab(),
+      ReportesTab(),
+      WorkersTab(),
     ];
 
     // Registrar el tiempo inicial para el primer tab
     _lastVisitTimes[_selectedIndex] = DateTime.now();
   }
 
-  // Método para confirmar la salida
   Future<bool> _onWillPop() async {
     final now = DateTime.now();
 
-    // Si el usuario presiona atrás dos veces rápidamente (dentro de 2 segundos), cerrar la app
     if (_lastBackPressTime != null &&
         now.difference(_lastBackPressTime!) < const Duration(seconds: 2)) {
-      // Salir de la aplicación
       SystemNavigator.pop();
       return true;
     }
 
-    // Primera vez que presiona atrás, mostrar diálogo de confirmación
     _lastBackPressTime = now;
+
+    // Captura las referencias a los providers antes de mostrar el diálogo
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    final userProvider = Provider.of<UserProvider>(context, listen: false);
 
     final bool? shouldLogout = await showDialog<bool>(
       context: context,
@@ -77,13 +68,14 @@ class _SupervisorHomeState extends State<SupervisorHome> {
         actions: <Widget>[
           TextButton(
             onPressed: () {
-              Navigator.of(context).pop(false); // No cerrar sesión
+              Navigator.of(context).pop(false);
             },
             child: const Text('No'),
           ),
           TextButton(
-            onPressed: () {
-              Navigator.of(context).pop(true); // Sí cerrar sesión
+            onPressed: () async {
+              // IMPORTANTE: Primero cerramos el diálogo
+              Navigator.of(context).pop(true);
             },
             child: const Text('Sí'),
           ),
@@ -91,34 +83,58 @@ class _SupervisorHomeState extends State<SupervisorHome> {
       ),
     );
 
-    // Si el usuario confirmó que quiere cerrar sesión
     if (shouldLogout == true) {
-      // Cerrar sesión
-      final authProvider = Provider.of<AuthProvider>(context, listen: false);
-      authProvider.clearAccessToken();
-
-      // Navegar a la página de login y eliminar todas las rutas anteriores
+      // Mostrar un indicador de carga
       if (mounted) {
-        Navigator.of(context).pushAndRemoveUntil(
-          MaterialPageRoute(builder: (context) => const LoginPage()),
-          (Route<dynamic> route) => false,
+        showDialog(
+          context: context,
+          barrierDismissible: false,
+          builder: (dialogContext) => PopScope(
+            canPop: false,
+            child: const Center(
+              child: CircularProgressIndicator(),
+            ),
+          ),
         );
       }
 
-      return true; // Permitir el pop
-    }
+      try {
+        // IMPORTANTE: Usamos la referencia capturada anteriormente
+        userProvider.clearUser();
+        await authProvider.logout();
 
-    // Mostrar mensaje al usuario
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Presiona atrás de nuevo para salir de la aplicación'),
-          duration: Duration(seconds: 2),
-        ),
-      );
+        // Una vez completado el logout, navegamos a la página de login
+        if (mounted) {
+          // IMPORTANTE: Usamos pushReplacement en lugar de pushAndRemoveUntil
+          // Esto evita problemas con el contexto al desmontar widgets
+          Navigator.of(context).pushReplacement(
+            MaterialPageRoute(builder: (context) => const LoginPage()),
+          );
+        }
+        return true;
+      } catch (e) {
+        debugPrint('Error al cerrar sesión: $e');
+        if (mounted) {
+          // Cerrar el loader si está visible
+          if (Navigator.canPop(context)) {
+            Navigator.of(context).pop();
+          }
+          showErrorToast(context, 'Error al cerrar sesión');
+        }
+        return false;
+      }
+    } else {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content:
+                Text('Presiona atrás de nuevo para salir de la aplicación'),
+            duration: Duration(seconds: 2),
+          ),
+        );
+      }
+      return false;
     }
-
-    return false; // No permitir el comportamiento predeterminado del botón atrás
   }
 
   void _onItemTapped(int index) {
@@ -134,7 +150,6 @@ class _SupervisorHomeState extends State<SupervisorHome> {
     }
 
     setState(() {
-      _previousIndex = _selectedIndex;
       _selectedIndex = index;
 
       // Registrar cuándo se visitó este tab
@@ -163,12 +178,6 @@ class _SupervisorHomeState extends State<SupervisorHome> {
         } else if (tabIndex == 1) {
           // Refrescar Asignaciones
           _refreshAsignaciones();
-        } else if (tabIndex == 2) {
-          // Refrescar Reportes
-          _refreshReportes();
-        } else if (tabIndex == 3) {
-          // Refrescar Trabajadores
-          _refreshWorkers();
         }
       });
     }
@@ -176,7 +185,7 @@ class _SupervisorHomeState extends State<SupervisorHome> {
 
   // Métodos específicos para refrescar cada tab
   void _refreshDashboard() {
-    debugPrint('🔄 Refrescando Dashboard...');
+    // debugPrint('🔄 Refrescando Dashboard...');
     final assignmentsProvider =
         Provider.of<AssignmentsProvider>(context, listen: false);
     // Actualizar silenciosamente sin mostrar indicadores de carga
@@ -184,22 +193,11 @@ class _SupervisorHomeState extends State<SupervisorHome> {
   }
 
   void _refreshAsignaciones() {
-    debugPrint('🔄 Refrescando Asignaciones...');
+    // debugPrint('🔄 Refrescando Asignaciones...');
     final assignmentsProvider =
         Provider.of<AssignmentsProvider>(context, listen: false);
     // Refrescar solo asignaciones activas y pendientes
     assignmentsProvider.refreshActiveAssignments(context);
-  }
-
-  void _refreshReportes() {
-    // No requiere actualización automática, pues normalmente usa datos históricos
-    debugPrint('🔄 Reportes seleccionado (no requiere refresco automático)');
-  }
-
-  void _refreshWorkers() {
-    debugPrint('🔄 Refrescando Trabajadores...');
-    // Usar el mecanismo existente en WorkersProvider si existe
-    // (esto dependerá de tu implementación actual)
   }
 
   @override

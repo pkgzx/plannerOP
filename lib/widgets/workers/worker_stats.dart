@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:plannerop/pages/supervisor/tabs/worker_filter.dart';
+import 'package:plannerop/widgets/worker_filter.dart';
 import 'package:plannerop/store/faults.dart';
 import 'package:provider/provider.dart';
 
@@ -23,8 +23,7 @@ class WorkerStatsCards extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final availableWorkers =
-        totalWorkers - assignedWorkers - disabledWorkers - retiredWorkers;
+    final availableWorkers = totalWorkers - assignedWorkers - disabledWorkers;
 
     final faultsProvider = Provider.of<FaultsProvider>(context);
 
@@ -79,8 +78,7 @@ class WorkerStatsCards extends StatelessWidget {
                 ),
                 _buildStatCard(
                   title: 'Novedades',
-                  value:
-                      '${faultsProvider.getWorkersWithMostFaults(context).length}',
+                  value: '${faultsProvider.faults.length}',
                   icon: Icons.warning_amber_rounded,
                   color: const Color(0xFFF56565),
                   isSelected: currentFilter == WorkerFilter.faults,

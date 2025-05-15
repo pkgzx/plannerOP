@@ -101,7 +101,7 @@ class AssignmentDetailsBottomSheet extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  buildDetailsSection(
+                  buildDetailSection(
                     title: 'Detalles de la operación',
                     children: [
                       buildDetailRow('Fecha',
@@ -125,7 +125,7 @@ class AssignmentDetailsBottomSheet extends StatelessWidget {
                     ],
                   ),
                   const SizedBox(height: 20),
-                  buildDetailsSection(
+                  buildDetailSection(
                     title: 'Trabajadores asignados',
                     children: assignment.workers.map((worker) {
                       return _buildWorkerItem(worker);

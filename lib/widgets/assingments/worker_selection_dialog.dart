@@ -6,16 +6,20 @@ import 'package:provider/provider.dart';
 
 class WorkerSelectionDialog extends StatefulWidget {
   final List<Worker> selectedWorkers;
+  final List<Worker> allSelectedWorkers; // Lista de trabajadores seleccionados
   final List<Worker>?
       availableWorkers; // Opcional, permite pasar trabajadores filtrados
   final Map<int, double>? workerHours; // Horas trabajadas por cada trabajador
+  final String title; // Título del diálogo
 
-  const WorkerSelectionDialog({
-    Key? key,
-    required this.selectedWorkers,
-    this.availableWorkers,
-    this.workerHours,
-  }) : super(key: key);
+  const WorkerSelectionDialog(
+      {Key? key,
+      required this.selectedWorkers,
+      this.availableWorkers,
+      this.workerHours,
+      required this.allSelectedWorkers,
+      required this.title})
+      : super(key: key);
 
   @override
   State<WorkerSelectionDialog> createState() => _WorkerSelectionDialogState();
@@ -48,19 +52,20 @@ class _WorkerSelectionDialogState extends State<WorkerSelectionDialog> {
 
   // Obtener trabajadores disponibles (sin filtro de área ni búsqueda)
   List<Worker> _getAvailableWorkers(BuildContext context) {
-    // De lo contrario, obtener de WorkersProvider
-    final workersProvider = Provider.of<WorkersProvider>(context);
-    // Si se proporcionó una lista de trabajadores filtrados, usarla
+    // Si se proporcionó una lista de trabajadores filtrados, usarla directamente
     if (widget.availableWorkers != null) {
-      return workersProvider.getWorkersAvailable();
-      ;
+      debugPrint('Usando lista de trabajadores filtrados proporcionada');
+      return widget
+          .availableWorkers!; // CAMBIO AQUÍ: Usar la lista proporcionada
     }
 
     // De lo contrario, obtener de WorkersProvider
-    return workersProvider.getWorkersAvailable();
+    final workersProvider = Provider.of<WorkersProvider>(context);
+    // return workersProvider.getWorkersAvailable();
+    return workersProvider.workersWithoutRetiredAndDisabled;
   }
 
-  // Método para verificar si un trabajador ya está seleccionado
+// También corrige este método para que considere correctamente los trabajadores seleccionados:
   bool _isSelected(Worker worker) {
     return _selectedWorkers.any((selected) => selected.id == worker.id);
   }
@@ -130,6 +135,8 @@ class _WorkerSelectionDialogState extends State<WorkerSelectionDialog> {
   Widget build(BuildContext context) {
     final filteredWorkers = _getFilteredWorkers(context);
     final areas = _getAreas(context);
+    debugPrint("Filtered workers: $filteredWorkers");
+    debugPrint("Length filtered workers: ${filteredWorkers.length}");
 
     return Dialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
@@ -145,9 +152,9 @@ class _WorkerSelectionDialogState extends State<WorkerSelectionDialog> {
             // Título con contador de seleccionados
             Row(
               children: [
-                const Text(
-                  'Seleccionar Trabajadores',
-                  style: TextStyle(
+                Text(
+                  widget.title,
+                  style: const TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
                   ),
@@ -463,11 +470,6 @@ class _WorkerSelectionDialogState extends State<WorkerSelectionDialog> {
     }
 
     return colors[hash.abs() % colors.length];
-  }
-
-  // Obtener color para un trabajador
-  Color _getColorForWorker(Worker worker) {
-    return _getColorForArea(worker.area);
   }
 
   @override

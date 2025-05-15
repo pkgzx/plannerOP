@@ -22,4 +22,10 @@ class User {
       phone: json['phone'],
     );
   }
+
+  // toString()
+  @override
+  String toString() {
+    return 'User{id: $id, name: $name, dni: $dni, phone: $phone, cargo: $cargo}';
+  }
 }

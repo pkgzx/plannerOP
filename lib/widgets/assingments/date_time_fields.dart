@@ -7,8 +7,10 @@ class DateField extends StatelessWidget {
   final String hint;
   final IconData icon;
   final TextEditingController controller;
-  final Function(String)? onDateChanged; // Añadir esta callback
+  final Function(String) onDateChanged; // Añadir esta callback
   final bool isOptional;
+  final bool locked;
+  final String? lockedMessage;
 
   const DateField({
     Key? key,
@@ -16,8 +18,10 @@ class DateField extends StatelessWidget {
     required this.hint,
     required this.icon,
     required this.controller,
-    this.onDateChanged, // Opcional para notificar cambios
+    required this.onDateChanged,
     this.isOptional = false,
+    this.locked = false,
+    this.lockedMessage,
   }) : super(key: key);
 
   @override
@@ -27,111 +31,118 @@ class DateField extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            label,
-            style: const TextStyle(
-              fontWeight: FontWeight.w600,
-              fontSize: 14,
-              color: Color(0xFF4A5568),
-            ),
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  label,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w600,
+                    fontSize: 14,
+                    color: Color(0xFF4A5568),
+                  ),
+                ),
+              ),
+              if (locked) // Mostrar un indicador de bloqueo
+                Tooltip(
+                  message: lockedMessage ?? 'Este campo no se puede modificar',
+                  child: const Icon(
+                    Icons.lock_outline,
+                    size: 16,
+                    color: Color(0xFFE53E3E),
+                  ),
+                ),
+            ],
           ),
           const SizedBox(height: 6),
           GestureDetector(
-            onTap: () async {
-              final DateTime now = DateTime.now();
-              final DateTime firstDate = now;
-              final DateTime lastDate =
-                  DateTime(now.year + 3, now.month, now.day);
-
-              // Intentar usar la fecha actual del campo o usar hoy
-              DateTime initialDate;
-              try {
-                // Verificar que el texto no esté vacío antes de intentar parsearlo
-                if (controller.text.isNotEmpty) {
-                  initialDate = DateFormat('dd/MM/yyyy').parse(controller.text);
-                  // Si la fecha es anterior a hoy, usar hoy
-                  if (initialDate.isBefore(firstDate)) {
-                    initialDate = firstDate;
-                  }
-                } else {
-                  // Si el campo está vacío, usar la fecha actual
-                  initialDate = firstDate;
-                }
-              } catch (_) {
-                initialDate = firstDate;
-              }
-
-              final DateTime? picked = await showDatePicker(
-                context: context,
-                initialDate: initialDate,
-                firstDate: firstDate,
-                lastDate: lastDate,
-                builder: (context, child) {
-                  return Theme(
-                    data: ThemeData.light().copyWith(
-                      colorScheme: const ColorScheme.light(
-                        primary: Color(0xFF3182CE),
-                        onPrimary: Colors.white,
-                      ),
-                      dialogBackgroundColor: Colors.white,
-                    ),
-                    child: child!,
-                  );
-                },
-              );
-
-              if (picked != null) {
-                final formattedDate = DateFormat('dd/MM/yyyy').format(picked);
-                controller.text = formattedDate;
-
-                // Notificar que la fecha ha cambiado
-                if (onDateChanged != null) {
-                  onDateChanged!(formattedDate);
-
-                  // Log para debug
-                  debugPrint('Fecha cambiada a: $formattedDate');
-                }
-              }
-            },
+            onTap: locked
+                ? null // Deshabilitar si está bloqueado
+                : () async {
+                    final DateTime? pickedDate = await showDatePicker(
+                      context: context,
+                      initialDate: controller.text.isNotEmpty
+                          ? _parseDate(controller.text)
+                          : DateTime.now(),
+                      firstDate: DateTime(2020),
+                      lastDate: DateTime(2030),
+                    );
+                    if (pickedDate != null) {
+                      final formattedDate =
+                          '${pickedDate.day.toString().padLeft(2, '0')}/${pickedDate.month.toString().padLeft(2, '0')}/${pickedDate.year}';
+                      controller.text = formattedDate;
+                      onDateChanged(formattedDate);
+                    }
+                  },
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
               decoration: BoxDecoration(
-                border: Border.all(color: const Color(0xFFE2E8F0)),
+                border: Border.all(
+                  color: locked
+                      ? const Color(0xFFEDF2F7)
+                      : const Color(0xFFE2E8F0),
+                ),
                 borderRadius: BorderRadius.circular(8),
+                color: locked
+                    ? const Color(
+                        0xFFF7FAFC) // Color más claro si está bloqueado
+                    : Colors.white,
               ),
               child: Row(
                 children: [
                   Icon(icon, size: 20, color: const Color(0xFF718096)),
-                  const SizedBox(width: 10),
+                  const SizedBox(width: 8),
                   Expanded(
                     child: Text(
-                      controller.text.isEmpty ? hint : controller.text,
+                      controller.text.isNotEmpty ? controller.text : hint,
                       style: TextStyle(
-                        color: controller.text.isEmpty
-                            ? const Color(0xFFA0AEC0)
-                            : Colors.black,
+                        color: controller.text.isNotEmpty
+                            ? Colors.black
+                            : const Color(0xFFA0AEC0),
                       ),
                     ),
                   ),
-                  const Icon(Icons.calendar_today, color: Color(0xFF718096)),
+                  if (!locked) // Solo mostrar el icono del calendario si no está bloqueado
+                    const Icon(Icons.arrow_drop_down, color: Color(0xFF718096)),
                 ],
               ),
             ),
           ),
+          // Mensaje opcional de validación
+          if (locked && lockedMessage != null)
+            Padding(
+              padding: const EdgeInsets.only(top: 4.0),
+              child: Text(
+                lockedMessage!,
+                style: const TextStyle(
+                  fontSize: 12,
+                  color: Color(0xFFE53E3E),
+                  fontStyle: FontStyle.italic,
+                ),
+              ),
+            ),
         ],
       ),
     );
   }
+
+  DateTime _parseDate(String dateStr) {
+    final parts = dateStr.split('/');
+    return DateTime(
+        int.parse(parts[2]), int.parse(parts[1]), int.parse(parts[0]));
+  }
 }
 
-class TimeField extends StatelessWidget {
+class TimeField extends StatefulWidget {
   final String label;
   final String hint;
   final IconData icon;
   final TextEditingController controller;
   final TextEditingController? dateController;
   final bool isOptional;
-  final bool isEndTime; // Nuevo parámetro para identificar si es hora de fin
+  final bool isEndTime;
+  final bool locked;
+  final String? lockedMessage;
 
   const TimeField({
     Key? key,
@@ -141,51 +152,116 @@ class TimeField extends StatelessWidget {
     required this.controller,
     this.dateController,
     this.isOptional = false,
-    this.isEndTime = false, // Por defecto, asumimos que es hora de inicio
+    this.isEndTime = false,
+    this.locked = false,
+    this.lockedMessage,
   }) : super(key: key);
 
   @override
+  State<TimeField> createState() => _TimeFieldState();
+}
+
+class _TimeFieldState extends State<TimeField> {
+  @override
+  void initState() {
+    // debugPrint("Valor del campo: ${widget.controller.text}");
+    super.initState();
+    // Añadir un listener al controller para detectar cambios y forzar rebuild
+    widget.controller.addListener(_onControllerChanged);
+  }
+
+  @override
+  void dispose() {
+    // Remover el listener al destruir el widget
+    widget.controller.removeListener(_onControllerChanged);
+    super.dispose();
+  }
+
+  void _onControllerChanged() {
+    if (mounted) {
+      setState(() {
+        // Forzar rebuild cuando cambia el valor del controller
+        debugPrint(
+            'TimeField controller actualizado: ${widget.controller.text}');
+      });
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
-    debugPrint(
-        'TimeField build - date: ${dateController?.text}, time: ${controller.text}, isEndTime: $isEndTime');
+    // Mostrar para debugging
+    debugPrint('Renderizando TimeField con valor: ${widget.locked}');
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            label,
-            style: const TextStyle(
-              fontWeight: FontWeight.w600,
-              fontSize: 14,
-              color: Color(0xFF4A5568),
-            ),
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  widget.label,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w600,
+                    fontSize: 14,
+                    color: Color(0xFF4A5568),
+                  ),
+                ),
+              ),
+              if (widget.locked) // Mostrar un indicador de bloqueo
+                Tooltip(
+                  message: widget.lockedMessage ??
+                      'Este campo no se puede modificar',
+                  child: const Icon(
+                    Icons.lock_outline,
+                    size: 16,
+                    color: Color(0xFFE53E3E),
+                  ),
+                ),
+            ],
           ),
           const SizedBox(height: 6),
           GestureDetector(
-            onTap: () => _selectTime(context),
+            onTap: widget.locked ||
+                    (widget.dateController != null &&
+                        widget.dateController!.text.isEmpty)
+                ? null // Deshabilitar si está bloqueado o no hay fecha seleccionada
+                : () async {
+                    await _selectTime(context);
+                  },
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
               decoration: BoxDecoration(
-                border: Border.all(color: const Color(0xFFE2E8F0)),
+                border: Border.all(
+                    color: widget.locked
+                        ? const Color(0xFFEDF2F7)
+                        : const Color(0xFFE2E8F0)),
                 borderRadius: BorderRadius.circular(8),
+                color: widget.locked
+                    ? const Color(
+                        0xFFF7FAFC) // Color más claro si está bloqueado
+                    : Colors.white,
               ),
               child: Row(
                 children: [
-                  Icon(icon, size: 20, color: const Color(0xFF718096)),
+                  Icon(widget.icon, size: 20, color: const Color(0xFF718096)),
                   const SizedBox(width: 10),
                   Expanded(
                     child: Text(
-                      controller.text.isEmpty ? hint : controller.text,
+                      widget.controller.text.isEmpty
+                          ? widget.hint
+                          : widget.controller.text,
                       style: TextStyle(
-                        color: controller.text.isEmpty
+                        color: widget.controller.text.isEmpty
                             ? const Color(0xFFA0AEC0)
                             : Colors.black,
                       ),
                     ),
                   ),
-                  const Icon(Icons.access_time, color: Color(0xFF718096)),
+                  if (!widget
+                      .locked) // Solo mostrar el icono del reloj si no está bloqueado
+                    const Icon(Icons.arrow_drop_down, color: Color(0xFF718096)),
                 ],
               ),
             ),
@@ -200,8 +276,8 @@ class TimeField extends StatelessWidget {
       // Determinar la hora inicial para el selector
       TimeOfDay initialTime;
       try {
-        if (controller.text.isNotEmpty) {
-          final timeParts = controller.text.split(':');
+        if (widget.controller.text.isNotEmpty) {
+          final timeParts = widget.controller.text.split(':');
           initialTime = TimeOfDay(
             hour: int.parse(timeParts[0]),
             minute: int.parse(timeParts[1]),
@@ -219,12 +295,12 @@ class TimeField extends StatelessWidget {
       TimeOfDay? minimumTime;
 
       // Solo verificamos restricciones para hora de inicio si tenemos una fecha y no es hora final
-      if (!isEndTime &&
-          dateController != null &&
-          dateController!.text.isNotEmpty) {
+      if (!widget.isEndTime &&
+          widget.dateController != null &&
+          widget.dateController!.text.isNotEmpty) {
         try {
           final selectedDate =
-              DateFormat('dd/MM/yyyy').parse(dateController!.text);
+              DateFormat('dd/MM/yyyy').parse(widget.dateController!.text);
           final now = DateTime.now();
 
           // Verificar si es hoy
@@ -282,7 +358,7 @@ class TimeField extends StatelessWidget {
             'Hora seleccionada: ${picked.hour}:${picked.minute} ($pickedHour12:${picked.minute.toString().padLeft(2, '0')} $pickedPeriod)');
 
         // Comprobación solo si es el día de hoy y es una hora de inicio
-        if (!isEndTime && isToday && minimumTime != null) {
+        if (!widget.isEndTime && isToday && minimumTime != null) {
           final selectedMinutes = picked.hour * 60 + picked.minute;
           final minimumMinutes = minimumTime.hour * 60 + minimumTime.minute;
 
@@ -301,14 +377,14 @@ class TimeField extends StatelessWidget {
         // Formatear la hora seleccionada
         final hour = picked.hour.toString().padLeft(2, '0');
         final minute = picked.minute.toString().padLeft(2, '0');
-        controller.text = '$hour:$minute';
+        widget.controller.text = '$hour:$minute';
 
         // Obligar actualización de UI si es necesario
         if (context is StatefulElement) {
-          (context.state as State).setState(() {});
+          (context.state).setState(() {});
         }
 
-        debugPrint('Hora guardada: ${controller.text}');
+        debugPrint('Hora guardada: ${widget.controller.text}');
       }
     } catch (e, stackTrace) {
       debugPrint('Error en selector de hora: $e');

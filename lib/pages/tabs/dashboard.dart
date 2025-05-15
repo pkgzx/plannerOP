@@ -1,14 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_neumorphic_plus/flutter_neumorphic.dart';
+import 'package:plannerop/hooks/loaders/loader.dart';
 import 'package:plannerop/store/areas.dart';
 import 'package:plannerop/store/assignments.dart';
-import 'package:plannerop/store/chargersOp.dart';
-import 'package:plannerop/store/clients.dart';
-import 'package:plannerop/store/faults.dart';
-import 'package:plannerop/store/task.dart';
 import 'package:plannerop/utils/toast.dart';
-import 'package:plannerop/widgets/quickActions.dart';
-import 'package:plannerop/widgets/recentOps.dart';
+import 'package:plannerop/widgets/dashboard/quickActions.dart';
+import 'package:plannerop/widgets/dashboard/recentOps.dart';
 import 'package:plannerop/store/workers.dart';
 import 'package:provider/provider.dart';
 
@@ -39,89 +36,66 @@ class _DashboardTabState extends State<DashboardTab> {
       if (!isLoading) {
         isLoading = true;
         await Future.wait([
-          _checkAndLoadWorkersIfNeeded(),
-          _loadAreas(),
-          _loadTask(),
-          _loadClients(),
-          _loadAssignments(),
-          _loadFaults(),
-          _loadChargersOp(),
+          checkAndLoadWorkersIfNeeded(
+            mounted,
+            setState,
+            _isLoadingWorkers,
+            context,
+          ),
+          loadAreas(
+            mounted,
+            setState,
+            _isLoadingAreas,
+            context,
+          ),
+          loadTask(
+            mounted,
+            setState,
+            _isLoadingTasks,
+            context,
+          ),
+          loadClients(
+            mounted,
+            setState,
+            _isLoadingClients,
+            context,
+          ),
+          loadAssignments(
+            context: context,
+            isMounted: () => mounted, // Retorna el valor actual de mounted
+            setStateCallback: (fn) {
+              if (mounted) setState(fn);
+            },
+            updateLoadingState: (isLoading) {
+              _isLoadingAssignments = isLoading;
+            },
+          ),
+          loadFaults(
+            context: context,
+            isMounted: () => mounted, // Retorna el valor actual de mounted
+            setStateCallback: (fn) {
+              if (mounted) setState(fn);
+            },
+            updateLoadingState: (isLoading) {
+              _isLoadingFaults = isLoading;
+            },
+          ),
+          loadChargersOp(
+            context: context,
+            isMounted: () => mounted, // Retorna el valor actual de mounted
+            setStateCallback: (fn) {
+              if (mounted) setState(fn);
+            },
+            updateLoadingState: (isLoading) {
+              _isLoadingChargers = isLoading;
+            },
+          ),
         ]).catchError((error) {
           debugPrint('Error durante la carga en paralelo: $error');
           // Continuar aunque haya errores
         });
       }
     });
-  }
-
-  Future<void> _loadChargersOp() async {
-    if (!mounted) return;
-
-    setState(() {
-      _isLoadingChargers = true;
-    });
-
-    try {
-      final chargersOpProvider =
-          Provider.of<ChargersOpProvider>(context, listen: false);
-
-      await chargersOpProvider.fetchChargers(context);
-      debugPrint(
-          'Cargadores cargados con éxito: ${chargersOpProvider.chargers.length}');
-    } catch (e) {
-      debugPrint('Error al cargar cargadores: $e');
-
-      if (mounted) {
-        showErrorToast(context, "Error al cargar cargadores.");
-      }
-    } finally {
-      if (mounted) {
-        setState(() {
-          _isLoadingChargers = false;
-        });
-      }
-    }
-  }
-
-// Método para cargar faltas (similar a los otros métodos de carga)
-  Future<void> _loadFaults() async {
-    if (!mounted) return;
-
-    setState(() {
-      _isLoadingFaults = true; // Añade esta variable de estado
-    });
-
-    try {
-      final faultsProvider =
-          Provider.of<FaultsProvider>(context, listen: false);
-
-      await faultsProvider.fetchFaults(context);
-    } catch (e) {
-      debugPrint('Error al cargar faltas: $e');
-
-      if (mounted) {
-        showErrorToast(context, "Error al cargar faltas.");
-      }
-    } finally {
-      if (mounted) {
-        setState(() {
-          _isLoadingFaults = false;
-        });
-      }
-    }
-  }
-
-  // Método para verificar si necesitamos cargar trabajadores
-  Future<void> _checkAndLoadWorkersIfNeeded() async {
-    if (!mounted) return;
-
-    final workersProvider =
-        Provider.of<WorkersProvider>(context, listen: false);
-
-    // Solo cargaremos si no se han cargado antes
-    if (!workersProvider.hasLoadedInitialData) {
-      await _loadWorkers();
-    }
   }
 
   Future<void> _loadWorkers() async {
@@ -152,101 +126,6 @@ class _DashboardTabState extends State<DashboardTab> {
       if (mounted) {
         setState(() {
           _isLoadingWorkers = false;
-        });
-      }
-    }
-  }
-
-  Future<void> _loadAreas() async {
-    if (!mounted) return;
-
-    final areasProvider = Provider.of<AreasProvider>(context, listen: false);
-
-    // Verificar si ya hay áreas cargadas
-    if (areasProvider.areas.isNotEmpty) {
-      // debugPrint(
-      //     'Áreas ya cargadas anteriormente: ${areasProvider.areas.length}');
-      return;
-    }
-
-    // debugPrint('Iniciando carga de áreas desde API...');
-
-    // Mostrar indicador de carga para áreas
-    setState(() {
-      _isLoadingAreas = true;
-    });
-
-    try {
-      // Llamar al método fetchAreas con await para asegurar que se complete
-      await areasProvider.fetchAreas(context);
-
-      // Verificar si se cargaron áreas
-      if (areasProvider.areas.isNotEmpty) {
-        // debugPrint(
-        //     'Áreas cargadas con éxito: ${areasProvider.areas.length} áreas');
-      } else {
-        // debugPrint('No se cargaron áreas o la lista está vacía');
-
-        // Si no hay áreas, cargar algunas predeterminadas
-        _loadDefaultAreas(areasProvider);
-      }
-    } catch (e, stackTrace) {
-      debugPrint('Error al cargar áreas: $e');
-      debugPrint('Stack trace: $stackTrace');
-
-      // Cargar áreas predeterminadas en caso de error
-      _loadDefaultAreas(areasProvider);
-
-      // Mostrar un mensaje de error más informativo
-      if (mounted) {
-        showErrorToast(context, "Error al cargar áreas.");
-      }
-    } finally {
-      if (mounted) {
-        setState(() {
-          _isLoadingAreas = false;
-        });
-      }
-    }
-  }
-
-  Future<void> _loadTask() async {
-    if (!mounted) return;
-
-    setState(() {
-      _isLoadingTasks = true;
-    });
-
-    try {
-      final tasksProvider = Provider.of<TasksProvider>(context, listen: false);
-
-      // Si ya se ha intentado cargar o ya hay tareas, no hacemos nada
-      if (tasksProvider.hasAttemptedLoading || tasksProvider.tasks.isNotEmpty) {
-        // debugPrint('Tareas ya cargadas o intento previo realizado.');
-        return;
-      }
-
-      await tasksProvider.loadTasks(context);
-
-      // Verificar resultado después de la carga
-      if (tasksProvider.tasks.isEmpty) {
-        debugPrint('La API devolvió una lista vacía de tareas.');
-        // Esto ahora lo hace automáticamente el provider
-        // _loadDefaultTasks(tasksProvider);
-      } else {
-        debugPrint('Tareas cargadas con éxito: ${tasksProvider.tasks.length}');
-      }
-    } catch (e) {
-      debugPrint('Error al cargar tareas: $e');
-
-      // En caso de error, mostramos una notificación
-      if (mounted) {
-        showErrorToast(context, 'Error al cargar tareas.');
-      }
-    } finally {
-      if (mounted) {
-        setState(() {
-          _isLoadingTasks = false;
         });
       }
     }
@@ -309,63 +188,6 @@ class _DashboardTabState extends State<DashboardTab> {
     }
 
     // No necesitamos esperar el timeout
-  }
-
-  // Método auxiliar para cargar áreas predeterminadas
-  void _loadDefaultAreas(AreasProvider areasProvider) {
-    // Verificar si el AreasProvider tiene un método para agregar áreas predeterminadas
-    if (areasProvider.areas.isEmpty) {
-      debugPrint(
-          'Se cargaron áreas predeterminadas: ${areasProvider.areas.length} áreas');
-    }
-  }
-
-  Future<bool> _loadClients() async {
-    if (!mounted) return false;
-
-    final clientsProvider =
-        Provider.of<ClientsProvider>(context, listen: false);
-
-    // Si ya se han cargado clientes, no hacer nada
-    if (clientsProvider.clients.isNotEmpty) {
-      debugPrint('Clientes ya cargados: ${clientsProvider.clients.length}');
-      return true;
-    }
-
-    debugPrint('Iniciando carga de clientes desde API...');
-
-    setState(() {
-      _isLoadingClients = true;
-    });
-
-    try {
-      await clientsProvider.fetchClients(context);
-
-      if (clientsProvider.clients.isNotEmpty) {
-        debugPrint(
-            'Clientes cargados con éxito: ${clientsProvider.clients.length}');
-        return true;
-      } else {
-        debugPrint('No se cargaron clientes o la lista está vacía');
-        return false;
-      }
-    } catch (e, stackTrace) {
-      debugPrint('Error al cargar clientes: $e');
-      debugPrint('Stack trace: $stackTrace');
-
-      // Mostrar un mensaje de error más informativo
-      if (mounted) {
-        showErrorToast(context, 'Error al cargar clientes.');
-      }
-
-      return false;
-    } finally {
-      if (mounted) {
-        setState(() {
-          _isLoadingClients = false;
-        });
-      }
-    }
   }
 
   @override
@@ -438,22 +260,44 @@ class _DashboardTabState extends State<DashboardTab> {
                                   _isLoadingAssignments
                               ? null
                               : () async {
-                                  setState(() {
-                                    _isLoadingWorkers = true;
-                                    _isLoadingAreas = true;
-                                    _isLoadingAssignments = true;
-                                  });
-                                  // Al refrescar manualmente, forzamos la recarga de todo
-                                  await _loadWorkers();
-                                  await _loadAreas();
-                                  await _loadAssignments();
+                                  try {
+                                    if (!mounted) {
+                                      return;
+                                    }
 
-                                  // Forzar actualización final
-                                  setState(() {
-                                    _isLoadingWorkers = false;
-                                    _isLoadingAreas = false;
-                                    _isLoadingAssignments = false;
-                                  });
+                                    setState(() {
+                                      _isLoadingWorkers = true;
+                                      _isLoadingAreas = true;
+                                      _isLoadingAssignments = true;
+                                    });
+                                    // Al refrescar manualmente, forzamos la recarga de todo
+                                    await _loadWorkers();
+                                    await loadAreas(
+                                      mounted,
+                                      setState,
+                                      _isLoadingAreas,
+                                      context,
+                                    );
+                                    await _loadAssignments();
+
+                                    if (!mounted) {
+                                      return;
+                                    }
+
+                                    // Forzar actualización final
+                                    setState(() {
+                                      _isLoadingWorkers = false;
+                                      _isLoadingAreas = false;
+                                      _isLoadingAssignments = false;
+                                    });
+                                  } catch (e) {
+                                    // Forzar actualización final
+                                    setState(() {
+                                      _isLoadingWorkers = false;
+                                      _isLoadingAreas = false;
+                                      _isLoadingAssignments = false;
+                                    });
+                                  }
                                 },
                         ),
                       ],
@@ -546,7 +390,12 @@ class _DashboardTabState extends State<DashboardTab> {
                       // Recargar datos al hacer pull-to-refresh
                       await Future.wait([
                         _loadWorkers(),
-                        _loadAreas(),
+                        loadAreas(
+                          mounted,
+                          setState,
+                          _isLoadingAreas,
+                          context,
+                        ),
                         _loadAssignments(),
                       ]);
                     },

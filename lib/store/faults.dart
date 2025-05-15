@@ -104,8 +104,8 @@ class FaultsProvider extends ChangeNotifier {
         latestFaultDate[workerId] = faultDate;
       }
 
-      debugPrint(
-          'Worker ID: $workerId, Faltas: ${workerFaultCount[workerId]}, Última falta: ${latestFaultDate[workerId]}');
+      // debugPrint(
+      //     'Worker ID: $workerId, Faltas: ${workerFaultCount[workerId]}, Última falta: ${latestFaultDate[workerId]}');
     }
 
     // Obtener lista única de trabajadores (sin duplicados)
@@ -143,16 +143,10 @@ class FaultsProvider extends ChangeNotifier {
           dateA); // Orden descendente por fecha (más reciente primero)
     });
 
-    // Imprimir resultado para depuración
-    for (var worker in workersWithFaults) {
-      final faultCount = workerFaultCount[worker.id] ?? 0;
-      final latestDate = latestFaultDate[worker.id];
-      debugPrint(
-          'Ordenado - Trabajador: ${worker.name}, Faltas: $faultCount, Última falta: $latestDate');
-    }
+  
 
-    debugPrint(
-        'Trabajadores con faltas encontrados: ${workersWithFaults.length}');
+    // debugPrint(
+    //     'Trabajadores con faltas encontrados: ${workersWithFaults.length}');
 
     return workersWithFaults;
   }
