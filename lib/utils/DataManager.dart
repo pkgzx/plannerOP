@@ -48,8 +48,6 @@ class DataManager {
       return;
     }
 
-    debugPrint('DataManager: Token disponible, cargando datos');
-
     // Ahora sí, cargar datos críticos
     await _loadCriticalData(context);
 

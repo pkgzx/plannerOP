@@ -3,18 +3,18 @@ import 'package:flutter/services.dart';
 import 'package:flutter_neumorphic_plus/flutter_neumorphic.dart';
 import 'package:intl/intl.dart';
 import 'package:plannerop/core/model/user.dart';
-import 'package:plannerop/widgets/worker_filter.dart';
+import 'package:plannerop/widgets/workers/workerFilter.dart';
 import 'package:plannerop/store/faults.dart';
 import 'package:plannerop/store/user.dart';
 import 'package:plannerop/store/workers.dart';
 import 'package:plannerop/utils/toast.dart';
 import 'package:provider/provider.dart';
 import 'package:plannerop/core/model/worker.dart';
-import 'package:plannerop/widgets/workers/worker_list_item.dart';
-import 'package:plannerop/widgets/workers/worker_add_dialog.dart';
-import 'package:plannerop/widgets/workers/worker_detail_dialog.dart';
-import 'package:plannerop/widgets/workers/worker_empty_state.dart';
-import 'package:plannerop/widgets/workers/worker_stats.dart';
+import 'package:plannerop/widgets/workers/workerListItem.dart';
+import 'package:plannerop/widgets/workers/workerAddDialog.dart';
+import 'package:plannerop/widgets/workers/workerDetailDialog.dart';
+import 'package:plannerop/widgets/workers/workerEmptyState.dart';
+import 'package:plannerop/widgets/workers/workerStats.dart';
 import 'package:plannerop/core/model/fault.dart';
 
 class WorkersTab extends StatefulWidget {

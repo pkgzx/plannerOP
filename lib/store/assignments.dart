@@ -77,7 +77,8 @@ class AssignmentsProvider extends ChangeNotifier {
         // Buscar el grupo por ID
         final group = assignment.groups.firstWhere(
           (g) => g.id == groupId,
-          orElse: () => WorkerGroup(workers: [], name: "", id: ""),
+          orElse: () =>
+              WorkerGroup(workers: [], name: "", id: "", serviceId: 0),
         );
 
         // Si el grupo tiene fecha y hora de inicio, usarlas
@@ -149,25 +150,25 @@ class AssignmentsProvider extends ChangeNotifier {
 
             // Actualizar la asignación con los grupos actualizados
             _assignments[index] = Assignment(
-              id: assignment.id,
-              workers: remainingWorkers,
-              area: assignment.area,
-              task: assignment.task,
-              date: assignment.date,
-              time: assignment.time,
-              supervisor: assignment.supervisor,
-              status: assignment.status,
-              endDate: assignment.endDate,
-              endTime: assignment.endTime,
-              zone: assignment.zone,
-              motorship: assignment.motorship,
-              userId: assignment.userId,
-              areaId: assignment.areaId,
-              taskId: assignment.taskId,
-              clientId: assignment.clientId,
-              inChagers: assignment.inChagers,
-              groups: updatedGroups, // Actualizar con la lista filtrada
-            );
+                id: assignment.id,
+                workers: remainingWorkers,
+                area: assignment.area,
+                task: assignment.task,
+                date: assignment.date,
+                time: assignment.time,
+                supervisor: assignment.supervisor,
+                status: assignment.status,
+                endDate: assignment.endDate,
+                endTime: assignment.endTime,
+                zone: assignment.zone,
+                motorship: assignment.motorship,
+                userId: assignment.userId,
+                areaId: assignment.areaId,
+                taskId: assignment.taskId,
+                clientId: assignment.clientId,
+                inChagers: assignment.inChagers,
+                groups: updatedGroups, // Actualizar con la lista filtrada
+                id_clientProgramming: assignment.id_clientProgramming);
           } else {
             // Si no es un grupo, solo actualizar la lista de trabajadores
             _assignments[index] = Assignment(
@@ -189,6 +190,7 @@ class AssignmentsProvider extends ChangeNotifier {
               clientId: assignment.clientId,
               inChagers: assignment.inChagers,
               groups: assignment.groups,
+              id_clientProgramming: assignment.id_clientProgramming,
             );
           }
 
@@ -213,6 +215,7 @@ class AssignmentsProvider extends ChangeNotifier {
               clientId: assignment.clientId,
               inChagers: assignment.inChagers,
               groups: [], // Vaciar los grupos
+              id_clientProgramming: assignment.id_clientProgramming,
             );
           }
         }
@@ -304,6 +307,8 @@ class AssignmentsProvider extends ChangeNotifier {
             taskId: currentAssignment.taskId,
             clientId: currentAssignment.clientId,
             inChagers: currentAssignment.inChagers,
+            groups: currentAssignment.groups,
+            id_clientProgramming: currentAssignment.id_clientProgramming,
           );
           notifyListeners();
         }
@@ -354,6 +359,7 @@ class AssignmentsProvider extends ChangeNotifier {
             inChagers: _assignments[index].inChagers,
             groups: updatedGroups,
             deletedWorkers: _assignments[index].deletedWorkers,
+            id_clientProgramming: _assignments[index].id_clientProgramming,
           );
 
           notifyListeners();
@@ -386,13 +392,6 @@ class AssignmentsProvider extends ChangeNotifier {
 
       // Añadir nuevas asignaciones
       _assignments.addAll(assignments);
-
-      if (_assignments.isEmpty) {
-        debugPrint('No se encontraron asignaciones en la API.');
-        _error = 'No se encontraron asignaciones disponibles.';
-      } else {
-        debugPrint('Operaciones cargadas exitosamente: ${_assignments.length}');
-      }
     } catch (e, stackTrace) {
       debugPrint('Error al cargar asignaciones: $e');
       debugPrint('Stack trace: $stackTrace');
@@ -455,6 +454,7 @@ class AssignmentsProvider extends ChangeNotifier {
     required int zoneId,
     required int userId,
     required int clientId,
+    int? id_clientProgramming,
     required List<int> chargerIds,
     required List<WorkerGroup> groups,
     String? clientName,
@@ -470,23 +470,23 @@ class AssignmentsProvider extends ChangeNotifier {
 
     try {
       final newAssignment = Assignment(
-        workers: workers,
-        area: area,
-        task: task,
-        date: date,
-        time: time,
-        zone: zoneId,
-        status: 'PENDING',
-        endDate: endDate,
-        endTime: endTime,
-        motorship: motorship,
-        userId: userId,
-        areaId: areaId,
-        taskId: taskId,
-        clientId: clientId,
-        inChagers: chargerIds,
-        groups: groups,
-      );
+          workers: workers,
+          area: area,
+          task: task,
+          date: date,
+          time: time,
+          zone: zoneId,
+          status: 'PENDING',
+          endDate: endDate,
+          endTime: endTime,
+          motorship: motorship,
+          userId: userId,
+          areaId: areaId,
+          taskId: taskId,
+          clientId: clientId,
+          inChagers: chargerIds,
+          groups: groups,
+          id_clientProgramming: id_clientProgramming);
 
       // Si tenemos contexto, intentamos enviar al backend
       CreateassigmentDto response = CreateassigmentDto(id: 0, isSuccess: false);
@@ -544,6 +544,8 @@ class AssignmentsProvider extends ChangeNotifier {
         taskId: currentAssignment.taskId,
         clientId: currentAssignment.clientId,
         inChagers: currentAssignment.inChagers,
+        groups: currentAssignment.groups,
+        id_clientProgramming: currentAssignment.id_clientProgramming,
       );
 
       // debugPrint('Actualizando estado de la asignación en el backend...');
@@ -577,6 +579,8 @@ class AssignmentsProvider extends ChangeNotifier {
         taskId: currentAssignment.taskId,
         clientId: currentAssignment.clientId,
         inChagers: currentAssignment.inChagers,
+        id_clientProgramming: currentAssignment.id_clientProgramming,
+        groups: currentAssignment.groups,
       );
       await _saveAssignments();
       notifyListeners();
@@ -595,18 +599,18 @@ class AssignmentsProvider extends ChangeNotifier {
       return _assignments.firstWhere(
         (a) => a.id == id,
         orElse: () => Assignment(
-          workers: [],
-          area: "",
-          task: "",
-          date: DateTime.now(),
-          time: "",
-          zone: 0,
-          userId: 0,
-          areaId: 0,
-          taskId: 0,
-          clientId: 0,
-          inChagers: [],
-        ),
+            workers: [],
+            area: "",
+            task: "",
+            date: DateTime.now(),
+            time: "",
+            zone: 0,
+            userId: 0,
+            areaId: 0,
+            taskId: 0,
+            clientId: 0,
+            inChagers: [],
+            id_clientProgramming: 0),
       );
     } catch (e) {
       return null;

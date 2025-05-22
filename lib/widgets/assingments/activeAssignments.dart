@@ -10,10 +10,10 @@ import 'package:plannerop/utils/foodUtils.dart';
 import 'package:plannerop/utils/toast.dart';
 import 'package:plannerop/widgets/assingments/components/assigmentCard.dart';
 import 'package:plannerop/widgets/assingments/components/buildWorkerItem.dart';
-import 'package:plannerop/widgets/assingments/editAssignmentForm.dart';
+import 'package:plannerop/widgets/assingments/components/editAssignmentForm.dart';
 import 'package:provider/provider.dart';
 import 'package:plannerop/store/assignments.dart';
-import 'package:plannerop/widgets/assingments/emptyState.dart';
+import 'package:plannerop/widgets/assingments/components/emptyState.dart';
 import 'package:plannerop/core/model/assignment.dart';
 import 'package:plannerop/widgets/assingments/components/showCompletionDialog.dart';
 import 'package:plannerop/widgets/assingments/components/utils.dart';
@@ -345,7 +345,9 @@ class _ActiveAssignmentsViewState extends State<ActiveAssignmentsView> {
       if (assignment.endDate != null)
         buildDetailRow('Fecha de finalización',
             DateFormat('dd/MM/yyyy').format(assignment.endDate!)),
-      buildDetailRow('Zona', 'Zona ${assignment.zone}'),
+      if (assignment.zone != 0)
+        buildDetailRow('Zona', 'Zona ${assignment.zone}'),
+      if (assignment.zone == 0) buildDetailRow("Zona", "Sin zona"),
       if (assignment.motorship != "" && assignment.motorship != null)
         buildDetailRow('Motonave', assignment.motorship ?? ''),
     ];

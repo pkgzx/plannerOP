@@ -3,7 +3,7 @@ import 'package:flutter_neumorphic_plus/flutter_neumorphic.dart';
 import 'package:plannerop/widgets/assingments/activeAssignments.dart';
 import 'package:plannerop/widgets/assingments/pendingAssignments.dart';
 import 'package:plannerop/widgets/assingments/historyAssignments.dart';
-import 'package:plannerop/widgets/assingments/addAssignmentDialog.dart';
+import 'package:plannerop/widgets/assingments/add/addAssignmentDialog.dart';
 
 class AsignacionesTab extends StatefulWidget {
   const AsignacionesTab({super.key});

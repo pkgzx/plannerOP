@@ -8,10 +8,10 @@ import 'package:plannerop/utils/assignments.dart';
 import 'package:plannerop/utils/toast.dart';
 import 'package:plannerop/widgets/assingments/components/UnifiedAssignmentCard.dart';
 import 'package:plannerop/widgets/assingments/components/utils.dart';
-import 'package:plannerop/widgets/assingments/editAssignmentForm.dart';
+import 'package:plannerop/widgets/assingments/components/editAssignmentForm.dart';
 import 'package:provider/provider.dart';
 import 'package:plannerop/store/assignments.dart';
-import 'package:plannerop/widgets/assingments/emptyState.dart';
+import 'package:plannerop/widgets/assingments/components/emptyState.dart';
 import 'package:plannerop/core/model/assignment.dart';
 
 class PendingAssignmentsView extends StatefulWidget {

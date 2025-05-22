@@ -39,7 +39,7 @@ class UnifiedAssignmentCard extends StatelessWidget {
         color: Colors.white,
         boxShape: NeumorphicBoxShape.roundRect(BorderRadius.circular(16)),
         lightSource: LightSource.topLeft,
-        shadowDarkColorEmboss: Colors.grey.withOpacity(0.2),
+        shadowDarkColorEmboss: Colors.grey.withValues(alpha: .2),
         shadowLightColorEmboss: Colors.white,
       ),
       child: InkWell(
@@ -175,13 +175,13 @@ class UnifiedAssignmentCard extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(6),
             decoration: BoxDecoration(
-              color: statusColor.withOpacity(0.1),
+              color: statusColor.withValues(alpha: .1),
               borderRadius: BorderRadius.circular(8),
             ),
             child: Icon(
               Icons.check_circle_outline,
               size: 14,
-              color: statusColor,
+              color: statusColor.withValues(alpha: .1),
             ),
           ),
           const SizedBox(width: 8),
@@ -206,14 +206,14 @@ class UnifiedAssignmentCard extends StatelessWidget {
         Icon(
           Icons.people_outline,
           size: 10,
-          color: const Color(0xFF718096).withOpacity(0.8),
+          color: const Color(0xFF718096).withValues(alpha: .8),
         ),
         const SizedBox(width: 3),
         Text(
           "${assignment.workers.length}",
           style: TextStyle(
             fontSize: 10,
-            color: const Color(0xFF718096).withOpacity(0.8),
+            color: const Color(0xFF718096).withValues(alpha: .8),
             fontWeight: FontWeight.w500,
           ),
         ),
@@ -223,14 +223,14 @@ class UnifiedAssignmentCard extends StatelessWidget {
         Icon(
           Icons.access_time,
           size: 10,
-          color: const Color(0xFF718096).withOpacity(0.8),
+          color: const Color(0xFF718096).withValues(alpha: .8),
         ),
         const SizedBox(width: 3),
         Text(
           assignment.time,
           style: TextStyle(
             fontSize: 10,
-            color: const Color(0xFF718096).withOpacity(0.8),
+            color: const Color(0xFF718096).withValues(alpha: .8),
             fontWeight: FontWeight.w500,
           ),
         ),
@@ -277,7 +277,7 @@ class UnifiedAssignmentCard extends StatelessWidget {
             materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
             labelPadding: const EdgeInsets.symmetric(horizontal: 4),
             padding: EdgeInsets.zero,
-            backgroundColor: color.withOpacity(0.1),
+            backgroundColor: color.withValues(alpha: .1),
             avatar: Icon(icon, size: 12, color: color),
             label: Text(
               food,

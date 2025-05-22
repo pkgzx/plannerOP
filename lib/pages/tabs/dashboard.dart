@@ -163,13 +163,6 @@ class _DashboardTabState extends State<DashboardTab> {
     try {
       // Cargar asignaciones con prioridad
       await assignmentsProvider.loadAssignmentsWithPriority(context);
-
-      if (assignmentsProvider.assignments.isNotEmpty) {
-        debugPrint(
-            'Operaciones cargadas exitosamente: ${assignmentsProvider.assignments.length}');
-      } else {
-        debugPrint('No se cargaron asignaciones o la lista está vacía');
-      }
     } catch (e) {
       debugPrint('Error al cargar asignaciones: $e');
 

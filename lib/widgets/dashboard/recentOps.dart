@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_neumorphic_plus/flutter_neumorphic.dart';
 import 'package:plannerop/store/clients.dart';
 import 'package:plannerop/utils/worker_utils.dart';
-import 'package:plannerop/widgets/assingments/emptyState.dart';
+import 'package:plannerop/widgets/assingments/components/emptyState.dart';
 import 'package:provider/provider.dart';
 import 'package:plannerop/store/assignments.dart';
 import 'package:plannerop/core/model/assignment.dart';

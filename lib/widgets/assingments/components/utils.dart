@@ -9,22 +9,6 @@ import 'package:plannerop/store/feedings.dart';
 import 'package:plannerop/widgets/assingments/components/showCompletionDialog.dart';
 import 'package:provider/provider.dart';
 
-Map<String, List<Worker>> groupWorkersByGroup(Assignment assignment) {
-  final Map<String, List<Worker>> workersByGroup = {};
-  final Set<int> finishedWorkerIds =
-      assignment.workersFinished.map((w) => w.id).toSet();
-
-  for (var group in assignment.groups) {
-    workersByGroup[group.id] = assignment.workers
-        .where((worker) =>
-            group.workers.contains(worker.id) &&
-            !finishedWorkerIds.contains(worker.id))
-        .toList();
-  }
-
-  return workersByGroup;
-}
-
 Widget buildDetailRow(String label, String value) {
   return Padding(
     padding: const EdgeInsets.only(bottom: 8),
@@ -274,7 +258,7 @@ Widget buildWorkersSection(Assignment assignment, BuildContext context,
 
     final group = groups.firstWhere(
       (g) => g.id == groupId,
-      orElse: () => WorkerGroup(workers: [], name: "", id: ""),
+      orElse: () => WorkerGroup(workers: [], name: "", id: "", serviceId: 0),
     );
 
     sections.add(

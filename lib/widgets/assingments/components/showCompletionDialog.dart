@@ -352,6 +352,7 @@ void showIndividualCompletionDialog(BuildContext context, Assignment assignment,
                             inChagers: assignment.inChagers,
                             groups: assignment
                                 .groups, // Mantener los grupos actuales
+                            id_clientProgramming: assignment.id_clientProgramming,
                           );
 
                           // Llamar a API para completar operación individual
@@ -634,6 +635,8 @@ void showGroupCompletionDialog(
                             clientId: assignment.clientId,
                             inChagers: assignment.inChagers,
                             groups: assignment.groups,
+                            id_clientProgramming:
+                                assignment.id_clientProgramming,
                           );
 
                           // Llamar a API para completar operación grupal
@@ -922,6 +925,8 @@ void showCompleteAllIndividualsDialog(
                             clientId: assignment.clientId,
                             inChagers: assignment.inChagers,
                             groups: assignment.groups,
+                            id_clientProgramming:
+                                assignment.id_clientProgramming,
                           );
 
                           // Llamar a API para completar operación grupal

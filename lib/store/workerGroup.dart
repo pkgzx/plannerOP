@@ -24,7 +24,7 @@ class WorkerGroupsProvider with ChangeNotifier {
   // Recuperar un grupo por su ID
   WorkerGroup? getGroupById(String groupId) {
     return _groups.firstWhere((group) => group.id == groupId,
-        orElse: () => WorkerGroup(workers: [], name: "", id: ""));
+        orElse: () => WorkerGroup(workers: [], name: "", id: "", serviceId: 0));
   }
 
   // Remover un trabajador de su grupo

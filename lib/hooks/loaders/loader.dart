@@ -106,7 +106,6 @@ Future<void> _loadWorkers(
 
   try {
     // Intentar cargar desde la API usando el método que respeta el flag
-    // debugPrint('Cargando trabajadores desde API..++++.');
     await workersProvider.fetchWorkersIfNeeded(context);
 
     // Si después de intentar cargar no hay datos, añadir datos de muestra
@@ -275,8 +274,6 @@ Future<void> loadAssignments({
     await assignmentsProvider.loadAssignmentsWithPriority(context);
 
     if (assignmentsProvider.assignments.isNotEmpty) {
-      debugPrint(
-          'Operaciones cargadas exitosamente: ${assignmentsProvider.assignments.length}');
     } else {
       debugPrint('No se cargaron asignaciones o la lista está vacía');
     }
@@ -313,8 +310,6 @@ Future<bool> loadClients(
     debugPrint('Clientes ya cargados: ${clientsProvider.clients.length}');
     return true;
   }
-
-  debugPrint('Iniciando carga de clientes desde API...');
 
   setState(() {
     isLoadingClients = true;

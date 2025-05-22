@@ -4,7 +4,7 @@ import 'package:plannerop/core/model/assignment.dart';
 import 'package:plannerop/utils/assignments.dart';
 import 'package:plannerop/widgets/assingments/components/UnifiedAssignmentCard.dart';
 import 'package:plannerop/widgets/assingments/components/buildWorkerItem.dart';
-import 'package:plannerop/widgets/assingments/emptyState.dart';
+import 'package:plannerop/widgets/assingments/components/emptyState.dart';
 import 'package:plannerop/store/assignments.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
@@ -298,15 +298,20 @@ class _HistoryAssignmentsViewState extends State<HistoryAssignmentsView> {
                       ),
                     ),
                     const SizedBox(height: 12),
-                    ...assignments.map(
-                      (assignment) => UnifiedAssignmentCard(
-                        assignment: assignment,
-                        onTap: _showAssignmentDetails,
-                        statusColor: const Color(0xFF38A169),
-                        statusText: 'COMPLETADA',
-                        showCompletionDate: true,
-                      ),
-                    ),
+                    ...assignments.map((assignment) {
+                      return Column(
+                        children: [
+                          UnifiedAssignmentCard(
+                            assignment: assignment,
+                            onTap: _showAssignmentDetails,
+                            statusColor: const Color(0xFF38A169),
+                            statusText: 'COMPLETADA',
+                            showCompletionDate: true,
+                          ),
+                          const SizedBox(height: 8), // Espacio entre tarjetas
+                        ],
+                      );
+                    }).toList(),
                   ],
                 );
               }).toList(),

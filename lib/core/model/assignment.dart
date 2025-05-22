@@ -21,6 +21,7 @@ class Assignment {
   final int areaId;
   final int taskId;
   final int clientId;
+  final int? id_clientProgramming;
   DateTime? createdAt;
   DateTime? updatedAt;
   List<Worker> deletedWorkers = [];
@@ -53,6 +54,7 @@ class Assignment {
     required this.areaId,
     required this.taskId,
     required this.clientId,
+    this.id_clientProgramming,
     this.createdAt,
     this.updatedAt,
     this.groups = const [],
@@ -78,14 +80,14 @@ class Assignment {
       'taskId': taskId,
       'clientId': clientId,
       'inChargedIds': inChagers,
+      'id_clientProgramming': id_clientProgramming,
     };
   }
 
-  static Assignment fromJson(
-      Map<String, dynamic> json, List<Worker> workers, User supervisor) {
+  static Assignment fromJson(Map<String, dynamic> json, List<Worker> workers) {
     return Assignment(
       id: json['id'],
-      workers: json['workers'], // ! NOT WORKING
+      workers: workers,
       area: json['jobArea']['name'],
       task: json['task']['name'],
       date: DateTime.parse(json['dateStart']),
@@ -99,9 +101,10 @@ class Assignment {
       areaId: json['jobArea']['id'],
       taskId: json['task']['id'],
       clientId: json['id_client'],
-      inChagers: json['chagers'], // ! NOT WORKING
+      inChagers: json['inChargedIds'],
       createdAt: DateTime.parse(json['createAt']),
       updatedAt: DateTime.parse(json['updateAt']),
+      id_clientProgramming: json['id_clientProgramming'],
     );
   }
 }

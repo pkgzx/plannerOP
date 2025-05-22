@@ -4,14 +4,14 @@ import 'package:intl/intl.dart';
 import 'package:plannerop/core/model/assignment.dart';
 import 'package:plannerop/store/assignments.dart';
 import 'package:plannerop/utils/toast.dart';
-import 'package:plannerop/widgets/reports/charts/area_chart.dart';
-import 'package:plannerop/widgets/reports/report_filter.dart';
-import 'package:plannerop/widgets/reports/report_data_table.dart';
-import 'package:plannerop/widgets/reports/export_options.dart';
-import 'package:plannerop/widgets/reports/charts/ship_personnel_chart.dart';
-import 'package:plannerop/widgets/reports/charts/zone_distribution_chart.dart';
-import 'package:plannerop/widgets/reports/charts/worker_status_chart.dart';
-import 'package:plannerop/widgets/reports/charts/service_trend_chart.dart';
+import 'package:plannerop/widgets/reports/charts/areaChart.dart';
+import 'package:plannerop/widgets/reports/reportFilter.dart';
+import 'package:plannerop/widgets/reports/reportDataTable.dart';
+import 'package:plannerop/widgets/reports/exportOptions.dart';
+import 'package:plannerop/widgets/reports/charts/shipPersonnelChart.dart';
+import 'package:plannerop/widgets/reports/charts/zoneDistributionChart.dart';
+import 'package:plannerop/widgets/reports/charts/workerStatusChart.dart';
+import 'package:plannerop/widgets/reports/charts/serviceTrendChart.dart';
 import 'package:provider/provider.dart';
 
 class ReportesTab extends StatefulWidget {

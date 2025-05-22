@@ -30,10 +30,8 @@ class AssignmentService {
       }
 
       // Filtrar los trabajadores para solo incluir aquellos que no están en grupos
-      List<int> individualWorkers = assignment.workers
-          .map((worker) => worker.id)
-          .where((id) => !workersInGroups.contains(id))
-          .toList();
+      List<int> individualWorkers =
+          assignment.workers.map((worker) => worker.id).toList();
 
       // Crear el payload en el formato requerido por el backend
       final Map<String, dynamic> payload = {
@@ -54,9 +52,11 @@ class AssignmentService {
             "dateEnd": group.endDate,
             "timeStart": group.startTime,
             "timeEnd": group.endTime,
-            "workerIds": group.workers
+            "workerIds": group.workers,
+            "id_task": group.serviceId
           };
         }).toList(),
+        'id_clientProgramming': assignment.id_clientProgramming,
       };
 
       if (assignment.endDate != null) {
@@ -138,25 +138,7 @@ class AssignmentService {
             workersAssignment.add(workerObj);
           }
 
-          var assignmentObj = Assignment(
-              id: assignment['id'],
-              workers: workersAssignment,
-              area: assignment['jobArea']['name'],
-              task: assignment['task']['name'],
-              date: DateTime.parse(assignment['dateStart']),
-              time: assignment['timeStrat'],
-              status: assignment['status'],
-              endTime: assignment['timeEnd'],
-              endDate: assignment['dateEnd'] != null
-                  ? DateTime.parse(assignment['dateEnd'])
-                  : null,
-              zone: assignment['zone'],
-              motorship: assignment['motorShip'],
-              userId: assignment['id_user'],
-              areaId: assignment['jobArea']['id'],
-              taskId: assignment['task']['id'],
-              clientId: assignment['id_client'],
-              inChagers: assignment['inChargedIds'] ?? []);
+          var assignmentObj = Assignment.fromJson(assignment, workers);
 
           assignments.add(assignmentObj);
         }
@@ -571,6 +553,7 @@ class AssignmentService {
                   workers: groupWorkerIds,
                   name: groupName,
                   id: 'group_${DateTime.now().millisecondsSinceEpoch}_${groupWorkerIds.length}',
+                  serviceId: schedule["id_task"] ?? 0,
                 ));
               }
             }
@@ -650,6 +633,7 @@ class AssignmentService {
             clientId: assignment['id_client'],
             inChagers: inChargers,
             groups: assignmentGroups,
+            id_clientProgramming: assignment['id_clientProgramming'],
           );
 
           assignments.add(assignmentObj);

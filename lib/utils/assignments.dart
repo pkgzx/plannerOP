@@ -416,3 +416,52 @@ void showCancelDialog(
     },
   );
 }
+
+// método para crear campos no editables con el mismo estilo que los editables
+Widget buildNonEditableField({
+  required String label,
+  required String value,
+  required IconData icon,
+}) {
+  return Padding(
+    padding: const EdgeInsets.only(bottom: 16),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: const TextStyle(
+            fontWeight: FontWeight.w600,
+            fontSize: 14,
+            color: Color(0xFF4A5568),
+          ),
+        ),
+        const SizedBox(height: 6),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+          decoration: BoxDecoration(
+            border: Border.all(color: const Color(0xFFE2E8F0)),
+            borderRadius: BorderRadius.circular(8),
+            color: const Color(
+                0xFFF7FAFC), // Color de fondo más claro para indicar que no es editable
+          ),
+          child: Row(
+            children: [
+              Icon(icon, size: 20, color: const Color(0xFF718096)),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  value,
+                  style: const TextStyle(
+                    color: Color(0xFF2D3748),
+                    fontSize: 14,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    ),
+  );
+}

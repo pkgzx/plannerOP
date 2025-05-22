@@ -61,11 +61,6 @@ Future<void> tryAutoLogin(bool mounted, Function setState, bool _isLoading,
           barrierDismissible: false,
           builder: (BuildContext context) {
             return PopScope(
-              onPopInvokedWithResult: (didPop, result) {
-                if (didPop) {
-                  debugPrint('Retroceso bloqueado');
-                }
-              },
               child: Center(
                 child: Card(
                   elevation: 8,
@@ -145,11 +140,6 @@ Future<void> login(GlobalKey<FormState> _formKey, BuildContext context,
         dialogContextRef = dialogContext;
 
         return PopScope(
-          onPopInvokedWithResult: (didPop, result) {
-            if (didPop) {
-              debugPrint('Retroceso bloqueado');
-            }
-          }, // Prevenir cierre con el botón atrás
           child: const Center(
             child: CircularProgressIndicator(
               valueColor: AlwaysStoppedAnimation<Color>(Colors.blue),
