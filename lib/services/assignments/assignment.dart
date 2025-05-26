@@ -2,11 +2,11 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
-import 'package:plannerop/core/model/assignment.dart';
+import 'package:plannerop/core/model/operation.dart';
 import 'package:http/http.dart' as http;
 import 'package:plannerop/core/model/worker.dart';
 import 'package:plannerop/core/model/workerGroup.dart';
-import 'package:plannerop/dto/assignment/createAssigment.dart';
+import 'package:plannerop/dto/operations/createOperation.dart';
 import 'package:plannerop/store/auth.dart';
 import 'package:plannerop/store/workers.dart';
 import 'package:plannerop/utils/group.dart';
@@ -15,9 +15,9 @@ import 'package:provider/provider.dart';
 class AssignmentService {
   final String API_URL = dotenv.get('API_URL');
 
-  // Método para enviar asignación al backend usando AuthProvider
-  Future<CreateassigmentDto> createAssignment(
-      Assignment assignment, BuildContext context) async {
+  // Método para enviar operación al backend usando AuthProvider
+  Future<CreateOperationDto> createAssignment(
+      Operation assignment, BuildContext context) async {
     try {
       // Obtener token del AuthProvider
       final token =
@@ -29,9 +29,9 @@ class AssignmentService {
         workersInGroups.addAll(group.workers);
       }
 
-      // Filtrar los trabajadores para solo incluir aquellos que no están en grupos
-      List<int> individualWorkers =
-          assignment.workers.map((worker) => worker.id).toList();
+      // // Filtrar los trabajadores para solo incluir aquellos que no están en grupos
+      // List<int> individualWorkers =
+      //     assignment.workers.map((worker) => worker.id).toList();
 
       // Crear el payload en el formato requerido por el backend
       final Map<String, dynamic> payload = {
@@ -42,9 +42,9 @@ class AssignmentService {
         "timeStrat": assignment.time,
         "id_user": assignment.userId,
         "id_area": assignment.areaId,
-        "id_task": assignment.taskId,
+        // "id_task": assignment.taskId,
         "id_client": assignment.clientId,
-        "workerIds": individualWorkers,
+        // "workerIds": individualWorkers,
         'inChargedIds': assignment.inChagers,
         "groups": assignment.groups.map((group) {
           return {
@@ -67,7 +67,7 @@ class AssignmentService {
         payload['timeEnd'] = assignment.endTime;
       }
 
-      // debugPrint('Enviando asignación: ${jsonEncode(payload)}');
+      // debugPrint('Enviando operación: ${jsonEncode(payload)}');
 
       var url = Uri.parse('$API_URL/operation');
       var response = await http.post(url,
@@ -80,18 +80,18 @@ class AssignmentService {
       if (response.statusCode == 201) {
         var body = jsonDecode(response.body);
 
-        return CreateassigmentDto(
+        return CreateOperationDto(
           id: body['id'],
           isSuccess: true,
         );
       } else {
         debugPrint(
-            'Error al crear asignación: ${response.statusCode} - ${response.body}');
-        return CreateassigmentDto(id: 0, isSuccess: false);
+            'Error al crear operación: ${response.statusCode} - ${response.body}');
+        return CreateOperationDto(id: 0, isSuccess: false);
       }
     } catch (e) {
-      debugPrint('Excepción al crear asignación: $e');
-      return CreateassigmentDto(id: 0, isSuccess: false);
+      debugPrint('Excepción al crear operación: $e');
+      return CreateOperationDto(id: 0, isSuccess: false);
     }
   }
 
@@ -101,7 +101,7 @@ class AssignmentService {
   }
 
   // Metodo para obtener las asignaciones
-  Future<List<Assignment>> fetchAssignments(BuildContext context) async {
+  Future<List<Operation>> fetchAssignments(BuildContext context) async {
     try {
       final token =
           Provider.of<AuthProvider>(context, listen: false).accessToken;
@@ -116,7 +116,7 @@ class AssignmentService {
 
       if (response.statusCode == 200) {
         final jsonResponse = jsonDecode(response.body);
-        List<Assignment> assignments = [];
+        List<Operation> assignments = [];
         for (var assignment in jsonResponse) {
           // debugPrint('Asignación: $assignment');
 
@@ -138,7 +138,7 @@ class AssignmentService {
             workersAssignment.add(workerObj);
           }
 
-          var assignmentObj = Assignment.fromJson(assignment, workers);
+          var assignmentObj = Operation.fromJson(assignment, workers);
 
           assignments.add(assignmentObj);
         }
@@ -168,30 +168,30 @@ class AssignmentService {
           },
           body: jsonEncode(
               {"status": status == 'IN_PROGRESS' ? 'INPROGRESS' : status}));
-      // debugPrint('Actualizando estado de asignación $status');
+      // debugPrint('Actualizando estado de operación $status');
       if (response.statusCode == 200) {
         return true;
       } else {
         debugPrint(
-            'Error al actualizar asignación: ${response.statusCode} - ${response.body}');
+            'Error al actualizar operación: ${response.statusCode} - ${response.body}');
         return false;
       }
     } catch (e) {
-      debugPrint('Excepción al actualizar asignación: $e');
+      debugPrint('Excepción al actualizar operación: $e');
       return false;
     }
   }
 
-  // Método para actualizar una asignación existente
+  // Método para actualizar una operación existente
   Future<bool> updateAssignment(
-      Assignment assignment, BuildContext context) async {
+      Operation assignment, BuildContext context) async {
     try {
       // Obtener token del AuthProvider
       final token =
           Provider.of<AuthProvider>(context, listen: false).accessToken;
 
       if (assignment.id == null) {
-        debugPrint('Error: ID de asignación no proporcionado');
+        debugPrint('Error: ID de operación no proporcionado');
         return false;
       }
       // Crear el payload con los datos actualizados
@@ -199,10 +199,10 @@ class AssignmentService {
         "status": assignment.status.toUpperCase(),
         "dateStart": _formatDate(assignment.date),
         "timeStrat": assignment.time,
-        "workers": {
-          "connect":
-              assignment.workers.map((worker) => {"id": worker.id}).toList()
-        },
+        // "workers": {
+        //   "connect":
+        //       assignment.workers.map((worker) => {"id": worker.id}).toList()
+        // },
       };
 
       // Añadir campos opcionales si tienen valor
@@ -215,7 +215,7 @@ class AssignmentService {
       }
 
       // debugPrint(
-      // 'Actualizando asignación ${assignment.id}: ${jsonEncode(payload)}');
+      // 'Actualizando operación ${assignment.id}: ${jsonEncode(payload)}');
 
       var url = Uri.parse('$API_URL/operation/${assignment.id}');
       var response = await http.patch(url,
@@ -229,25 +229,25 @@ class AssignmentService {
         return true;
       } else {
         debugPrint(
-            'Error al actualizar asignación: ${response.statusCode} - ${response.body}');
+            'Error al actualizar operación: ${response.statusCode} - ${response.body}');
         return false;
       }
     } catch (e) {
-      debugPrint('Excepción al actualizar asignación: $e');
+      debugPrint('Excepción al actualizar operación: $e');
       return false;
     }
   }
 
-  // Método para actualizar una asignación existente
+  // Método para actualizar una operación existente
   Future<bool> updateAssignmentToComplete(
-      Assignment assignment, BuildContext context) async {
+      Operation assignment, BuildContext context) async {
     try {
       // Obtener token del AuthProvider
       final token =
           Provider.of<AuthProvider>(context, listen: false).accessToken;
 
       if (assignment.id == null) {
-        debugPrint('Error: ID de asignación no proporcionado');
+        debugPrint('Error: ID de operación no proporcionado');
         return false;
       }
       // Crear el payload con los datos actualizados
@@ -265,7 +265,7 @@ class AssignmentService {
       }
 
       // debugPrint(
-      //     'Actualizando asignación ${assignment.id}: ${jsonEncode(payload)}');
+      //     'Actualizando operación ${assignment.id}: ${jsonEncode(payload)}');
 
       var url = Uri.parse('$API_URL/operation/${assignment.id}');
       var response = await http.patch(url,
@@ -279,23 +279,23 @@ class AssignmentService {
         return true;
       } else {
         debugPrint(
-            'Error al actualizar asignación: ${response.statusCode} - ${response.body}');
+            'Error al actualizar operación: ${response.statusCode} - ${response.body}');
         return false;
       }
     } catch (e) {
-      debugPrint('Excepción al actualizar asignación: $e');
+      debugPrint('Excepción al actualizar operación: $e');
       return false;
     }
   }
 
-// Método para eliminar un grupo de una asignación
+// Método para eliminar un grupo de una operación
   Future<bool> removeGroupFromAssignment(
       int assignmentId, BuildContext context, List<int> workerIds) async {
     try {
       final token =
           Provider.of<AuthProvider>(context, listen: false).accessToken;
 
-      // Endpoint para eliminar un grupo específico de una asignación
+      // Endpoint para eliminar un grupo específico de una operación
       var url = Uri.parse('$API_URL/operation/$assignmentId');
 
       Map<String, dynamic> body = {
@@ -325,7 +325,7 @@ class AssignmentService {
     }
   }
 
-  // Método para actualizar solo la hora de finalización de una asignación
+  // Método para actualizar solo la hora de finalización de una operación
   Future<bool> updateAssignmentEndTime(
       String assignmentId, String endTime, BuildContext context) async {
     try {
@@ -357,7 +357,7 @@ class AssignmentService {
     }
   }
 
-  // Método para eliminar una asignación
+  // Método para eliminar una operación
   Future<bool> deleteAssignment(
       String assignmentId, BuildContext context) async {
     try {
@@ -373,17 +373,17 @@ class AssignmentService {
         return true;
       } else {
         debugPrint(
-            'Error al eliminar asignación: ${response.statusCode} - ${response.body}');
+            'Error al eliminar operación: ${response.statusCode} - ${response.body}');
         return false;
       }
     } catch (e) {
-      debugPrint('Excepción al eliminar asignación: $e');
+      debugPrint('Excepción al eliminar operación: $e');
       return false;
     }
   }
 
 // Modificación de fetchAssignmentsByStatus para evitar duplicados de trabajadores
-  Future<List<Assignment>> fetchAssignmentsByStatus(
+  Future<List<Operation>> fetchAssignmentsByStatus(
       BuildContext context, List<String> statusList) async {
     try {
       // Verificaciones iniciales (sin cambios)
@@ -414,7 +414,7 @@ class AssignmentService {
 
       if (response.statusCode == 200) {
         final jsonResponse = jsonDecode(response.body);
-        List<Assignment> assignments = [];
+        List<Operation> assignments = [];
 
         for (var assignment in jsonResponse) {
           // Mapa para evitar duplicados basados en el ID
@@ -611,13 +611,13 @@ class AssignmentService {
             })).where((id) => id != 0).toList();
           }
 
-          var assignmentObj = Assignment(
+          var assignmentObj = Operation(
             id: assignment['id'],
-            workers: workersMap.values.toList(),
+            // workers: workersMap.values.toList(),
             workersFinished: finishedWorkersMap.values
                 .toList(), // Usar la lista de trabajadores finalizados
             area: assignment['jobArea']['name'],
-            task: assignment['task']['name'],
+            // task: assignment['task']['name'],
             date: DateTime.parse(assignment['dateStart']),
             time: assignment['timeStrat'],
             status: assignment['status'],
@@ -629,7 +629,7 @@ class AssignmentService {
             motorship: assignment['motorShip'],
             userId: assignment['id_user'],
             areaId: assignment['jobArea']['id'],
-            taskId: assignment['task']['id'],
+            // taskId: assignment['task']['id'],
             clientId: assignment['id_client'],
             inChagers: inChargers,
             groups: assignmentGroups,
@@ -659,7 +659,7 @@ class AssignmentService {
     }
   }
 
-  // Método para completar una asignación
+  // Método para completar una operación
   Future<bool> completeAssigment(
     int assignmentId,
     String status,
@@ -691,11 +691,11 @@ class AssignmentService {
         return true;
       } else {
         debugPrint(
-            'Error al completar asignación: ${response.statusCode} - ${response.body}');
+            'Error al completar operación: ${response.statusCode} - ${response.body}');
         return false;
       }
     } catch (e) {
-      debugPrint('Excepción al completar asignación: $e');
+      debugPrint('Excepción al completar operación: $e');
       return false;
     }
   }
@@ -759,7 +759,7 @@ class AssignmentService {
     }
   }
 
-// Método para conectar nuevos trabajadores a una asignación existente
+// Método para conectar nuevos trabajadores a una operación existente
   Future<bool> connectWorkersToAssignment(
       int assignmentId,
       List<int> individualWorkerIds,
@@ -769,7 +769,7 @@ class AssignmentService {
       final token =
           Provider.of<AuthProvider>(context, listen: false).accessToken;
 
-      // Endpoint para actualizar la asignación
+      // Endpoint para actualizar la operación
       var url = Uri.parse('$API_URL/operation/$assignmentId');
 
       // Preparar la estructura de la solicitud

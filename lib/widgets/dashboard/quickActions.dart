@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_neumorphic_plus/flutter_neumorphic.dart';
-import 'package:plannerop/pages/tabs/assigments.dart';
+import 'package:plannerop/pages/tabs/operations.dart';
 import 'package:plannerop/pages/tabs/reports.dart';
-import 'package:plannerop/widgets/assingments/add/addAssignmentDialog.dart';
+import 'package:plannerop/widgets/operations/add/addOperationDialog.dart';
 
 class QuickActions extends StatelessWidget {
   const QuickActions({super.key});
@@ -44,10 +44,10 @@ class QuickActions extends StatelessWidget {
                     height: 75,
                     child: NeumorphicButton(
                       onPressed: () {
-                        // Acción para crear nueva asignación
+                        // Acción para crear nueva operación
                         showDialog(
                           context: context,
-                          builder: (context) => const AddAssignmentDialog(),
+                          builder: (context) => const AddOperationDialog(),
                         );
                       },
                       style: NeumorphicStyle(

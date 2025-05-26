@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:plannerop/store/areas.dart';
 import 'package:plannerop/store/assignments.dart';
 import 'package:plannerop/store/chargersOp.dart';
 import 'package:plannerop/store/clients.dart';
 import 'package:plannerop/store/faults.dart';
+import 'package:plannerop/store/programmings.dart';
 import 'package:plannerop/store/task.dart';
 import 'package:plannerop/store/workers.dart';
 import 'package:plannerop/utils/toast.dart';
@@ -248,14 +250,14 @@ Future<void> loadAssignments({
       // Desactivar loading en el provider también
       Provider.of<AssignmentsProvider>(context, listen: false)
           .changeIsLoadingOff();
-      showAlertToast(
-          context, 'La carga de datos está tomando demasiado tiempo');
+      // showAlertToast(
+      //     context, 'La carga de datos está tomando demasiado tiempo');
     }
   });
 
   loadingTimeout.then((_) {
     if (isMounted()) {
-      debugPrint('Carga de asignaciones completada');
+      // debugPrint('Carga de asignaciones completada');
     }
   });
   // No mostrar indicador de carga si ya hay datos disponibles
@@ -340,6 +342,57 @@ Future<bool> loadClients(
     if (mounted) {
       setState(() {
         isLoadingClients = false;
+      });
+    }
+  }
+}
+
+Future<void> loadClientProgramming(
+  bool mounted,
+  Function setState,
+  bool isLoadingClientProgramming,
+  BuildContext context,
+) async {
+  if (!mounted) return;
+
+  final programmingsProvider =
+      Provider.of<ProgrammingsProvider>(context, listen: false);
+
+  // Si ya se han cargado clientes, no hacer nada
+  if (programmingsProvider.programmings.isNotEmpty) {
+    debugPrint(
+        'Clientes ya cargados: ${programmingsProvider.programmings.length}');
+    return;
+  }
+
+  setState(() {
+    isLoadingClientProgramming = true;
+  });
+
+  final DateTime now = DateTime.now();
+  final String formattedDate = DateFormat('yyyy-MM-dd').format(now);
+
+  try {
+    await programmingsProvider.fetchProgrammingsByDate(formattedDate, context);
+
+    if (programmingsProvider.programmings.isNotEmpty) {
+      debugPrint(
+          'Programaciones cargadas con éxito: ${programmingsProvider.programmings.length}');
+    } else {
+      debugPrint('No se cargaron programaciones o la lista está vacía');
+    }
+  } catch (e, stackTrace) {
+    debugPrint('Error al cargar programaciones: $e');
+    debugPrint('Stack trace: $stackTrace');
+
+    // Mostrar un mensaje de error más informativo
+    if (mounted) {
+      showErrorToast(context, 'Error al cargar programaciones.');
+    }
+  } finally {
+    if (mounted) {
+      setState(() {
+        isLoadingClientProgramming = false;
       });
     }
   }

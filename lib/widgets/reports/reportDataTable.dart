@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_neumorphic_plus/flutter_neumorphic.dart';
 import 'package:intl/intl.dart';
-import 'package:plannerop/core/model/assignment.dart';
+import 'package:plannerop/core/model/operation.dart';
 import 'package:plannerop/store/assignments.dart';
 import 'package:plannerop/store/workers.dart';
 import 'package:provider/provider.dart';
@@ -42,7 +42,7 @@ class _ReportDataTableState extends State<ReportDataTable> {
     super.dispose();
   }
 
-  List<Assignment> _getFilteredData(List<Assignment> allAssignments) {
+  List<Operation> _getFilteredData(List<Operation> allAssignments) {
     final filtered = allAssignments.where((data) {
       // Primero verificamos si hay datos en la consola para depuración
 
@@ -59,7 +59,7 @@ class _ReportDataTableState extends State<ReportDataTable> {
 
       // Filtrar por zona - CORREGIDO PARA MANEJAR DIFERENTES TIPOS DE DATOS
       if (widget.zone != null) {
-        // Convertir la zona de la asignación a int para una comparación consistente
+        // Convertir la zona de la operación a int para una comparación consistente
         int? assignmentZone;
         if (data.zone != null) {
           try {
@@ -91,64 +91,64 @@ class _ReportDataTableState extends State<ReportDataTable> {
         }
       }
 
-      // Filtrar por búsqueda
-      if (_searchQuery.isNotEmpty) {
-        final searchLower = _searchQuery.toLowerCase();
-        return data.workers.any((worker) =>
-                worker.name.toString().toLowerCase().contains(searchLower)) ||
-            data.task.toLowerCase().contains(searchLower) ||
-            (data.motorship?.toLowerCase().contains(searchLower) ?? false) ||
-            data.area.toLowerCase().contains(searchLower);
-      }
+      // // Filtrar por búsqueda
+      // if (_searchQuery.isNotEmpty) {
+      //   final searchLower = _searchQuery.toLowerCase();
+      //   return data.workers.any((worker) =>
+      //           worker.name.toString().toLowerCase().contains(searchLower)) ||
+      //       data.task.toLowerCase().contains(searchLower) ||
+      //       (data.motorship?.toLowerCase().contains(searchLower) ?? false) ||
+      //       data.area.toLowerCase().contains(searchLower);
+      // }
 
       return true;
     }).toList();
 
     // Ordenar datos
-    filtered.sort((a, b) {
-      var comparison = 0;
-      switch (_sortColumnIndex) {
-        case 1: // Trabajador (primer trabajador si hay varios)
-          final aWorkerName =
-              a.workers.isNotEmpty ? a.workers[0].name.toString() : '';
-          final bWorkerName =
-              b.workers.isNotEmpty ? b.workers[0].name.toString() : '';
-          comparison = aWorkerName.compareTo(bWorkerName);
-          break;
-        case 2: // Área
-          comparison = a.area.compareTo(b.area);
-          break;
-        case 3: // Tarea
-          comparison = a.task.compareTo(b.task);
-          break;
-        case 4: // Fecha
-          comparison = a.date.compareTo(b.date);
-          break;
-        case 5: // Estado
-          comparison = a.status.compareTo(b.status);
-          break;
-        case 6: // Hora de ingreso
-          comparison = a.time.compareTo(b.time);
-          break;
-        case 7: // Hora de finalización
-          final aEndTime = a.endTime ?? '';
-          final bEndTime = b.endTime ?? '';
-          if (aEndTime.isEmpty && bEndTime.isEmpty) {
-            comparison = 0;
-          } else if (aEndTime.isEmpty) {
-            comparison = 1; // Vacío va después
-          } else if (bEndTime.isEmpty) {
-            comparison = -1; // Vacío va después
-          } else {
-            comparison = aEndTime.compareTo(bEndTime);
-          }
-          break;
-        case 8: // Supervisor
+    // filtered.sort((a, b) {
+    //   var comparison = 0;
+    //   switch (_sortColumnIndex) {
+    //     case 1: // Trabajador (primer trabajador si hay varios)
+    //       final aWorkerName =
+    //           a.workers.isNotEmpty ? a.workers[0].name.toString() : '';
+    //       final bWorkerName =
+    //           b.workers.isNotEmpty ? b.workers[0].name.toString() : '';
+    //       comparison = aWorkerName.compareTo(bWorkerName);
+    //       break;
+    //     case 2: // Área
+    //       comparison = a.area.compareTo(b.area);
+    //       break;
+    //     case 3: // Tarea
+    //       comparison = a.task.compareTo(b.task);
+    //       break;
+    //     case 4: // Fecha
+    //       comparison = a.date.compareTo(b.date);
+    //       break;
+    //     case 5: // Estado
+    //       comparison = a.status.compareTo(b.status);
+    //       break;
+    //     case 6: // Hora de ingreso
+    //       comparison = a.time.compareTo(b.time);
+    //       break;
+    //     case 7: // Hora de finalización
+    //       final aEndTime = a.endTime ?? '';
+    //       final bEndTime = b.endTime ?? '';
+    //       if (aEndTime.isEmpty && bEndTime.isEmpty) {
+    //         comparison = 0;
+    //       } else if (aEndTime.isEmpty) {
+    //         comparison = 1; // Vacío va después
+    //       } else if (bEndTime.isEmpty) {
+    //         comparison = -1; // Vacío va después
+    //       } else {
+    //         comparison = aEndTime.compareTo(bEndTime);
+    //       }
+    //       break;
+    //     case 8: // Supervisor
 
-          break;
-      }
-      return _sortAscending ? comparison : -comparison;
-    });
+    //       break;
+    //   }
+    //   return _sortAscending ? comparison : -comparison;
+    // });
 
     return filtered;
   }
@@ -237,7 +237,7 @@ class _ReportDataTableState extends State<ReportDataTable> {
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Text(
-            'Mostrando $count ${count == 1 ? 'asignación' : 'asignaciones'}',
+            'Mostrando $count ${count == 1 ? 'operación' : 'asignaciones'}',
             style: const TextStyle(
               color: Color(0xFF718096),
               fontWeight: FontWeight.w500,
@@ -255,7 +255,7 @@ class _ReportDataTableState extends State<ReportDataTable> {
     );
   }
 
-  Widget _buildDataTable(List<Assignment> data, WorkersProvider usersProvider) {
+  Widget _buildDataTable(List<Operation> data, WorkersProvider usersProvider) {
     return SingleChildScrollView(
       scrollDirection: Axis.vertical,
       child: SingleChildScrollView(
@@ -288,7 +288,7 @@ class _ReportDataTableState extends State<ReportDataTable> {
   }
 
   // Nuevo método para expandir las filas con un trabajador por fila como en el Excel
-  List<DataRow> _buildExpandedRows(List<Assignment> data) {
+  List<DataRow> _buildExpandedRows(List<Operation> data) {
     List<DataRow> rows = [];
 
     // Para alternar colores por operación
@@ -308,62 +308,62 @@ class _ReportDataTableState extends State<ReportDataTable> {
           ? const Color(0xFFF7FAFC)
           : const Color(0xFFEDF2F7);
 
-      // Si no hay trabajadores, crear una fila con "Sin asignar"
-      if (assignment.workers.isEmpty) {
-        rows.add(
-          DataRow(
-            color: MaterialStateProperty.all(backgroundColor),
-            cells: [
-              DataCell(Text(DateFormat('dd/MM/yyyy').format(assignment.date))),
-              DataCell(Text(assignment.time)),
-              DataCell(const Text('Sin asignar')),
-              DataCell(const Text('-')),
-              DataCell(Text(assignment.area)),
-              DataCell(
-                  Text('${assignment.zone == 0 ? 'N/A' : assignment.zone}')),
-              DataCell(Text(assignment.motorship ?? 'N/A')),
-              DataCell(Text(assignment.task)),
-              DataCell(assignment.endDate != null
-                  ? Text(DateFormat('dd/MM/yyyy').format(assignment.endDate!))
-                  : const Text('')),
-              DataCell(Text(assignment.endTime ?? '')),
-              DataCell(_buildStatusWidget(assignment.status)),
-            ],
-          ),
-        );
-      } else {
-        // Crear una fila para CADA trabajador
-        for (var worker in assignment.workers) {
-          String workerName = '';
-          String workerDocument = '';
+      // // Si no hay trabajadores, crear una fila con "Sin asignar"
+      // if (assignment.workers.isEmpty) {
+      //   rows.add(
+      //     DataRow(
+      //       color: MaterialStateProperty.all(backgroundColor),
+      //       cells: [
+      //         DataCell(Text(DateFormat('dd/MM/yyyy').format(assignment.date))),
+      //         DataCell(Text(assignment.time)),
+      //         DataCell(const Text('Sin asignar')),
+      //         DataCell(const Text('-')),
+      //         DataCell(Text(assignment.area)),
+      //         DataCell(
+      //             Text('${assignment.zone == 0 ? 'N/A' : assignment.zone}')),
+      //         DataCell(Text(assignment.motorship ?? 'N/A')),
+      //         DataCell(Text(assignment.task)),
+      //         DataCell(assignment.endDate != null
+      //             ? Text(DateFormat('dd/MM/yyyy').format(assignment.endDate!))
+      //             : const Text('')),
+      //         DataCell(Text(assignment.endTime ?? '')),
+      //         DataCell(_buildStatusWidget(assignment.status)),
+      //       ],
+      //     ),
+      //   );
+      // } else {
+      //   // Crear una fila para CADA trabajador
+      //   for (var worker in assignment.workers) {
+      //     String workerName = '';
+      //     String workerDocument = '';
 
-          workerName = worker.name;
-          workerDocument = worker.document;
+      //     workerName = worker.name;
+      //     workerDocument = worker.document;
 
-          rows.add(
-            DataRow(
-              color: MaterialStateProperty.all(backgroundColor),
-              cells: [
-                DataCell(
-                    Text(DateFormat('dd/MM/yyyy').format(assignment.date))),
-                DataCell(Text(assignment.time)),
-                DataCell(Text(workerName)),
-                DataCell(Text(workerDocument)),
-                DataCell(Text(assignment.area)),
-                DataCell(
-                    Text('${assignment.zone == 0 ? 'N/A' : assignment.zone}')),
-                DataCell(Text(assignment.motorship ?? 'N/A')),
-                DataCell(Text(assignment.task)),
-                DataCell(assignment.endDate != null
-                    ? Text(DateFormat('dd/MM/yyyy').format(assignment.endDate!))
-                    : const Text('')),
-                DataCell(Text(assignment.endTime ?? '')),
-                DataCell(_buildStatusWidget(assignment.status)),
-              ],
-            ),
-          );
-        }
-      }
+      //     rows.add(
+      //       DataRow(
+      //         color: MaterialStateProperty.all(backgroundColor),
+      //         cells: [
+      //           DataCell(
+      //               Text(DateFormat('dd/MM/yyyy').format(assignment.date))),
+      //           DataCell(Text(assignment.time)),
+      //           DataCell(Text(workerName)),
+      //           DataCell(Text(workerDocument)),
+      //           DataCell(Text(assignment.area)),
+      //           DataCell(
+      //               Text('${assignment.zone == 0 ? 'N/A' : assignment.zone}')),
+      //           DataCell(Text(assignment.motorship ?? 'N/A')),
+      //           DataCell(Text(assignment.task)),
+      //           DataCell(assignment.endDate != null
+      //               ? Text(DateFormat('dd/MM/yyyy').format(assignment.endDate!))
+      //               : const Text('')),
+      //           DataCell(Text(assignment.endTime ?? '')),
+      //           DataCell(_buildStatusWidget(assignment.status)),
+      //         ],
+      //       ),
+      //     );
+      //   }
+      // }
     }
 
     return rows;

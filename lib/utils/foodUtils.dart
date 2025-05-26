@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:plannerop/store/feedings.dart';
+import 'package:provider/provider.dart';
 
 class FoodUtils {
   /// Helper para convertir string de hora a TimeOfDay
@@ -16,13 +18,48 @@ class FoodUtils {
     }
   }
 
-  static List<String> determinateFoods(String? horaInicio, String? horaFin) {
+  // NUEVO: Método para determinar comidas considerando el estado de entrega
+  static List<String> determinateFoodsWithDeliveryStatus(
+      String? horaInicio, String? horaFin, BuildContext context,
+      {int? operationId, int? workerId}) {
+    final feedingProvider =
+        Provider.of<FeedingProvider>(context, listen: false);
+
+    // Primero obtener las comidas normalmente
+    List<String> foods = determinateFoods(horaInicio, horaFin, context);
+
+    debugPrint("Foods******************: $foods");
+
+    // Si no hay operationId o workerId, retornar como siempre
+    if (operationId == null || workerId == null) {
+      return foods;
+    }
+
+    // Si hay una comida válida, verificar si ya fue entregada
+    if (foods.isNotEmpty &&
+        foods[0] != "Sin alimentación" &&
+        foods[0] != "Sin alimentación actual") {
+      String foodType = foods[0];
+      bool yaEntregada =
+          feedingProvider.isMarked(operationId, workerId, foodType);
+
+      if (yaEntregada) {
+        return ["$foodType ya entregado"];
+      }
+    }
+
+    return foods;
+  }
+
+  static List<String> determinateFoods(
+      String? horaInicio, String? horaFin, BuildContext context) {
     List<String> foods = [];
 
     // 1. Obtener la hora actual
     DateTime now = DateTime.now();
-    TimeOfDay currentTime = TimeOfDay(hour: now.hour, minute: now.minute);
-    // TimeOfDay currentTime = TimeOfDay(hour: 06, minute: 31); // Solo para pruebas
+    TimeOfDay currentTime = TimeOfDay(
+        hour: now.hour, minute: now.minute); // Cambiar a 8:00 AM para testing
+    // TimeOfDay currentTime = TimeOfDay.now(); // Usar cuando esté listo para producción
     int currentMinutes = currentTime.hour * 60 + currentTime.minute;
 
     // 2. Convertir strings de hora a objetos TimeOfDay para la operación
@@ -149,10 +186,23 @@ class FoodUtils {
   }
 
   /// Determina si una operación tiene derecho a comida específica en este momento
-  static bool tieneDerechoAComidaAhora(String? horaInicio, String? horaFin) {
-    List<String> comidas = determinateFoods(horaInicio, horaFin);
+  static bool tieneDerechoAComidaAhora(
+      String? horaInicio, String? horaFin, BuildContext context) {
+    List<String> comidas = determinateFoods(horaInicio, horaFin, context);
     return comidas.isNotEmpty &&
         comidas[0] != "Sin alimentación" &&
         comidas[0] != "Sin alimentación actual";
+  }
+
+  /// Verificar si la alimentación actual puede ser marcada (no está ya entregada)
+  static bool puedeMarcarAlimentacion(String? horaInicio, String? horaFin,
+      BuildContext context, int operationId, int workerId) {
+    List<String> foods = determinateFoodsWithDeliveryStatus(
+        horaInicio, horaFin, context,
+        operationId: operationId, workerId: workerId);
+
+    return foods.isNotEmpty &&
+        !foods[0].contains("Sin alimentación") &&
+        !foods[0].contains("ya entregado");
   }
 }

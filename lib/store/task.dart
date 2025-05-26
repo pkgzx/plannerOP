@@ -28,6 +28,12 @@ class TasksProvider extends ChangeNotifier {
     return loadTasks(context);
   }
 
+  String getTaskNameByIdService(int id) {
+    final task = _tasks.firstWhere((task) => task.id == id,
+        orElse: () => Task(id: 0, name: ''));
+    return task.name;
+  }
+
   // Cargar las tareas desde el API
   Future<void> loadTasks(BuildContext context) async {
     // Si ya está cargando, prevenir múltiples llamadas

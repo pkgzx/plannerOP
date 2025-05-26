@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:plannerop/core/model/assignment.dart';
+import 'package:plannerop/core/model/operation.dart';
 import 'package:plannerop/core/model/worker.dart';
 import 'package:intl/intl.dart';
 import 'package:plannerop/store/assignments.dart';
-import 'package:plannerop/utils/assignments.dart';
+import 'package:plannerop/utils/operations.dart';
 import 'package:provider/provider.dart';
 
 class WorkerAssignmentsSection extends StatelessWidget {
@@ -19,7 +19,7 @@ class WorkerAssignmentsSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     // Simulación de asignaciones actuales
-    final List<Assignment> assignments =
+    final List<Operation> assignments =
         Provider.of<AssignmentsProvider>(context).assignments;
 
     if (assignments.isEmpty) {
@@ -42,17 +42,17 @@ class WorkerAssignmentsSection extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 12),
-        ...assignments
-            .where((assignment) =>
-                assignment.workers.any((w) => w.id == worker.id))
-            .where((assignment) => assignment.status != 'COMPLETED')
-            .map((assignment) => _buildAssignmentItem(assignment))
-            .toList(),
+        // ...assignments
+        //     .where((assignment) =>
+        //         assignment.workers.any((w) => w.id == worker.id))
+        //     .where((assignment) => assignment.status != 'COMPLETED')
+        //     .map((assignment) => _buildAssignmentItem(assignment))
+        //     .toList(),
       ],
     );
   }
 
-  Widget _buildAssignmentItem(Assignment assignment) {
+  Widget _buildAssignmentItem(Operation assignment) {
     final date = assignment.date;
     final formattedDate = DateFormat('dd/MM/yyyy').format(date);
 
@@ -70,16 +70,16 @@ class WorkerAssignmentsSection extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Expanded(
-                child: Text(
-                  assignment.task,
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                    color: specialtyColor,
-                  ),
-                ),
-              ),
+              // Expanded(
+              //   child: Text(
+              //     assignment.task,
+              //     style: TextStyle(
+              //       fontSize: 16,
+              //       fontWeight: FontWeight.w600,
+              //       color: specialtyColor,
+              //     ),
+              //   ),
+              // ),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(

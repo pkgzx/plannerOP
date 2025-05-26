@@ -5,7 +5,7 @@ import 'package:plannerop/core/model/task.dart';
 import 'package:provider/provider.dart';
 import 'package:plannerop/store/workers.dart';
 import 'package:plannerop/store/assignments.dart';
-import 'package:plannerop/core/model/assignment.dart';
+import 'package:plannerop/core/model/operation.dart';
 import 'package:plannerop/store/task.dart';
 
 class ServiceTrendChart extends StatefulWidget {
@@ -65,7 +65,7 @@ class _ServiceTrendChartState extends State<ServiceTrendChart> {
   }
 
   List<ServiceWorkerData> processAssignmentData(
-      List<Assignment> assignments, List<Task> tasks) {
+      List<Operation> assignments, List<Task> tasks) {
     try {
       // Filtrar asignaciones por todos los criterios
       final filteredAssignments = assignments.where((assignment) {
@@ -123,14 +123,14 @@ class _ServiceTrendChartState extends State<ServiceTrendChart> {
         return true;
       }).toList();
       // Agrupar por servicio (tarea)
-      final Map<String, List<Assignment>> serviceAssignments = {};
-      for (var assignment in filteredAssignments) {
-        final task = assignment.task;
-        if (!serviceAssignments.containsKey(task)) {
-          serviceAssignments[task] = [];
-        }
-        serviceAssignments[task]!.add(assignment);
-      }
+      final Map<String, List<Operation>> serviceAssignments = {};
+      // for (var assignment in filteredAssignments) {
+      //   final task = assignment.task;
+      //   if (!serviceAssignments.containsKey(task)) {
+      //     serviceAssignments[task] = [];
+      //   }
+      //   serviceAssignments[task]!.add(assignment);
+      // }
 
       // Convertir a ServiceWorkerData
       final result = <ServiceWorkerData>[];
@@ -140,17 +140,17 @@ class _ServiceTrendChartState extends State<ServiceTrendChart> {
 
         final List<Map<String, dynamic>> workersDetails = [];
 
-        for (var assignment in assignments) {
-          for (var worker in assignment.workers) {
-            uniqueWorkerIds.add(worker.id);
-            workersDetails.add({
-              'id': worker.id,
-              'name': worker.name,
-              'code': worker.code,
-              'phone': worker.phone,
-            });
-          }
-        }
+        // for (var assignment in assignments) {
+        //   for (var worker in assignment.workers) {
+        //     uniqueWorkerIds.add(worker.id);
+        //     workersDetails.add({
+        //       'id': worker.id,
+        //       'name': worker.name,
+        //       'code': worker.code,
+        //       'phone': worker.phone,
+        //     });
+        //   }
+        // }
 
         // Crear objeto con los datos del servicio
         result.add(
@@ -194,7 +194,7 @@ class _ServiceTrendChartState extends State<ServiceTrendChart> {
         debugPrint(
             'AssignmentsProvider isLoading: ${assignmentsProvider.isLoading}');
         debugPrint('TasksProvider isLoading: ${tasksProvider.isLoading}');
-      
+
         debugPrint('Tasks count: ${tasksProvider.tasks.length}');
 
         // Verificar si necesitamos cargar datos
@@ -205,7 +205,7 @@ class _ServiceTrendChartState extends State<ServiceTrendChart> {
             debugPrint('Procesando datos de asignaciones disponibles');
             _servicesData = processAssignmentData(
                 assignmentsProvider.assignments, tasksProvider.tasks);
-          
+
             _isLoading = false;
           }
           // Si no hay tareas, intentar cargarlas primero
@@ -1120,7 +1120,7 @@ class ServiceWorkerData {
   final String dateRange;
   final int assignments;
   final List<Map<String, dynamic>> workers; // Lista detallada de trabajadores
-  final List<Assignment> assignmentList;
+  final List<Operation> assignmentList;
 
   ServiceWorkerData({
     required this.serviceName,

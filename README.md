@@ -70,10 +70,10 @@ flutter run
 ### Creación de Asignaciones
 
 1. Navega a la pestaña "Asignaciones"
-2. Presiona el botón "+" para crear una nueva asignación
+2. Presiona el botón "+" para crear una nueva operación
 3. Completa los campos requeridos (área, zona, motonave, etc.)
 4. Asigna trabajadores desde el listado disponible
-5. Guarda la asignación
+5. Guarda la operación
 
 ### Generación de Reportes
 

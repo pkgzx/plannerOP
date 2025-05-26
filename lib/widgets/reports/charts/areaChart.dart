@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:plannerop/core/model/assignment.dart';
+import 'package:plannerop/core/model/operation.dart';
 import 'package:plannerop/store/assignments.dart';
 import 'package:plannerop/store/areas.dart';
 import 'package:provider/provider.dart';
@@ -62,7 +62,7 @@ class _AreaDistributionChartState extends State<AreaDistributionChart> {
   }
 
   // Procesar asignaciones para obtener datos por área
-  List<AreaData> processAssignmentData(List<Assignment> assignments) {
+  List<AreaData> processAssignmentData(List<Operation> assignments) {
     try {
       // Filtrar asignaciones por fecha
       var filteredAssignments = assignments.where((assignment) {
@@ -156,7 +156,7 @@ class _AreaDistributionChartState extends State<AreaDistributionChart> {
       }
 
       // Agrupar por área
-      final Map<String, List<Assignment>> areaAssignments = {};
+      final Map<String, List<Operation>> areaAssignments = {};
 
       for (var assignment in filteredAssignments) {
         final areaName = assignment.area;
@@ -185,58 +185,58 @@ class _AreaDistributionChartState extends State<AreaDistributionChart> {
       final result = <AreaData>[];
       int colorIndex = 0;
 
-      // Ordenar por cantidad de personal (de mayor a menor)
-      final sortedEntries = areaAssignments.entries.toList()
-        ..sort((a, b) {
-          final totalWorkersA = a.value.fold<int>(
-              0, (sum, assignment) => sum + assignment.workers.length);
-          final totalWorkersB = b.value.fold<int>(
-              0, (sum, assignment) => sum + assignment.workers.length);
-          return totalWorkersB.compareTo(totalWorkersA);
-        });
+      // // Ordenar por cantidad de personal (de mayor a menor)
+      // final sortedEntries = areaAssignments.entries.toList()
+      //   ..sort((a, b) {
+      //     final totalWorkersA = a.value.fold<int>(
+      //         0, (sum, assignment) => sum + assignment.workers.length);
+      //     final totalWorkersB = b.value.fold<int>(
+      //         0, (sum, assignment) => sum + assignment.workers.length);
+      //     return totalWorkersB.compareTo(totalWorkersA);
+      //   });
 
-      // Crear AreaData para cada área
-      for (var entry in sortedEntries) {
-        final areaName = entry.key;
-        final assignments = entry.value;
+      // // Crear AreaData para cada área
+      // for (var entry in sortedEntries) {
+      //   final areaName = entry.key;
+      //   final assignments = entry.value;
 
-        // Contar personal único por área
-        final Set<int> uniqueWorkerIds = {};
-        for (var assignment in assignments) {
-          for (var worker in assignment.workers) {
-            uniqueWorkerIds.add(worker.id);
-          }
-        }
+      //   // Contar personal único por área
+      //   final Set<int> uniqueWorkerIds = {};
+      //   for (var assignment in assignments) {
+      //     for (var worker in assignment.workers) {
+      //       uniqueWorkerIds.add(worker.id);
+      //     }
+      //   }
 
-        final totalAssignments = assignments.length;
-        final totalPersonnel = uniqueWorkerIds.length;
+      //   final totalAssignments = assignments.length;
+      //   final totalPersonnel = uniqueWorkerIds.length;
 
-        // Calcular porcentaje del total
-        double percentage = 0;
-        if (filteredAssignments.isNotEmpty) {
-          final totalWorkers = filteredAssignments.fold<Set<int>>(<int>{},
-              (workers, assignment) {
-            assignment.workers.forEach((worker) {
-              workers.add(worker.id);
-            });
-            return workers;
-          }).length;
+      //   // Calcular porcentaje del total
+      //   double percentage = 0;
+      //   if (filteredAssignments.isNotEmpty) {
+      //     final totalWorkers = filteredAssignments.fold<Set<int>>(<int>{},
+      //         (workers, assignment) {
+      //       assignment.workers.forEach((worker) {
+      //         workers.add(worker.id);
+      //       });
+      //       return workers;
+      //     }).length;
 
-          percentage = totalWorkers > 0 ? totalPersonnel / totalWorkers : 0;
-        }
+      //     percentage = totalWorkers > 0 ? totalPersonnel / totalWorkers : 0;
+      //   }
 
-        result.add(AreaData(
-          name: areaName,
-          personnel: totalPersonnel,
-          color: colorPalette[colorIndex % colorPalette.length],
-          assignments: totalAssignments,
-          dateRange:
-              '${DateFormat('dd/MM/yyyy').format(widget.startDate)} - ${DateFormat('dd/MM/yyyy').format(widget.endDate)}',
-          percentage: percentage,
-        ));
+      //   result.add(AreaData(
+      //     name: areaName,
+      //     personnel: totalPersonnel,
+      //     color: colorPalette[colorIndex % colorPalette.length],
+      //     assignments: totalAssignments,
+      //     dateRange:
+      //         '${DateFormat('dd/MM/yyyy').format(widget.startDate)} - ${DateFormat('dd/MM/yyyy').format(widget.endDate)}',
+      //     percentage: percentage,
+      //   ));
 
-        colorIndex++;
-      }
+      //   colorIndex++;
+      // }
 
       return result;
     } catch (e) {

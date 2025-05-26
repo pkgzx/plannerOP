@@ -6,7 +6,7 @@ class WorkerGroup {
   final String? startDate;
   final String? endDate;
   final List<int> workers;
-  final List<Worker>? workersData;
+  List<Worker>? workersData;
   final int serviceId;
   final String name;
   final String id;

@@ -29,6 +29,22 @@ class FeedingProvider extends ChangeNotifier {
     }
   }
 
+  // Convertir tipo de API a formato de UI
+  String _getFeedingTypeFromApi(String apiType) {
+    switch (apiType) {
+      case 'BREAKFAST':
+        return 'Desayuno';
+      case 'LUNCH':
+        return 'Almuerzo';
+      case 'DINNER':
+        return 'Cena';
+      case 'SNACK':
+        return 'Media noche';
+      default:
+        return 'Desayuno';
+    }
+  }
+
   // Verificar si la alimentación está marcada
   bool isMarked(int operationId, int workerId, String foodType) {
     return _feedingStatus[operationId]?[workerId]?[foodType] ?? false;
@@ -101,23 +117,7 @@ class FeedingProvider extends ChangeNotifier {
     return true;
   }
 
-  // Cargar el estado de alimentación de la API (útil al iniciar la aplicación)
-  Future<void> loadFeedingStatus() async {
-    _isLoading = true;
-    notifyListeners();
-
-    try {
-      // Aquí podrías agregar una llamada a la API para cargar el historial de alimentación
-
-      _isLoading = false;
-      notifyListeners();
-    } catch (e) {
-      _isLoading = false;
-      notifyListeners();
-    }
-  }
-
-// cargar alimentaciones de una operación específica
+  // cargar alimentaciones de una operación específica - MÉTODO CORREGIDO
   Future<void> loadFeedingStatusForOperation(
       int operationId, BuildContext context) async {
     _isLoading = true;
@@ -128,6 +128,8 @@ class FeedingProvider extends ChangeNotifier {
       final List<dynamic> feedingData =
           await feedingService.getFeedingsForOperation(operationId, context);
 
+      debugPrint("Feeding data: $feedingData");
+
       // Inicializar la estructura de datos para esta operación
       _feedingStatus[operationId] = {};
 
@@ -136,7 +138,7 @@ class FeedingProvider extends ChangeNotifier {
         int workerId = feeding['id_worker'];
         String type = feeding['type'];
 
-        // Convertir tipo de API a formato de UI
+        // CORREGIDO: Convertir tipo de API a formato de UI usando el método correcto
         String foodType = _getFeedingTypeFromApi(type);
 
         // Inicializar la estructura si no existe
@@ -155,23 +157,7 @@ class FeedingProvider extends ChangeNotifier {
     }
   }
 
-// Convertir tipo de la API a formato de UI
-  String _getFeedingTypeFromApi(String apiType) {
-    switch (apiType) {
-      case 'BREAKFAST':
-        return 'Desayuno';
-      case 'LUNCH':
-        return 'Almuerzo';
-      case 'DINNER':
-        return 'Cena';
-      case 'SNACK':
-        return 'Media noche';
-      default:
-        return 'Desayuno';
-    }
-  }
-
-// Verificar si una comida específica está marcada para un trabajador
+  // Verificar si una comida específica está marcada para un trabajador
   bool isFoodTypeMarked(int operationId, int workerId, String foodType) {
     return _feedingStatus[operationId]?[workerId]?[foodType] ?? false;
   }

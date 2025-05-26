@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_neumorphic_plus/flutter_neumorphic.dart';
 import 'package:plannerop/pages/login.dart';
-import 'package:plannerop/pages/tabs/assigments.dart';
+import 'package:plannerop/pages/tabs/operations.dart';
 import 'package:plannerop/pages/tabs/dashboard.dart';
 import 'package:plannerop/pages/tabs/reports.dart';
 import 'package:plannerop/pages/tabs/workers.dart';

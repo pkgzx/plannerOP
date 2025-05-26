@@ -3,7 +3,7 @@ import 'dart:math' as math;
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:plannerop/store/assignments.dart';
-import 'package:plannerop/core/model/assignment.dart';
+import 'package:plannerop/core/model/operation.dart';
 
 class ZoneDistributionChart extends StatefulWidget {
   final DateTime startDate;
@@ -60,7 +60,7 @@ class _ZoneDistributionChartState extends State<ZoneDistributionChart> {
     });
   }
 
-  List<ZoneData> processAssignmentData(List<Assignment> assignments) {
+  List<ZoneData> processAssignmentData(List<Operation> assignments) {
     try {
       final filteredAssignments = assignments.where((assignment) {
         // Filtrar por fecha
@@ -127,7 +127,7 @@ class _ZoneDistributionChartState extends State<ZoneDistributionChart> {
         return true;
       }).toList();
       // Agrupar por zona
-      final Map<int, List<Assignment>> zoneAssignments = {};
+      final Map<int, List<Operation>> zoneAssignments = {};
       for (var assignment in filteredAssignments) {
         final zone = assignment.zone;
         if (!zoneAssignments.containsKey(zone)) {
@@ -164,17 +164,17 @@ class _ZoneDistributionChartState extends State<ZoneDistributionChart> {
 
         for (var assignment in assignments) {
           // Contar trabajadores únicos
-          for (var worker in assignment.workers) {
-            uniqueWorkerIds.add(worker.id);
-          }
+          // for (var worker in assignment.workers) {
+          //   uniqueWorkerIds.add(worker.id);
+          // }
 
-          // Contar por tipo de tarea
-          if (taskCounts.containsKey(assignment.task)) {
-            taskCounts[assignment.task] =
-                (taskCounts[assignment.task] ?? 0) + 1;
-          } else {
-            taskCounts[assignment.task] = 1;
-          }
+          // // Contar por tipo de tarea
+          // if (taskCounts.containsKey(assignment.task)) {
+          //   taskCounts[assignment.task] =
+          //       (taskCounts[assignment.task] ?? 0) + 1;
+          // } else {
+          //   taskCounts[assignment.task] = 1;
+          // }
 
           // Contar por estado
           if (statusCounts.containsKey(assignment.status)) {

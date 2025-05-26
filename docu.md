@@ -2,7 +2,7 @@
 
 ## 1. Introducción
 
-CargoPlanner es un sistema integral de gestión operativa diseñado específicamente para optimizar la planificación de operaciones y la asignación de trabajadores en entornos empresariales, con un enfoque particular en sectores como la logística, operaciones portuarias y gestión de recursos humanos. El sistema consta de dos componentes principales: un backend (ServidorCargoPlanner) desarrollado con NestJS y una aplicación frontend multiplataforma (PlannerOP) desarrollada con Flutter.
+CargoPlanner es un sistema integral de gestión operativa diseñado específicamente para optimizar la planificación de operaciones y la operación de trabajadores en entornos empresariales, con un enfoque particular en sectores como la logística, operaciones portuarias y gestión de recursos humanos. El sistema consta de dos componentes principales: un backend (ServidorCargoPlanner) desarrollado con NestJS y una aplicación frontend multiplataforma (PlannerOP) desarrollada con Flutter.
 
 El desarrollo de CargoPlanner responde a la necesidad creciente de las empresas de optimizar sus recursos humanos y mejorar la eficiencia operativa mediante herramientas digitales que faciliten la toma de decisiones en tiempo real.
 
@@ -12,7 +12,7 @@ En los entornos operativos actuales, especialmente en sectores como logística y
 
 1. **Gestión ineficiente de personal**: Distribución manual de trabajadores que resulta en asignaciones subóptimas y tiempos muertos.
 2. **Seguimiento limitado de operaciones**: Dificultad para monitorear en tiempo real el estado de las diferentes tareas y operaciones.
-3. **Duplicación de esfuerzos**: Falta de coordinación entre supervisores que provoca sobreasignación o subasignación de personal.
+3. **Duplicación de esfuerzos**: Falta de coordinación entre supervisores que provoca sobreoperación o suboperación de personal.
 4. **Documentación y reportes manuales**: Generación de informes operativos que consume tiempo y está sujeta a errores humanos.
 5. **Comunicación fragmentada**: Canales de comunicación ineficientes entre los diferentes niveles operativos.
 6. **Planificación reactiva vs. proactiva**: Dificultad para anticipar necesidades de personal y recursos con suficiente antelación.
@@ -27,7 +27,7 @@ La ausencia de sistemas digitales integrados para abordar estos problemas deriva
 
 ### 3.1 Objetivo General
 
-Desarrollar e implementar un sistema integral de gestión operativa que optimice la planificación, asignación y seguimiento de recursos humanos y tareas en entornos empresariales, mejorando la eficiencia operativa y facilitando la toma de decisiones basada en datos en tiempo real.
+Desarrollar e implementar un sistema integral de gestión operativa que optimice la planificación, operación y seguimiento de recursos humanos y tareas en entornos empresariales, mejorando la eficiencia operativa y facilitando la toma de decisiones basada en datos en tiempo real.
 
 ### 3.2 Objetivos Específicos
 
@@ -52,7 +52,7 @@ La digitalización de procesos operativos representa una ventaja competitiva en 
 
 ### 4.2 Justificación Económica
 El sistema permite:
-- Reducir costos operativos mediante la optimización de asignación de personal
+- Reducir costos operativos mediante la optimización de operación de personal
 - Minimizar tiempos muertos y maximizar la utilización de recursos humanos
 - Disminuir errores en la gestión que podrían resultar en pérdidas económicas
 - Mejorar la planificación proactiva, reduciendo costos de respuestas reactivas
@@ -259,7 +259,7 @@ La aplicación cliente (PlannerOP) organiza sus interfaces en cuatro pestañas p
 2. **Trabajadores**: Gestión completa del personal
    - Lista filtrable de trabajadores
    - Estados de disponibilidad
-   - Historiales de asignación
+   - Historiales de operación
    - Gestión de grupos
 
 3. **Asignaciones**: Administración del flujo de trabajo
@@ -418,13 +418,13 @@ Su arquitectura modular, enfoque multiplataforma y diseño centrado en el usuari
 
 Las prácticas laborales constituyen un componente fundamental en la formación integral de los estudiantes de Tecnología en Desarrollo de Software. Este informe documenta la experiencia adquirida durante el periodo de prácticas realizadas en Cargoban, un operador logístico y portuario líder en la región de Urabá, donde se tuvo la oportunidad de aplicar los conocimientos teóricos adquiridos durante la carrera en un entorno empresarial real.
 
-La creciente actividad portuaria en la región de Urabá, especialmente con la expansión de operaciones logísticas relacionadas con la exportación de frutas y otros productos, ha generado desafíos significativos en la gestión operativa. En este contexto, las prácticas se enfocaron en el desarrollo e implementación del sistema CargoPlanner, una solución integral diseñada para optimizar la planificación de operaciones y la asignación de trabajadores en entornos portuarios.
+La creciente actividad portuaria en la región de Urabá, especialmente con la expansión de operaciones logísticas relacionadas con la exportación de frutas y otros productos, ha generado desafíos significativos en la gestión operativa. En este contexto, las prácticas se enfocaron en el desarrollo e implementación del sistema CargoPlanner, una solución integral diseñada para optimizar la planificación de operaciones y la operación de trabajadores en entornos portuarios.
 
 ## 3. Objetivos de la Práctica
 
 ### 3.1. Objetivo General
 
-Desarrollar e implementar un sistema de gestión operativa (CargoPlanner) que optimice los procesos de asignación de personal y seguimiento de operaciones en Cargoban, aplicando metodologías ágiles de desarrollo y tecnologías modernas para mejorar la eficiencia operativa de la empresa.
+Desarrollar e implementar un sistema de gestión operativa (CargoPlanner) que optimice los procesos de operación de personal y seguimiento de operaciones en Cargoban, aplicando metodologías ágiles de desarrollo y tecnologías modernas para mejorar la eficiencia operativa de la empresa.
 
 ### 3.2. Objetivos Específicos
 
@@ -474,7 +474,7 @@ Cargoban cuenta con aproximadamente 150 empleados organizados en las siguientes 
 CargoPlanner: Sistema Integral de Gestión Operativa para Operaciones Portuarias
 
 #### Descripción del Proyecto
-CargoPlanner es un sistema diseñado para optimizar la planificación de operaciones y la asignación de trabajadores en el entorno portuario de Cargoban. El sistema permite una mejor coordinación entre supervisores, seguimiento en tiempo real de operaciones, gestión eficiente de recursos humanos y generación de reportes analíticos para la toma de decisiones.
+CargoPlanner es un sistema diseñado para optimizar la planificación de operaciones y la operación de trabajadores en el entorno portuario de Cargoban. El sistema permite una mejor coordinación entre supervisores, seguimiento en tiempo real de operaciones, gestión eficiente de recursos humanos y generación de reportes analíticos para la toma de decisiones.
 
 #### Tecnologías Utilizadas
 

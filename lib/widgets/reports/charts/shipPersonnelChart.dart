@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:plannerop/core/model/assignment.dart';
+import 'package:plannerop/core/model/operation.dart';
 import 'package:plannerop/store/assignments.dart';
 import 'package:provider/provider.dart';
 
@@ -60,7 +60,7 @@ class _ShipPersonnelChartState extends State<ShipPersonnelChart> {
   }
 
   // Procesar asignaciones para obtener datos de personal por buque
-  List<ShipData> processAssignmentData(List<Assignment> assignments) {
+  List<ShipData> processAssignmentData(List<Operation> assignments) {
     try {
       // Filtrar asignaciones por todos los criterios
       final filteredAssignments = assignments.where((assignment) {
@@ -119,7 +119,7 @@ class _ShipPersonnelChartState extends State<ShipPersonnelChart> {
       }).toList();
 
       // Agrupar por motorship (placa de la motonave)
-      final Map<String, List<Assignment>> shipAssignments = {};
+      final Map<String, List<Operation>> shipAssignments = {};
 
       for (var assignment in filteredAssignments) {
         if (assignment.motorship != null && assignment.motorship!.isNotEmpty) {
@@ -151,54 +151,54 @@ class _ShipPersonnelChartState extends State<ShipPersonnelChart> {
       int colorIndex = 0;
 
       // Ordenar por cantidad de personal (de mayor a menor)
-      final sortedEntries = shipAssignments.entries.toList()
-        ..sort((a, b) {
-          final totalWorkersA = a.value.fold<int>(
-              0, (sum, assignment) => sum + assignment.workers.length);
-          final totalWorkersB = b.value.fold<int>(
-              0, (sum, assignment) => sum + assignment.workers.length);
-          return totalWorkersB.compareTo(totalWorkersA);
-        });
+      // final sortedEntries = shipAssignments.entries.toList()
+      //   ..sort((a, b) {
+      //     final totalWorkersA = a.value.fold<int>(
+      //         0, (sum, assignment) => sum + assignment.workers.length);
+      //     final totalWorkersB = b.value.fold<int>(
+      //         0, (sum, assignment) => sum + assignment.workers.length);
+      //     return totalWorkersB.compareTo(totalWorkersA);
+      //   });
 
-      // Crear ShipData para cada buque
-      for (var entry in sortedEntries) {
-        final shipName = entry.key;
-        final assignments = entry.value;
+      // // Crear ShipData para cada buque
+      // for (var entry in sortedEntries) {
+      //   final shipName = entry.key;
+      //   final assignments = entry.value;
 
-        // Contar el total de trabajadores asignados (sin duplicados)
-        final Set<int> uniqueWorkerIds = {};
-        final List<Map<String, dynamic>> workersDetails = [];
+      //   // Contar el total de trabajadores asignados (sin duplicados)
+      //   final Set<int> uniqueWorkerIds = {};
+      //   final List<Map<String, dynamic>> workersDetails = [];
 
-        for (var assignment in assignments) {
-          for (var worker in assignment.workers) {
-            if (!uniqueWorkerIds.contains(worker.id)) {
-              uniqueWorkerIds.add(worker.id);
-              workersDetails.add({
-                'id': worker.id,
-                'name': worker.name,
-                'code': worker.code,
-                'phone': worker.phone,
-              });
-            }
-          }
-        }
+      //   // for (var assignment in assignments) {
+      //   //   for (var worker in assignment.workers) {
+      //   //     if (!uniqueWorkerIds.contains(worker.id)) {
+      //   //       uniqueWorkerIds.add(worker.id);
+      //   //       workersDetails.add({
+      //   //         'id': worker.id,
+      //   //         'name': worker.name,
+      //   //         'code': worker.code,
+      //   //         'phone': worker.phone,
+      //   //       });
+      //   //     }
+      //   //   }
+      //   // }
 
-        final totalAssignments = assignments.length;
-        final totalPersonnel = uniqueWorkerIds.length;
+      //   final totalAssignments = assignments.length;
+      //   final totalPersonnel = uniqueWorkerIds.length;
 
-        result.add(ShipData(
-          shipName,
-          totalPersonnel,
-          colorPalette[colorIndex % colorPalette.length],
-          totalAssignments: totalAssignments,
-          dateRange:
-              '${DateFormat('dd/MM/yyyy').format(widget.startDate)} - ${DateFormat('dd/MM/yyyy').format(widget.endDate)}',
-          workers: workersDetails,
-          assignmentList: assignments,
-        ));
+      //   result.add(ShipData(
+      //     shipName,
+      //     totalPersonnel,
+      //     colorPalette[colorIndex % colorPalette.length],
+      //     totalAssignments: totalAssignments,
+      //     dateRange:
+      //         '${DateFormat('dd/MM/yyyy').format(widget.startDate)} - ${DateFormat('dd/MM/yyyy').format(widget.endDate)}',
+      //     workers: workersDetails,
+      //     assignmentList: assignments,
+      //   ));
 
-        colorIndex++;
-      }
+      //   colorIndex++;
+      // }
 
       return result;
     } catch (e) {
@@ -986,7 +986,7 @@ class _ShipPersonnelChartState extends State<ShipPersonnelChart> {
               Text(
                   'Fecha: ${DateFormat('dd/MM/yyyy').format(assignment.date)}'),
               Text('Estado: ${_getStatusText(assignment.status)}'),
-              Text('Tarea: ${assignment.task}'),
+              // Text('Tarea: ${assignment.task}'),
             ],
           ),
           isThreeLine: true,
@@ -1018,7 +1018,7 @@ class ShipData {
   final int totalAssignments;
   final String dateRange;
   final List<Map<String, dynamic>> workers;
-  final List<Assignment> assignmentList;
+  final List<Operation> assignmentList;
 
   ShipData(
     this.name,

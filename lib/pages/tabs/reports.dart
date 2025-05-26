@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_neumorphic_plus/flutter_neumorphic.dart';
 import 'package:intl/intl.dart';
-import 'package:plannerop/core/model/assignment.dart';
+import 'package:plannerop/core/model/operation.dart';
 import 'package:plannerop/store/assignments.dart';
 import 'package:plannerop/utils/toast.dart';
 import 'package:plannerop/widgets/reports/charts/areaChart.dart';
@@ -96,7 +96,7 @@ class _ReportesTabState extends State<ReportesTab> {
   void _loadFilterData() {
     final assignmentsProvider =
         Provider.of<AssignmentsProvider>(context, listen: false);
-    final List<Assignment> assignments = assignmentsProvider.assignments;
+    final List<Operation> assignments = assignmentsProvider.assignments;
 
     // Extraer áreas únicas
     final areasSet = assignments.map((a) => a.area).toSet();

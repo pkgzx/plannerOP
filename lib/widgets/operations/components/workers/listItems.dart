@@ -1,0 +1,803 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_neumorphic_plus/flutter_neumorphic.dart';
+import 'package:plannerop/core/model/task.dart';
+import 'package:plannerop/core/model/worker.dart';
+import 'package:plannerop/core/model/workerGroup.dart';
+import 'package:plannerop/store/task.dart';
+import 'package:plannerop/utils/worker_utils.dart';
+import 'package:plannerop/widgets/operations/components/workers/groupUtils.dart';
+import 'package:provider/provider.dart';
+import 'hoursCalculator.dart';
+
+// Construir el encabezado de la lista
+Widget buildWorkersListHeader({
+  required BuildContext context,
+  required bool isCalculatingHours,
+  required VoidCallback onAddPressed,
+}) {
+  return Row(
+    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+    children: [
+      const Text(
+        'Trabajadores Asignados',
+        style: TextStyle(
+          fontWeight: FontWeight.w600,
+          fontSize: 14,
+          color: Color(0xFF4A5568),
+        ),
+      ),
+      NeumorphicButton(
+        style: NeumorphicStyle(
+          depth: 2,
+          intensity: 0.6,
+          boxShape: NeumorphicBoxShape.roundRect(BorderRadius.circular(8)),
+          color: const Color(0xFF3182CE),
+        ),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        onPressed: isCalculatingHours ? null : onAddPressed,
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            isCalculatingHours
+                ? const SizedBox(
+                    width: 12,
+                    height: 12,
+                    child: CircularProgressIndicator(
+                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                      strokeWidth: 2,
+                    ),
+                  )
+                : const Icon(
+                    Icons.add,
+                    size: 16,
+                    color: Colors.white,
+                  ),
+            const SizedBox(width: 6),
+            Text(
+              isCalculatingHours ? "Calculando..." : "Añadir",
+              style: const TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.w500,
+                fontSize: 12,
+              ),
+            ),
+          ],
+        ),
+      ),
+    ],
+  );
+}
+
+// Construir la lista de trabajadores con HashMaps y Sets
+Widget buildWorkerList({
+  required BuildContext context,
+  required List<Worker> selectedWorkers,
+  required List<WorkerGroup> selectedGroups,
+  required Map<int, double> workerHours,
+  required int? assignmentId,
+  required bool inEditMode,
+  required List<Worker> deletedWorkers,
+  required Function(WorkerGroup, int) onDeleteGroup,
+  required Function(List<Worker>)? onDeletedWorkersChanged,
+  required Function(List<Worker>) onWorkersChanged,
+  required Function(List<WorkerGroup>)? onGroupsChanged,
+}) {
+  if (selectedWorkers.isEmpty && selectedGroups.isEmpty) {
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
+      decoration: BoxDecoration(
+        border: Border.all(color: const Color(0xFFE2E8F0)),
+        borderRadius: BorderRadius.circular(8),
+        color: const Color(0xFFF7FAFC),
+      ),
+      child: const Center(
+        child: Text(
+          'No hay trabajadores seleccionados',
+          style: TextStyle(
+            color: Color(0xFF718096),
+            fontSize: 14,
+          ),
+        ),
+      ),
+    );
+  }
+
+  debugPrint("groups: ${selectedGroups.length}");
+
+  return Container(
+    key: ValueKey(
+        "worker_list_${selectedWorkers.hashCode}_${selectedGroups.hashCode}"),
+    padding: const EdgeInsets.all(12),
+    decoration: BoxDecoration(
+      border: Border.all(color: const Color(0xFFE2E8F0)),
+      borderRadius: BorderRadius.circular(8),
+      color: const Color(0xFFF7FAFC),
+    ),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        // SECCIÓN 1: TRABAJADORES INDIVIDUALES (que no están en grupos)
+        if (selectedWorkers.isNotEmpty)
+          _buildIndividualsSection(
+            context: context,
+            workerHours: workerHours,
+            selectedWorkers: selectedWorkers,
+            selectedGroups: selectedGroups,
+            assignmentId: assignmentId,
+            inEditMode: inEditMode,
+            deletedWorkers: deletedWorkers,
+            onDeletedWorkersChanged: onDeletedWorkersChanged,
+            onWorkersChanged: onWorkersChanged,
+            onGroupsChanged: onGroupsChanged,
+          ),
+
+        // Separador visual para mejorar la claridad entre secciones
+        if (selectedWorkers.isNotEmpty && selectedGroups.isNotEmpty)
+          const SizedBox(height: 16),
+
+        // SECCIÓN 2: GRUPOS DE TRABAJADORES
+        if (selectedGroups.isNotEmpty)
+          _buildGroupsSection(
+            context: context,
+            groups: selectedGroups,
+            workerHours: workerHours,
+            selectedGroups: selectedGroups,
+            assignmentId: assignmentId,
+            inEditMode: inEditMode,
+            deletedWorkers: deletedWorkers,
+            onDeleteGroup: onDeleteGroup,
+            onDeletedWorkersChanged: onDeletedWorkersChanged,
+            onWorkersChanged: onWorkersChanged,
+            onGroupsChanged: onGroupsChanged,
+          ),
+
+        // Información adicional sobre horas
+        if (selectedWorkers.isNotEmpty && workerHours.isNotEmpty)
+          buildHoursInfoText(),
+      ],
+    ),
+  );
+}
+
+// Nueva función para construir la sección de trabajadores individuales
+Widget _buildIndividualsSection({
+  required BuildContext context,
+  required Map<int, double> workerHours,
+  required List<Worker> selectedWorkers,
+  required List<WorkerGroup> selectedGroups,
+  required int? assignmentId,
+  required bool inEditMode,
+  required List<Worker> deletedWorkers,
+  required Function(List<Worker>)? onDeletedWorkersChanged,
+  required Function(List<Worker>) onWorkersChanged,
+  required Function(List<WorkerGroup>)? onGroupsChanged,
+}) {
+  return Container(
+    margin: const EdgeInsets.only(bottom: 8),
+    decoration: BoxDecoration(
+      border: Border.all(color: const Color(0xFFEBF8FF)), // Borde azul claro
+      borderRadius: BorderRadius.circular(8),
+      color: Colors.white,
+    ),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        // Encabezado de la sección
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+          decoration: BoxDecoration(
+            color:
+                const Color(0xFFEBF8FF), // Fondo azul claro para individuales
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(7)),
+          ),
+          child: Row(
+            children: [
+              const Icon(Icons.person_outline,
+                  size: 16, color: Color(0xFF2B6CB0)),
+              const SizedBox(width: 8),
+              Text(
+                'Trabajadores individuales',
+                style: const TextStyle(
+                  fontWeight: FontWeight.w600,
+                  fontSize: 14,
+                  color: Color(0xFF2B6CB0),
+                ),
+              ),
+            ],
+          ),
+        ),
+
+        // Lista de trabajadores individuales
+        ListView.builder(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          itemCount: selectedWorkers.length,
+          padding: const EdgeInsets.symmetric(vertical: 4),
+          itemBuilder: (context, index) {
+            final worker = selectedWorkers[index];
+            return _buildIndividualWorkerItem(
+              context: context,
+              worker: worker,
+              workerHours: workerHours,
+              selectedWorkers: selectedWorkers,
+              selectedGroups: selectedGroups,
+              assignmentId: assignmentId,
+              inEditMode: inEditMode,
+              deletedWorkers: deletedWorkers,
+              onDeletedWorkersChanged: onDeletedWorkersChanged,
+              onWorkersChanged: onWorkersChanged,
+              onGroupsChanged: onGroupsChanged,
+            );
+          },
+        ),
+      ],
+    ),
+  );
+}
+
+// Nueva función para construir la sección de grupos
+Widget _buildGroupsSection({
+  required BuildContext context,
+  required List<WorkerGroup> groups,
+  required Map<int, double> workerHours,
+  required List<WorkerGroup> selectedGroups,
+  required int? assignmentId,
+  required bool inEditMode,
+  required List<Worker> deletedWorkers,
+  required Function(WorkerGroup, int) onDeleteGroup,
+  required Function(List<Worker>)? onDeletedWorkersChanged,
+  required Function(List<Worker>) onWorkersChanged,
+  required Function(List<WorkerGroup>)? onGroupsChanged,
+}) {
+  return Container(
+    decoration: BoxDecoration(
+      border: Border.all(color: const Color(0xFFE6FFFA)), // Borde verde claro
+      borderRadius: BorderRadius.circular(8),
+      color: Colors.white,
+    ),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Encabezado de la sección
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+          decoration: BoxDecoration(
+            color: const Color(0xFFE6FFFA), // Fondo verde claro para grupos
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(7)),
+          ),
+          child: Row(
+            children: [
+              const Icon(Icons.groups_outlined,
+                  size: 16, color: Color(0xFF2C7A7B)),
+              const SizedBox(width: 8),
+              Text(
+                'Grupos de trabajadores',
+                style: const TextStyle(
+                  fontWeight: FontWeight.w600,
+                  fontSize: 14,
+                  color: Color(0xFF2C7A7B),
+                ),
+              ),
+              const Spacer(),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF38A169), // Verde más oscuro
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Text(
+                  '${groups.length}',
+                  style: const TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+
+        // Lista de grupos
+        ListView.separated(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          itemCount: groups.length,
+          separatorBuilder: (context, index) =>
+              const Divider(height: 1, thickness: 1),
+          padding: const EdgeInsets.symmetric(vertical: 0),
+          itemBuilder: (context, index) {
+            final group = groups[index];
+
+            return _buildGroupSection(
+              context: context,
+              group: group,
+              workerHours: workerHours,
+              selectedGroups: selectedGroups,
+              assignmentId: assignmentId,
+              inEditMode: inEditMode,
+              deletedWorkers: deletedWorkers,
+              onDeleteGroup: onDeleteGroup,
+              onDeletedWorkersChanged: onDeletedWorkersChanged,
+              onWorkersChanged: onWorkersChanged,
+              onGroupsChanged: onGroupsChanged,
+              workers: group.workersData ?? [],
+            );
+          },
+        ),
+      ],
+    ),
+  );
+}
+
+// Widget para un trabajador individual
+Widget _buildIndividualWorkerItem({
+  required BuildContext context,
+  required Worker worker,
+  required Map<int, double> workerHours,
+  required List<Worker> selectedWorkers,
+  required List<WorkerGroup> selectedGroups,
+  required int? assignmentId,
+  required bool inEditMode,
+  required List<Worker> deletedWorkers,
+  required Function(List<Worker>)? onDeletedWorkersChanged,
+  required Function(List<Worker>) onWorkersChanged,
+  required Function(List<WorkerGroup>)? onGroupsChanged,
+}) {
+  final isAvailable = isWorkerAvailable(worker.id, workerHours);
+
+  return Card(
+    margin: const EdgeInsets.only(bottom: 4),
+    elevation: 0,
+    color: const Color(0xFFF7FAFC),
+    shape: RoundedRectangleBorder(
+      borderRadius: BorderRadius.circular(6),
+      side: isAvailable
+          ? BorderSide.none
+          : const BorderSide(color: Colors.red, width: 0.5),
+    ),
+    child: buildWorkerDetails(
+      context: context,
+      worker: worker,
+      workerHours: workerHours,
+      isAvailable: isAvailable,
+      onDelete: () => removeWorker(
+        context: context,
+        worker: worker,
+        index: selectedWorkers.indexOf(worker),
+        selectedWorkers: selectedWorkers,
+        selectedGroups: selectedGroups,
+        workerGroup: null, // Individualmente, no tiene grupo
+        assignmentId: assignmentId,
+        inEditMode: inEditMode,
+        deletedWorkers: deletedWorkers,
+        onDeletedWorkersChanged: onDeletedWorkersChanged,
+        onWorkersChanged: onWorkersChanged,
+        onGroupsChanged: onGroupsChanged,
+        removeFromGroupOnly: false, // Eliminar completamente
+      ),
+    ),
+  );
+}
+
+// Widget para una sección de grupo con sus trabajadores
+Widget _buildGroupSection({
+  required BuildContext context,
+  required WorkerGroup group,
+  required List<Worker> workers,
+  required Map<int, double> workerHours,
+  required List<WorkerGroup> selectedGroups,
+  required int? assignmentId,
+  required bool inEditMode,
+  required List<Worker> deletedWorkers,
+  required Function(WorkerGroup, int) onDeleteGroup,
+  required Function(List<Worker>)? onDeletedWorkersChanged,
+  required Function(List<Worker>) onWorkersChanged,
+  required Function(List<WorkerGroup>)? onGroupsChanged,
+}) {
+  // Obtener la tarea correspondiente al grupo
+  final tasksProvider = Provider.of<TasksProvider>(context, listen: false);
+  String serviceName = "Servicio no especificado";
+
+  if (group.serviceId > 0) {
+    final service = tasksProvider.tasks.firstWhere(
+      (task) => task.id == group.serviceId,
+      orElse: () => Task(id: 0, name: ""),
+    );
+    if (service.name.isNotEmpty) {
+      serviceName = service.name;
+    }
+  }
+
+  return Card(
+    margin: const EdgeInsets.symmetric(vertical: 4),
+    elevation: 0,
+    shape: RoundedRectangleBorder(
+      borderRadius: BorderRadius.circular(8),
+    ),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Cabecera del grupo
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+          decoration: BoxDecoration(
+            color: const Color(0xFF38A169),
+            borderRadius: const BorderRadius.only(
+              topLeft: Radius.circular(8),
+              topRight: Radius.circular(8),
+            ),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  const Icon(Icons.group, color: Colors.white, size: 16),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      group.name,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w600,
+                        fontSize: 14,
+                      ),
+                    ),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.delete,
+                        color: Colors.white70, size: 20),
+                    onPressed: () => onDeleteGroup(group, assignmentId ?? 0),
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(),
+                    tooltip: 'Eliminar grupo',
+                  ),
+                ],
+              ),
+
+              // Segunda fila con servicio y horarios
+              if (group.serviceId > 0) ...[
+                const SizedBox(height: 4),
+                Row(
+                  children: [
+                    const Icon(Icons.work_outline,
+                        color: Colors.white70, size: 14),
+                    const SizedBox(width: 6),
+                    Expanded(
+                      child: Text(
+                        serviceName,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ],
+          ),
+        ),
+
+        // Contador de trabajadores
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+          color: const Color(0xFFE6FFFA),
+          child: Row(
+            children: [
+              const Icon(Icons.person, size: 14, color: Color(0xFF2C7A7B)),
+              const SizedBox(width: 6),
+              Text(
+                '${workers.length} trabajador${workers.length != 1 ? 'es' : ''}',
+                style: const TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFF2C7A7B),
+                ),
+              ),
+            ],
+          ),
+        ),
+
+        // Lista de trabajadores del grupo
+        Container(
+          color: const Color(0xFFE6FFFA),
+          child: ListView.builder(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            itemCount: workers.length,
+            itemBuilder: (context, index) {
+              final worker = workers[index];
+              final isAvailable = isWorkerAvailable(worker.id, workerHours);
+
+              return ListTile(
+                contentPadding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
+                dense: true,
+                leading: buildWorkerAvatar(worker, isAvailable),
+                title: Text(
+                  worker.name,
+                  style: TextStyle(
+                    fontWeight: FontWeight.w500,
+                    fontSize: 14,
+                    color:
+                        isAvailable ? const Color(0xFF2D3748) : Colors.red[700],
+                  ),
+                ),
+                subtitle: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      worker.area,
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: Color(0xFF718096),
+                      ),
+                    ),
+                    Text(
+                      getHoursText(worker.id, workerHours),
+                      style: TextStyle(
+                        fontSize: 10,
+                        color:
+                            isAvailable ? Colors.green[700] : Colors.red[700],
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ),
+                // trailing: IconButton(
+                //   icon: const Icon(Icons.remove_circle_outline,
+                //       color: Color(0xFF38A169), size: 20),
+                //   onPressed: () => removeWorker(
+                //     context: context,
+                //     worker: worker,
+                //     selectedGroups: selectedGroups,
+                //     workerGroup: group,
+                //     assignmentId: assignmentId,
+                //     inEditMode: inEditMode,
+                //     deletedWorkers: deletedWorkers,
+                //     onDeletedWorkersChanged: onDeletedWorkersChanged,
+                //     onWorkersChanged: onWorkersChanged,
+                //     onGroupsChanged: onGroupsChanged,
+                //     removeFromGroupOnly: true, // Solo eliminar del grupo
+                //   ),
+                //   tooltip: 'Quitar del grupo',
+                // ),
+              );
+            },
+          ),
+        ),
+      ],
+    ),
+  );
+}
+
+// Función para eliminar un trabajador (con opción para solo quitarlo del grupo)
+void removeWorker({
+  required BuildContext context,
+  required Worker worker,
+  required int index,
+  required List<Worker> selectedWorkers,
+  required List<WorkerGroup> selectedGroups,
+  required WorkerGroup? workerGroup,
+  required int? assignmentId,
+  required bool inEditMode,
+  required List<Worker> deletedWorkers,
+  required Function(List<Worker>)? onDeletedWorkersChanged,
+  required Function(List<Worker>) onWorkersChanged,
+  required Function(List<WorkerGroup>)? onGroupsChanged,
+  bool removeFromGroupOnly = false, // Nuevo parámetro
+}) {
+  // Si solo queremos quitar al trabajador del grupo pero dejarlo como individual
+  if (removeFromGroupOnly && workerGroup != null) {
+    // Clonar el grupo y actualizar la lista de trabajadores
+    final updatedGroup = WorkerGroup(
+      id: workerGroup.id,
+      name: workerGroup.name,
+      startTime: workerGroup.startTime,
+      endTime: workerGroup.endTime,
+      startDate: workerGroup.startDate,
+      endDate: workerGroup.endDate,
+      serviceId: workerGroup.serviceId,
+      workers: [...workerGroup.workers]..remove(worker.id),
+    );
+
+    // Actualizar la lista de grupos
+    final updatedGroups = selectedGroups.map((g) {
+      return g.id == workerGroup.id ? updatedGroup : g;
+    }).toList();
+
+    // Eliminar el grupo si se quedó sin trabajadores
+    final filteredGroups =
+        updatedGroups.where((g) => g.workers.isNotEmpty).toList();
+
+    // Notificar los cambios
+    if (onGroupsChanged != null) {
+      onGroupsChanged(filteredGroups);
+    }
+
+    return;
+  }
+
+  // Si queremos eliminar al trabajador por completo
+  final List<Worker> updatedWorkers = List.from(selectedWorkers);
+  updatedWorkers.removeAt(index);
+  onWorkersChanged(updatedWorkers);
+
+  // Si estamos en modo edición, también actualizamos la lista de trabajadores eliminados
+  if (inEditMode && assignmentId != null && onDeletedWorkersChanged != null) {
+    final List<Worker> updatedDeletedWorkers = List.from(deletedWorkers);
+    updatedDeletedWorkers.add(worker);
+    onDeletedWorkersChanged(updatedDeletedWorkers);
+  }
+
+  // Actualizar grupos si es necesario
+  if (workerGroup != null && onGroupsChanged != null) {
+    // Quitar al trabajador de cualquier grupo
+    final updatedGroups = selectedGroups.map((group) {
+      if (group.workers.contains(worker.id)) {
+        return WorkerGroup(
+          id: group.id,
+          name: group.name,
+          startTime: group.startTime,
+          endTime: group.endTime,
+          startDate: group.startDate,
+          endDate: group.endDate,
+          serviceId: group.serviceId,
+          workers: [...group.workers]..remove(worker.id),
+        );
+      }
+      return group;
+    }).toList();
+
+    // Eliminar grupos vacíos
+    final filteredGroups =
+        updatedGroups.where((g) => g.workers.isNotEmpty).toList();
+    onGroupsChanged(filteredGroups);
+  }
+}
+
+// Construir la cabecera del grupo
+Widget buildGroupHeader({
+  required BuildContext context,
+  required WorkerGroup group,
+  required VoidCallback onDelete,
+}) {
+  return Container(
+    width: double.infinity,
+    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+    decoration: BoxDecoration(
+      color: Color(0xFF38A169),
+      borderRadius: BorderRadius.only(
+        topLeft: Radius.circular(6),
+        topRight: Radius.circular(6),
+      ),
+    ),
+    child: Row(
+      children: [
+        Icon(Icons.access_time, color: Colors.white, size: 14),
+        SizedBox(width: 4),
+        Expanded(
+          child: Text(
+            group.name,
+            style: TextStyle(
+              color: Colors.white,
+              fontWeight: FontWeight.w500,
+              fontSize: 12,
+            ),
+          ),
+        ),
+        IconButton(
+          icon: Icon(Icons.delete, color: Colors.red, size: 20),
+          onPressed: onDelete,
+        ),
+      ],
+    ),
+  );
+}
+
+// Construir los detalles del trabajador
+Widget buildWorkerDetails({
+  required BuildContext context,
+  required Worker worker,
+  required Map<int, double> workerHours,
+  required bool isAvailable,
+  required VoidCallback onDelete,
+}) {
+  return ListTile(
+    contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+    dense: true,
+    leading: buildWorkerAvatar(worker, isAvailable),
+    title: Text(
+      worker.name,
+      style: TextStyle(
+        fontWeight: FontWeight.w500,
+        fontSize: 14,
+        color: isAvailable ? const Color(0xFF2D3748) : Colors.red[700],
+      ),
+    ),
+    subtitle: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          worker.area,
+          style: const TextStyle(
+            fontSize: 12,
+            color: Color(0xFF718096),
+          ),
+        ),
+        Text(
+          getHoursText(worker.id, workerHours),
+          style: TextStyle(
+            fontSize: 10,
+            color: isAvailable ? Colors.green[700] : Colors.red[700],
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+      ],
+    ),
+    trailing: IconButton(
+      icon: const Icon(Icons.delete_outline, color: Colors.red, size: 20),
+      onPressed: onDelete,
+      tooltip: 'Eliminar',
+    ),
+  );
+}
+
+// Construir el avatar del trabajador
+Widget buildWorkerAvatar(Worker worker, bool isAvailable) {
+  return Stack(
+    children: [
+      CircleAvatar(
+        backgroundColor: getColorForWorker(worker),
+        radius: 16,
+        child: Text(
+          worker.name.isNotEmpty ? worker.name[0].toUpperCase() : '?',
+          style: const TextStyle(
+            color: Colors.white,
+            fontWeight: FontWeight.bold,
+            fontSize: 12,
+          ),
+        ),
+      ),
+      if (!isAvailable)
+        Positioned(
+          right: 0,
+          bottom: 0,
+          child: Container(
+            width: 12,
+            height: 12,
+            decoration: BoxDecoration(
+              color: Colors.red,
+              shape: BoxShape.circle,
+              border: Border.all(color: Colors.white, width: 1),
+            ),
+            child: const Icon(
+              Icons.warning,
+              color: Colors.white,
+              size: 8,
+            ),
+          ),
+        ),
+    ],
+  );
+}
+
+// Texto informativo sobre horas
+Widget buildHoursInfoText() {
+  return Padding(
+    padding: const EdgeInsets.only(top: 8.0),
+    child: Text(
+      '* Los trabajadores deben tener menos de 12 horas acumuladas en el día',
+      style: TextStyle(
+        fontSize: 12,
+        fontStyle: FontStyle.italic,
+        color: Colors.grey[600],
+      ),
+    ),
+  );
+}

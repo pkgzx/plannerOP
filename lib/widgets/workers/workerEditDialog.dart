@@ -3,7 +3,7 @@ import 'package:plannerop/core/model/area.dart';
 import 'package:plannerop/core/model/worker.dart';
 import 'package:intl/intl.dart';
 import 'package:plannerop/store/areas.dart';
-import 'package:plannerop/utils/assignments.dart';
+import 'package:plannerop/utils/operations.dart';
 
 // Import necesario para el método min
 import 'dart:math' as Math;
@@ -128,7 +128,7 @@ class _WorkerEditDialogState extends State<WorkerEditDialog> {
               widget.worker.startDate, // Fecha de inicio del trabajo (mantener)
           endDate: _selectedStatus == WorkerStatus.assigned
               ? _endDate
-              : null, // Fecha fin asignación
+              : null, // Fecha fin operación
           code: _codeController.text,
           incapacityStartDate: incapacityStartDate, // Usar la fecha calculada
           incapacityEndDate: incapacityEndDate, // Usar la fecha calculada

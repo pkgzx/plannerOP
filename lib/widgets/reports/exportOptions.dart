@@ -2,7 +2,7 @@ import 'dart:io';
 import 'package:flutter/material.dart' hide Border;
 import 'package:flutter_neumorphic_plus/flutter_neumorphic.dart' hide Border;
 import 'package:intl/intl.dart';
-import 'package:plannerop/core/model/assignment.dart';
+import 'package:plannerop/core/model/operation.dart';
 import 'package:plannerop/store/assignments.dart';
 import 'package:plannerop/utils/toast.dart';
 import 'package:provider/provider.dart';
@@ -38,7 +38,7 @@ class ExportOptions extends StatefulWidget {
 }
 
 class _ExportOptionsState extends State<ExportOptions> {
-  late List<Assignment> _filteredAssignments;
+  late List<Operation> _filteredAssignments;
 
   @override
   void initState() {
@@ -50,7 +50,7 @@ class _ExportOptionsState extends State<ExportOptions> {
   }
 
   // Método para filtrar las asignaciones según los criterios del reporte
-  List<Assignment> _getFilteredAssignments() {
+  List<Operation> _getFilteredAssignments() {
     final assignmentsProvider =
         Provider.of<AssignmentsProvider>(context, listen: false);
 
@@ -339,110 +339,110 @@ class _ExportOptionsState extends State<ExportOptions> {
         final xlsio.Style rowStyle =
             currentOperationOrder % 2 == 0 ? evenRowStyle : oddRowStyle;
 
-        // Si no hay trabajadores, crear una fila con "Sin asignar"
-        if (data.workers.isEmpty) {
-          _addDataRow(
-            sheet: sheet,
-            rowIndex: rowIndex,
-            data: data,
-            workerName: 'Sin asignar',
-            workerDocument: '-',
-            rowStyle: rowStyle,
-          );
-          rowIndex++;
-        } else {
-// Crear un mapa para almacenar la información de trabajadores y sus grupos
-          Map<int, Map<String, dynamic>> workerGroupInfo = {};
+//         // Si no hay trabajadores, crear una fila con "Sin asignar"
+//         if (data.workers.isEmpty) {
+//           _addDataRow(
+//             sheet: sheet,
+//             rowIndex: rowIndex,
+//             data: data,
+//             workerName: 'Sin asignar',
+//             workerDocument: '-',
+//             rowStyle: rowStyle,
+//           );
+//           rowIndex++;
+//         } else {
+// // Crear un mapa para almacenar la información de trabajadores y sus grupos
+//           Map<int, Map<String, dynamic>> workerGroupInfo = {};
 
-          // Procesar los grupos de la asignación para obtener información de fechas/horas por trabajador
-          for (var group in data.groups) {
-            for (var workerId in group.workers) {
-              workerGroupInfo[workerId] = {
-                'groupId': group.id,
-                'startDate': group.startDate,
-                'startTime': group.startTime,
-                'endDate': group.endDate,
-                'endTime': group.endTime,
-              };
-            }
-          }
+//           // Procesar los grupos de la operación para obtener información de fechas/horas por trabajador
+//           for (var group in data.groups) {
+//             for (var workerId in group.workers) {
+//               workerGroupInfo[workerId] = {
+//                 'groupId': group.id,
+//                 'startDate': group.startDate,
+//                 'startTime': group.startTime,
+//                 'endDate': group.endDate,
+//                 'endTime': group.endTime,
+//               };
+//             }
+//           }
 
-          // Crear una fila para CADA trabajador (sean individuales o de grupos)
-          for (var worker in data.workers) {
-            var groupData = workerGroupInfo[worker.id];
+//           // Crear una fila para CADA trabajador (sean individuales o de grupos)
+//           for (var worker in data.workers) {
+//             var groupData = workerGroupInfo[worker.id];
 
-            // Extraer fechas y horas (del grupo si existen, de la operación si no)
-            String startDateText = DateFormat('dd/MM/yyyy').format(data.date);
-            String startTimeText = data.time;
-            String endDateText = '';
-            String endTimeText = '';
+//             // Extraer fechas y horas (del grupo si existen, de la operación si no)
+//             String startDateText = DateFormat('dd/MM/yyyy').format(data.date);
+//             String startTimeText = data.time;
+//             String endDateText = '';
+//             String endTimeText = '';
 
-            if (groupData != null) {
-              // Usar datos del grupo si están disponibles
-              if (groupData['startDate'] != null &&
-                  groupData['startDate'].isNotEmpty) {
-                try {
-                  startDateText = DateFormat('dd/MM/yyyy')
-                      .format(DateTime.parse(groupData['startDate']));
-                } catch (e) {
-                  // Mantener fecha de la operación si hay error
-                }
-              }
+//             if (groupData != null) {
+//               // Usar datos del grupo si están disponibles
+//               if (groupData['startDate'] != null &&
+//                   groupData['startDate'].isNotEmpty) {
+//                 try {
+//                   startDateText = DateFormat('dd/MM/yyyy')
+//                       .format(DateTime.parse(groupData['startDate']));
+//                 } catch (e) {
+//                   // Mantener fecha de la operación si hay error
+//                 }
+//               }
 
-              if (groupData['startTime'] != null &&
-                  groupData['startTime'].isNotEmpty) {
-                startTimeText = groupData['startTime'];
-              }
+//               if (groupData['startTime'] != null &&
+//                   groupData['startTime'].isNotEmpty) {
+//                 startTimeText = groupData['startTime'];
+//               }
 
-              if (groupData['endDate'] != null &&
-                  groupData['endDate'].isNotEmpty) {
-                try {
-                  endDateText = DateFormat('dd/MM/yyyy')
-                      .format(DateTime.parse(groupData['endDate']));
-                } catch (e) {
-                  // Usar fecha de fin de la operación como respaldo
-                  endDateText = data.endDate != null
-                      ? DateFormat('dd/MM/yyyy').format(data.endDate!)
-                      : '';
-                }
-              } else {
-                // Usar fecha de fin de la operación como respaldo
-                endDateText = data.endDate != null
-                    ? DateFormat('dd/MM/yyyy').format(data.endDate!)
-                    : '';
-              }
+//               if (groupData['endDate'] != null &&
+//                   groupData['endDate'].isNotEmpty) {
+//                 try {
+//                   endDateText = DateFormat('dd/MM/yyyy')
+//                       .format(DateTime.parse(groupData['endDate']));
+//                 } catch (e) {
+//                   // Usar fecha de fin de la operación como respaldo
+//                   endDateText = data.endDate != null
+//                       ? DateFormat('dd/MM/yyyy').format(data.endDate!)
+//                       : '';
+//                 }
+//               } else {
+//                 // Usar fecha de fin de la operación como respaldo
+//                 endDateText = data.endDate != null
+//                     ? DateFormat('dd/MM/yyyy').format(data.endDate!)
+//                     : '';
+//               }
 
-              if (groupData['endTime'] != null &&
-                  groupData['endTime'].isNotEmpty) {
-                endTimeText = groupData['endTime'];
-              } else {
-                // Usar hora de fin de la operación como respaldo
-                endTimeText = data.endTime ?? '';
-              }
-            } else {
-              // Para trabajadores sin grupo, usar fechas/horas de la operación
-              endDateText = data.endDate != null
-                  ? DateFormat('dd/MM/yyyy').format(data.endDate!)
-                  : '';
-              endTimeText = data.endTime ?? '';
-            }
+//               if (groupData['endTime'] != null &&
+//                   groupData['endTime'].isNotEmpty) {
+//                 endTimeText = groupData['endTime'];
+//               } else {
+//                 // Usar hora de fin de la operación como respaldo
+//                 endTimeText = data.endTime ?? '';
+//               }
+//             } else {
+//               // Para trabajadores sin grupo, usar fechas/horas de la operación
+//               endDateText = data.endDate != null
+//                   ? DateFormat('dd/MM/yyyy').format(data.endDate!)
+//                   : '';
+//               endTimeText = data.endTime ?? '';
+//             }
 
-            // Añadir la fila con la información adecuada
-            _addDataRowWithDates(
-                sheet: sheet,
-                rowIndex: rowIndex,
-                data: data,
-                workerName: worker.name,
-                workerDocument: worker.document,
-                startDate: startDateText,
-                startTime: startTimeText,
-                endDate: endDateText,
-                endTime: endTimeText,
-                rowStyle: rowStyle,
-                inGroup: groupData != null ? "Sí" : "No");
-            rowIndex++;
-          }
-        }
+//             // Añadir la fila con la información adecuada
+//             _addDataRowWithDates(
+//                 sheet: sheet,
+//                 rowIndex: rowIndex,
+//                 data: data,
+//                 workerName: worker.name,
+//                 workerDocument: worker.document,
+//                 startDate: startDateText,
+//                 startTime: startTimeText,
+//                 endDate: endDateText,
+//                 endTime: endTimeText,
+//                 rowStyle: rowStyle,
+//                 inGroup: groupData != null ? "Sí" : "No");
+//             rowIndex++;
+//           }
+//         }
       }
 
       // 8. AJUSTAR ANCHOS DE COLUMNA
@@ -492,7 +492,7 @@ class _ExportOptionsState extends State<ExportOptions> {
   void _addDataRow({
     required xlsio.Worksheet sheet,
     required int rowIndex,
-    required Assignment data,
+    required Operation data,
     required String workerName,
     required String workerDocument,
     required xlsio.Style rowStyle,
@@ -540,10 +540,10 @@ class _ExportOptionsState extends State<ExportOptions> {
     colIndex++;
 
     // Tarea
-    sheet.getRangeByIndex(rowIndex, colIndex).setText(data.task);
-    sheet.getRangeByIndex(rowIndex, colIndex).cellStyle = rowStyle;
-    sheet.getRangeByIndex(rowIndex, colIndex).cellStyle.wrapText = true;
-    colIndex++;
+    // sheet.getRangeByIndex(rowIndex, colIndex).setText(data.task);
+    // sheet.getRangeByIndex(rowIndex, colIndex).cellStyle = rowStyle;
+    // sheet.getRangeByIndex(rowIndex, colIndex).cellStyle.wrapText = true;
+    // colIndex++;
 
     // Fecha Finalización
     String endDateText = data.endDate != null
@@ -562,88 +562,6 @@ class _ExportOptionsState extends State<ExportOptions> {
     sheet
         .getRangeByIndex(rowIndex, colIndex)
         .setText(_getHumanReadableStatus(data.status));
-    sheet.getRangeByIndex(rowIndex, colIndex).cellStyle = rowStyle;
-  }
-
-// Método mejorado para agregar una fila de datos con fechas y horas específicas
-  void _addDataRowWithDates({
-    required xlsio.Worksheet sheet,
-    required int rowIndex,
-    required Assignment data,
-    required String workerName,
-    required String workerDocument,
-    required String startDate,
-    required String startTime,
-    required String endDate,
-    required String endTime,
-    required xlsio.Style rowStyle,
-    required String inGroup,
-  }) {
-    int colIndex = 1; // Syncfusion comienza en 1, no en 0
-
-    // Fecha Inicial
-    sheet.getRangeByIndex(rowIndex, colIndex).setText(startDate);
-    sheet.getRangeByIndex(rowIndex, colIndex).cellStyle = rowStyle;
-    colIndex++;
-
-    // Hora Inicial
-    sheet.getRangeByIndex(rowIndex, colIndex).setText(startTime);
-    sheet.getRangeByIndex(rowIndex, colIndex).cellStyle = rowStyle;
-    colIndex++;
-
-    // Nombre Completo
-    sheet.getRangeByIndex(rowIndex, colIndex).setText(workerName);
-    sheet.getRangeByIndex(rowIndex, colIndex).cellStyle = rowStyle;
-    sheet.getRangeByIndex(rowIndex, colIndex).cellStyle.wrapText = true;
-    colIndex++;
-
-    // Documento
-    sheet.getRangeByIndex(rowIndex, colIndex).setText(workerDocument);
-    sheet.getRangeByIndex(rowIndex, colIndex).cellStyle = rowStyle;
-    colIndex++;
-
-    // Área
-    sheet.getRangeByIndex(rowIndex, colIndex).setText(data.area);
-    sheet.getRangeByIndex(rowIndex, colIndex).cellStyle = rowStyle;
-    colIndex++;
-
-    // Zona
-    sheet.getRangeByIndex(rowIndex, colIndex).setText("${data.zone}");
-    sheet.getRangeByIndex(rowIndex, colIndex).cellStyle = rowStyle;
-    sheet.getRangeByIndex(rowIndex, colIndex).cellStyle.wrapText = true;
-    colIndex++;
-
-    // Motonave
-    sheet.getRangeByIndex(rowIndex, colIndex).setText(data.motorship ?? 'N/A');
-    sheet.getRangeByIndex(rowIndex, colIndex).cellStyle = rowStyle;
-    sheet.getRangeByIndex(rowIndex, colIndex).cellStyle.wrapText = true;
-    colIndex++;
-
-    // Tarea
-    sheet.getRangeByIndex(rowIndex, colIndex).setText(data.task);
-    sheet.getRangeByIndex(rowIndex, colIndex).cellStyle = rowStyle;
-    sheet.getRangeByIndex(rowIndex, colIndex).cellStyle.wrapText = true;
-    colIndex++;
-
-    // Fecha Finalización
-    sheet.getRangeByIndex(rowIndex, colIndex).setText(endDate);
-    sheet.getRangeByIndex(rowIndex, colIndex).cellStyle = rowStyle;
-    colIndex++;
-
-    // Hora Finalización
-    sheet.getRangeByIndex(rowIndex, colIndex).setText(endTime);
-    sheet.getRangeByIndex(rowIndex, colIndex).cellStyle = rowStyle;
-    colIndex++;
-
-    // Estado
-    sheet
-        .getRangeByIndex(rowIndex, colIndex)
-        .setText(_getHumanReadableStatus(data.status));
-    sheet.getRangeByIndex(rowIndex, colIndex).cellStyle = rowStyle;
-    colIndex++;
-
-    // Añadir columna indicando si está en grupo
-    sheet.getRangeByIndex(rowIndex, colIndex).setText(inGroup);
     sheet.getRangeByIndex(rowIndex, colIndex).cellStyle = rowStyle;
   }
 

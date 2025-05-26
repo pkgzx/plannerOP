@@ -24,6 +24,7 @@ class _DashboardTabState extends State<DashboardTab> {
   bool _isLoadingAssignments = false;
   bool _isLoadingFaults = false;
   bool _isLoadingChargers = false;
+  bool _isLoadingClientProgramming = false;
 
   @override
   void initState() {
@@ -90,6 +91,8 @@ class _DashboardTabState extends State<DashboardTab> {
               _isLoadingChargers = isLoading;
             },
           ),
+          loadClientProgramming(
+              mounted, setState, _isLoadingClientProgramming, context)
         ]).catchError((error) {
           debugPrint('Error durante la carga en paralelo: $error');
           // Continuar aunque haya errores
