@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:plannerop/core/model/worker.dart';
 import 'package:plannerop/core/model/operation.dart';
-import 'package:plannerop/store/assignments.dart';
+import 'package:plannerop/store/operations.dart';
+
 import 'package:plannerop/store/workers.dart';
 import 'package:plannerop/widgets/operations/add/addOperationDialog.dart';
 import 'package:provider/provider.dart';
@@ -16,7 +17,7 @@ class WorkerHoursResult {
 Future<WorkerHoursResult> calculateWorkerHours(
     BuildContext context, List<Worker> selectedWorkers) async {
   final assignmentsProvider =
-      Provider.of<AssignmentsProvider>(context, listen: false);
+      Provider.of<OperationsProvider>(context, listen: false);
   final workersProvider = Provider.of<WorkersProvider>(context, listen: false);
 
   final completedAssignments = assignmentsProvider.completedAssignments

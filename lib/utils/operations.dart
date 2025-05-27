@@ -2,16 +2,181 @@ import 'package:flutter/material.dart';
 import 'package:flutter_neumorphic_plus/flutter_neumorphic.dart';
 import 'package:intl/intl.dart';
 import 'package:plannerop/core/model/operation.dart';
+import 'package:plannerop/core/model/programming.dart';
 import 'package:plannerop/core/model/user.dart';
 import 'package:plannerop/core/model/workerGroup.dart';
-import 'package:plannerop/store/assignments.dart';
+import 'package:plannerop/store/operations.dart';
 import 'package:plannerop/store/chargersOp.dart';
 import 'package:plannerop/store/clients.dart';
+import 'package:plannerop/store/programmings.dart';
 import 'package:plannerop/store/task.dart';
-import 'package:plannerop/utils/group.dart';
+import 'package:plannerop/utils/groups/groups.dart';
 import 'package:plannerop/utils/toast.dart';
 import 'package:plannerop/widgets/operations/components/utils.dart';
 import 'package:provider/provider.dart';
+
+Future<Widget> _buildClientProgrammingRow(
+    BuildContext context, int programmingId) async {
+  try {
+    final programmingsProvider =
+        Provider.of<ProgrammingsProvider>(context, listen: false);
+
+    // Buscar la programación por ID (primero en caché, luego en backend)
+    Programming? programming =
+        await programmingsProvider.fetchProgrammingById(programmingId, context);
+
+    if (programming != null) {
+      // Agregar al caché para futuros usos
+      programmingsProvider.addProgrammingToCache(programming);
+      return _buildProgrammingDetailCard(programming);
+    } else {
+      return buildDetailRow(
+          'Programación Cliente', 'ID: $programmingId (No encontrada)');
+    }
+  } catch (e) {
+    debugPrint('Error al obtener programación del cliente: $e');
+    return buildDetailRow('Programación Cliente', 'Error al cargar: $e');
+  }
+}
+
+// Widget mejorado para mostrar los detalles de la programación
+Widget _buildProgrammingDetailCard(Programming programming) {
+  return Container(
+    margin: const EdgeInsets.only(bottom: 12),
+    padding: const EdgeInsets.all(12),
+    decoration: BoxDecoration(
+      color: const Color(0xFFF0F8FF), // Azul muy claro
+      borderRadius: BorderRadius.circular(8),
+      border: Border.all(color: const Color(0xFF3182CE).withOpacity(0.3)),
+    ),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Título de la sección
+        Row(
+          children: [
+            const Icon(
+              Icons.event_note,
+              size: 16,
+              color: Color(0xFF3182CE),
+            ),
+            const SizedBox(width: 6),
+            const Text(
+              'Programación del Cliente',
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.bold,
+                color: Color(0xFF4A5568),
+              ),
+            ),
+            const Spacer(),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+              decoration: BoxDecoration(
+                color: _getProgrammingStatusColor(programming.status),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Text(
+                _getProgrammingStatusText(programming.status),
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w600,
+                  fontSize: 10,
+                ),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+
+        // Detalles de la programación
+        _buildProgrammingDetailRow('Solicitud', programming.service_request),
+        _buildProgrammingDetailRow('Servicio', programming.service),
+        _buildProgrammingDetailRow('Cliente', programming.client),
+        _buildProgrammingDetailRow('Ubicación', programming.ubication),
+
+        Row(
+          children: [
+            Expanded(
+              child: _buildProgrammingDetailRow(
+                  'Fecha',
+                  DateFormat('dd/MM/yyyy')
+                      .format(DateTime.parse(programming.dateStart))),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: _buildProgrammingDetailRow('Hora', programming.timeStart),
+            ),
+          ],
+        ),
+      ],
+    ),
+  );
+}
+
+// Widget auxiliar para las filas de detalles de programación
+Widget _buildProgrammingDetailRow(String label, String value) {
+  return Padding(
+    padding: const EdgeInsets.only(bottom: 4),
+    child: Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        SizedBox(
+          width: 80,
+          child: Text(
+            '$label:',
+            style: const TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              color: Color(0xFF718096),
+            ),
+          ),
+        ),
+        Expanded(
+          child: Text(
+            value,
+            style: const TextStyle(
+              fontSize: 12,
+              color: Color(0xFF2D3748),
+            ),
+          ),
+        ),
+      ],
+    ),
+  );
+}
+
+// Función para obtener el color según el estado de la programación
+Color _getProgrammingStatusColor(String status) {
+  switch (status.toUpperCase()) {
+    case 'UNASSIGNED':
+      return Colors.orange;
+    case 'ASSIGNED':
+      return Colors.blue;
+    case 'COMPLETED':
+      return Colors.green;
+    case 'CANCELLED':
+      return Colors.red;
+    default:
+      return Colors.grey;
+  }
+}
+
+// Función para obtener el texto del estado en español
+String _getProgrammingStatusText(String status) {
+  switch (status.toUpperCase()) {
+    case 'UNASSIGNED':
+      return 'Sin Asignar';
+    case 'ASSIGNED':
+      return 'Asignada';
+    case 'COMPLETED':
+      return 'Completada';
+    case 'CANCELLED':
+      return 'Cancelada';
+    default:
+      return status;
+  }
+}
 
 /// Shows assignment details in a modal bottom sheet
 void showOperationDetails({
@@ -26,6 +191,11 @@ void showOperationDetails({
   // Actions
   List<Widget> Function(BuildContext, Operation)? actionsBuilder,
   Widget Function(BuildContext, Operation)? floatingActionBuilder,
+  // Groups configuration
+  Map<int, bool> alimentacionStatus = const {},
+  List<String> foods = const [],
+  Function(int, bool)? onAlimentacionChanged,
+  Function? setState,
   // Event handlers
   VoidCallback? onClose,
 }) {
@@ -60,6 +230,25 @@ void showOperationDetails({
       buildDetailRow('Zona', 'Zona ${assignment.zone}'),
       if (assignment.motorship != null && assignment.motorship!.isNotEmpty)
         buildDetailRow('Motonave', assignment.motorship!),
+
+      // Programación del Cliente
+      if (assignment.id_clientProgramming != null &&
+          assignment.id_clientProgramming != 0)
+        FutureBuilder<Widget>(
+          future: _buildClientProgrammingRow(
+              context, assignment.id_clientProgramming!),
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return buildDetailRow('Programación Cliente', 'Cargando...');
+            } else if (snapshot.hasError) {
+              return buildDetailRow('Programación Cliente', 'Error al cargar');
+            } else if (snapshot.hasData) {
+              return snapshot.data!;
+            } else {
+              return buildDetailRow('Programación Cliente', 'No encontrada');
+            }
+          },
+        ),
     ];
   }
 
@@ -150,22 +339,30 @@ void showOperationDetails({
                           workersBuilder(assignment, context),
                           const SizedBox(height: 20),
                         ],
+
+                        // Groups section with enhanced support
                         buildGroupsSection(
                           context,
                           assignment.groups,
                           'Grupos de trabajo',
+                          assignment: assignment,
+                          alimentacionStatus: alimentacionStatus,
+                          foods: foods,
+                          onAlimentacionChanged: onAlimentacionChanged,
+                          setState: setState,
                         ),
 
                         // In-charges section
                         if (inChargersFormat.isNotEmpty) ...[
+                          const SizedBox(height: 20),
                           buildDetailSection(
                             title: 'Encargados de la operación',
                             children: inChargersFormat
                                 .map((charger) => buildInChargerItem(charger))
                                 .toList(),
                           ),
-                          const SizedBox(height: 60),
                         ],
+                        const SizedBox(height: 60),
                       ],
                     ),
                   ),
@@ -274,7 +471,7 @@ Color getStatusColor(String status) {
 
 // Método para mostrar el diálogo de cancelación (agregarlo si no existe)
 void showCancelDialog(
-    BuildContext context, Operation assignment, AssignmentsProvider provider) {
+    BuildContext context, Operation assignment, OperationsProvider provider) {
   bool isProcessing = false;
 
   showDialog(
@@ -325,14 +522,6 @@ void showCancelDialog(
                           // Aquí iría la llamada a la API para cancelar
                           final success = await provider.updateAssignmentStatus(
                               assignment.id ?? 0, 'CANCELED', context);
-
-                          // final workersProvider = Provider.of<WorkersProvider>(
-                          //     context,
-                          //     listen: false);
-                          // for (var worker in assignment.workers) {
-                          //   workersProvider.releaseWorkerObject(
-                          //       worker, context);
-                          // }
 
                           Navigator.pop(dialogContext);
                           showSuccessToast(

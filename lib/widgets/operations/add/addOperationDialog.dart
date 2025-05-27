@@ -7,10 +7,9 @@ import 'package:plannerop/core/model/programming.dart';
 import 'package:plannerop/core/model/task.dart';
 import 'package:plannerop/core/model/worker.dart';
 import 'package:plannerop/core/model/workerGroup.dart';
-import 'package:plannerop/hooks/loaders/loader.dart';
 import 'package:plannerop/store/areas.dart';
-import 'package:plannerop/store/assignments.dart';
 import 'package:plannerop/store/clients.dart';
+import 'package:plannerop/store/operations.dart';
 import 'package:plannerop/store/task.dart';
 import 'package:plannerop/store/user.dart';
 import 'package:plannerop/store/workers.dart';
@@ -42,7 +41,6 @@ class AddOperationDialogState extends State<AddOperationDialog> {
   final _motorshipController = TextEditingController();
   final _chargerController = TextEditingController();
   final _programmingController = TextEditingController();
-  int? _selectedProgrammingId;
   Programming? _selectedProgramming;
   bool _startDateLockedByGroup = false;
   bool _startTimeLockedByGroup = false;
@@ -583,8 +581,8 @@ class AddOperationDialogState extends State<AddOperationDialog> {
           Provider.of<WorkersProvider>(context, listen: false);
       final areasProvider = Provider.of<AreasProvider>(context, listen: false);
       final tasksProvider = Provider.of<TasksProvider>(context, listen: false);
-      final assignmentsProvider =
-          Provider.of<AssignmentsProvider>(context, listen: false);
+      final operationsProvider =
+          Provider.of<OperationsProvider>(context, listen: false);
 
       // Parsear fecha de inicio
       final startDate =
@@ -670,7 +668,7 @@ class AddOperationDialogState extends State<AddOperationDialog> {
 
       // debugPrint('Datos de la operación: $zoneNum');
       // Si la validación es exitosa, guardar la operación
-      final success = await assignmentsProvider.addAssignment(
+      final success = await operationsProvider.addAssignment(
         // workers: _selectedWorkers,
         area: _areaController.text,
         areaId: selectedArea.id,
@@ -697,7 +695,7 @@ class AddOperationDialogState extends State<AddOperationDialog> {
       // Si hubo error al guardar
       if (!success) {
         showValidationError(context,
-            'Error al guardar la operación: ${assignmentsProvider.error}');
+            'Error al guardar la operación: ${operationsProvider.error}');
         return false;
       }
 

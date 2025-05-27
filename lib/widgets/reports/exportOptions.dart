@@ -3,7 +3,7 @@ import 'package:flutter/material.dart' hide Border;
 import 'package:flutter_neumorphic_plus/flutter_neumorphic.dart' hide Border;
 import 'package:intl/intl.dart';
 import 'package:plannerop/core/model/operation.dart';
-import 'package:plannerop/store/assignments.dart';
+import 'package:plannerop/store/operations.dart';
 import 'package:plannerop/utils/toast.dart';
 import 'package:provider/provider.dart';
 import 'package:share_plus/share_plus.dart';
@@ -52,7 +52,7 @@ class _ExportOptionsState extends State<ExportOptions> {
   // Método para filtrar las asignaciones según los criterios del reporte
   List<Operation> _getFilteredAssignments() {
     final assignmentsProvider =
-        Provider.of<AssignmentsProvider>(context, listen: false);
+        Provider.of<OperationsProvider>(context, listen: false);
 
     return assignmentsProvider.assignments.where((assignment) {
       // Filtrar por área si no es "Todas"

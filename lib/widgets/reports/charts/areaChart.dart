@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:plannerop/core/model/operation.dart';
-import 'package:plannerop/store/assignments.dart';
+import 'package:plannerop/store/operations.dart';
 import 'package:plannerop/store/areas.dart';
 import 'package:provider/provider.dart';
 import 'dart:math' as math;
@@ -251,7 +251,7 @@ class _AreaDistributionChartState extends State<AreaDistributionChart> {
 
   @override
   Widget build(BuildContext context) {
-    return Consumer<AssignmentsProvider>(
+    return Consumer<OperationsProvider>(
       builder: (context, assignmentsProvider, child) {
         // Obtener asignaciones del provider
         final assignments = assignmentsProvider.assignments;

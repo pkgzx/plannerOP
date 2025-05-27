@@ -502,28 +502,28 @@ class WorkersProvider with ChangeNotifier {
     }
   }
 
-  // Método para liberar un trabajador (cambia su estado a disponible)
-  // MANTIENE LA FIRMA ORIGINAL
-  void releaseWorker(Worker worker) {
-    final index = _workers.indexWhere((w) => w.name == worker.name);
-    if (index >= 0) {
-      final updatedWorker = Worker(
-          id: worker.id,
-          name: worker.name,
-          area: worker.area,
-          phone: worker.phone,
-          document: worker.document,
-          status: WorkerStatus.available,
-          startDate: worker.startDate,
-          endDate: null,
-          code: worker.code,
-          incapacityEndDate: worker.incapacityEndDate,
-          incapacityStartDate: worker.incapacityStartDate,
-          failures: worker.failures);
-      _workers[index] = updatedWorker;
-      notifyListeners();
-    }
-  }
+  // // Método para liberar un trabajador (cambia su estado a disponible)
+  // // MANTIENE LA FIRMA ORIGINAL
+  // void releaseWorker(Worker worker) {
+  //   final index = _workers.indexWhere((w) => w.name == worker.name);
+  //   if (index >= 0) {
+  //     final updatedWorker = Worker(
+  //         id: worker.id,
+  //         name: worker.name,
+  //         area: worker.area,
+  //         phone: worker.phone,
+  //         document: worker.document,
+  //         status: WorkerStatus.available,
+  //         startDate: worker.startDate,
+  //         endDate: null,
+  //         code: worker.code,
+  //         incapacityEndDate: worker.incapacityEndDate,
+  //         incapacityStartDate: worker.incapacityStartDate,
+  //         failures: worker.failures);
+  //     _workers[index] = updatedWorker;
+  //     notifyListeners();
+  //   }
+  // }
 
   // Agregar estos métodos a la clase WorkersProvider
 
@@ -576,39 +576,39 @@ class WorkersProvider with ChangeNotifier {
     }
   }
 
-  // Método para liberar un trabajador en el backend
-  Future<bool> releaseWorkerObject(Worker worker, BuildContext context) async {
-    try {
-      // Llamar al servicio para actualizar el estado en el backend
-      final success = await _workerService.updateWorkerStatus(
-          worker.id, "available", context);
+  // // Método para liberar un trabajador en el backend
+  // Future<bool> releaseWorkerObject(Worker worker, BuildContext context) async {
+  //   try {
+  //     // Llamar al servicio para actualizar el estado en el backend
+  //     final success = await _workerService.updateWorkerStatus(
+  //         worker.id, "available", context);
 
-      if (success) {
-        // Actualizar estado localmente
-        final index = _workers.indexWhere((w) => w.id == worker.id);
-        if (index >= 0) {
-          final updatedWorker = Worker(
-              id: worker.id,
-              name: worker.name,
-              area: worker.area,
-              phone: worker.phone,
-              document: worker.document,
-              status: WorkerStatus.available,
-              startDate: worker.startDate,
-              endDate: null,
-              code: worker.code,
-              incapacityEndDate: worker.incapacityEndDate,
-              incapacityStartDate: worker.incapacityStartDate,
-              failures: worker.failures);
-          _workers[index] = updatedWorker;
-          notifyListeners();
-        }
-        return true;
-      }
-      return false;
-    } catch (e) {
-      debugPrint('Error al liberar trabajador: $e');
-      return false;
-    }
-  }
+  //     if (success) {
+  //       // Actualizar estado localmente
+  //       final index = _workers.indexWhere((w) => w.id == worker.id);
+  //       if (index >= 0) {
+  //         final updatedWorker = Worker(
+  //             id: worker.id,
+  //             name: worker.name,
+  //             area: worker.area,
+  //             phone: worker.phone,
+  //             document: worker.document,
+  //             status: WorkerStatus.available,
+  //             startDate: worker.startDate,
+  //             endDate: null,
+  //             code: worker.code,
+  //             incapacityEndDate: worker.incapacityEndDate,
+  //             incapacityStartDate: worker.incapacityStartDate,
+  //             failures: worker.failures);
+  //         _workers[index] = updatedWorker;
+  //         notifyListeners();
+  //       }
+  //       return true;
+  //     }
+  //     return false;
+  //   } catch (e) {
+  //     debugPrint('Error al liberar trabajador: $e');
+  //     return false;
+  //   }
+  // }
 }

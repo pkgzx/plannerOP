@@ -6,17 +6,17 @@ import 'package:plannerop/store/areas.dart';
 import 'package:plannerop/store/chargersOp.dart';
 import 'package:plannerop/store/feedings.dart';
 import 'package:plannerop/utils/operations.dart' hide buildDetailRow;
-import 'package:plannerop/utils/foodUtils.dart';
-import 'package:plannerop/utils/group.dart';
+import 'package:plannerop/utils/feedingUtils.dart';
+import 'package:plannerop/utils/groups/groups.dart';
 import 'package:plannerop/utils/toast.dart';
 import 'package:plannerop/widgets/operations/components/OperationCard.dart';
 import 'package:plannerop/widgets/operations/components/workers/buildWorkerItem.dart';
 import 'package:plannerop/widgets/operations/update/editOperationForm.dart';
 import 'package:provider/provider.dart';
-import 'package:plannerop/store/assignments.dart';
+import 'package:plannerop/store/operations.dart';
 import 'package:plannerop/widgets/operations/components/utils/emptyState.dart';
 import 'package:plannerop/core/model/operation.dart';
-import 'package:plannerop/widgets/operations/components/showCompletionDialog.dart';
+import 'package:plannerop/widgets/operations/components/completeDialogs.dart';
 import 'package:plannerop/widgets/operations/components/utils.dart';
 
 class ActiveOperationsView extends StatefulWidget {
@@ -57,7 +57,7 @@ class _ActiveOperationsViewState extends State<ActiveOperationsView> {
       _selectedSupervisorId = null;
     }
 
-    return Consumer<AssignmentsProvider>(
+    return Consumer<OperationsProvider>(
       builder: (context, assignmentsProvider, child) {
         if (assignmentsProvider.isLoading) {
           return const Center(
@@ -129,7 +129,7 @@ class _ActiveOperationsViewState extends State<ActiveOperationsView> {
               itemCount: assignments.length,
               itemBuilder: (context, index) {
                 final assignment = assignments[index];
-                // CAMBIO: Usar OperationCard con parámetros específicos para asignaciones activas
+
                 return OperationCard(
                   assignment: assignment,
                   onTap: _showAssignmentDetails,
@@ -179,211 +179,126 @@ class _ActiveOperationsViewState extends State<ActiveOperationsView> {
 
   void _showAssignmentDetails(BuildContext context, Operation assignment) {
     final assignmentsProvider =
-        Provider.of<AssignmentsProvider>(context, listen: false);
+        Provider.of<OperationsProvider>(context, listen: false);
     final feedingProvider =
         Provider.of<FeedingProvider>(context, listen: false);
 
     // Cargar datos de alimentación para esta operación
     feedingProvider.loadFeedingStatusForOperation(assignment.id ?? 0, context);
 
-    final inChargersFormat =
-        Provider.of<ChargersOpProvider>(context, listen: false)
-            .chargers
-            .where((charger) => assignment.inChagers.contains(charger.id))
-            .map((charger) {
-      return User(
-        id: charger.id,
-        name: charger.name,
-        cargo: charger.cargo,
-        dni: charger.dni,
-        phone: charger.phone,
-      );
-    }).toList();
-
-    List<String> foods = FoodUtils.determinateFoodsWithDeliveryStatus(
+    List<String> foods = FeedingUtils.determinateFoodsWithDeliveryStatus(
         assignment.time, assignment.endTime, context);
-
-    for (var food in foods) {
-      debugPrint("Comida: $food");
-    }
 
     bool tieneDerechoAlimentacion = foods.isNotEmpty;
 
-    showModalBottomSheet(
+    // Usar la función unificada showOperationDetails
+    showOperationDetails(
       context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (context) {
-        return Stack(
-          children: [
-            Container(
-              height: MediaQuery.of(context).size.height * 0.85,
-              decoration: const BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Header
-                  _buildDetailHeader(assignment, context),
+      assignment: assignment,
+      statusColor: const Color(0xFF38A169),
+      statusText: 'EN CURSO',
 
-                  // Content
-                  Expanded(
-                    child: SingleChildScrollView(
-                      padding: const EdgeInsets.all(20),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          _buildDetailsSection(
-                            title: 'Detalles de la operación',
-                            children: _buildAssignmentDetails(assignment),
-                          ),
-                          const SizedBox(height: 20),
-                          // buildWorkersSection(
-                          //   assignment,
-                          //   context,
-                          //   setState: setState,
-                          //   alimentacionStatus: alimentacionStatus,
-                          //   foods: foods,
-                          //   onAlimentacionChanged: tieneDerechoAlimentacion
-                          //       ? (workerId, entregada) {
-                          //           if (foods.isNotEmpty) {
-                          //             feedingProvider.markFeeding(
-                          //               operationId: assignment.id ?? 0,
-                          //               workerId: workerId,
-                          //               foodType: foods[0],
-                          //               context: context,
-                          //             );
-                          //           }
-                          //         }
-                          //       : null,
-                          // ),
+      // Configuración específica para grupos activos
+      alimentacionStatus: alimentacionStatus,
+      foods: foods,
+      onAlimentacionChanged: tieneDerechoAlimentacion
+          ? (workerId, entregada) {
+              if (foods.isNotEmpty) {
+                feedingProvider.markFeeding(
+                  operationId: assignment.id ?? 0,
+                  workerId: workerId,
+                  foodType: foods[0],
+                  context: context,
+                );
+              }
+            }
+          : null,
+      setState: () => setState(() {}),
 
-                          buildGroupsSection(
-                            context,
-                            assignment.groups,
-                            "Grupos de trabajo",
-                            alimentacionStatus: alimentacionStatus,
-                            assignment: assignment,
-                            // setState: setState,
-                            foods: foods,
-                            onAlimentacionChanged: tieneDerechoAlimentacion
-                                ? (workerId, entregada) {
-                                    if (foods.isNotEmpty) {
-                                      feedingProvider.markFeeding(
-                                        operationId: assignment.id ?? 0,
-                                        workerId: workerId,
-                                        foodType: foods[0],
-                                        context: context,
-                                      );
-                                    }
-                                  }
-                                : null,
-                          ),
-
-                          _buildDeletedWorkersSection(assignment),
-                          const SizedBox(height: 20),
-                          _buildDetailsSection(
-                            title: 'Encargados de la operación',
-                            children: inChargersFormat.map((charger) {
-                              return buildInChargerItem(charger);
-                            }).toList(),
-                          ),
-                          const SizedBox(height: 60),
-                        ],
-                      ),
-                    ),
-                  ),
-
-                  // Action buttons
-                  _buildActionButtons(context, assignment, assignmentsProvider),
-                ],
-              ),
-            ),
-
-            // Botón flotante de cancelar
-            Positioned(
-              right: 20,
-              bottom: 90,
-              child:
-                  _buildCancelButton(context, assignment, assignmentsProvider),
-            ),
-          ],
-        );
+      // Workers builder para trabajadores eliminados
+      workersBuilder: (assignment, context) {
+        return assignment.deletedWorkers.isNotEmpty
+            ? _buildDeletedWorkersSection(assignment)
+            : const SizedBox();
       },
-    );
-  }
 
-  Widget _buildDetailHeader(Operation assignment, BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: const Color.fromARGB(255, 13, 184, 84).withOpacity(0.1),
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Row(
-          //   mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          //   children: [
-          //     Expanded(
-          //       child: Text(
-          //         assignment.task,
-          //         style: const TextStyle(
-          //           fontSize: 18,
-          //           fontWeight: FontWeight.bold,
-          //           color: Color(0xFF2D3748),
-          //         ),
-          //       ),
-          //     ),
-          //     IconButton(
-          //       icon: const Icon(Icons.close),
-          //       onPressed: () => Navigator.pop(context),
-          //     ),
-          //   ],
-          // ),
-          Row(
-            children: [
-              const Icon(
-                Icons.room_outlined,
-                size: 16,
-                color: Color.fromARGB(255, 11, 80, 53),
+      // Action buttons
+      actionsBuilder: (context, assignment) => [
+        Expanded(
+          child: NeumorphicButton(
+            style: NeumorphicStyle(
+              depth: 2,
+              intensity: 0.7,
+              color: Colors.white,
+              boxShape: NeumorphicBoxShape.roundRect(BorderRadius.circular(8)),
+            ),
+            onPressed: () {
+              Navigator.pop(context);
+              _showEditDialog(context, assignment, assignmentsProvider);
+            },
+            child: const Text(
+              'Editar',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: Color(0xFF3182CE),
+                fontWeight: FontWeight.w600,
               ),
-              const SizedBox(width: 4),
-              Text(
-                assignment.area,
-                style: const TextStyle(
-                  fontSize: 14,
-                  color: Color.fromARGB(255, 11, 80, 53),
-                  fontWeight: FontWeight.w500,
+            ),
+          ),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Consumer<OperationsProvider>(
+              builder: (context, provider, child) {
+            return NeumorphicButton(
+              style: NeumorphicStyle(
+                depth: 2,
+                intensity: 0.7,
+                color: const Color(0xFF3182CE),
+                boxShape:
+                    NeumorphicBoxShape.roundRect(BorderRadius.circular(8)),
+              ),
+              onPressed: () {
+                Navigator.pop(context);
+                showCompletionDialog(
+                    context: context,
+                    assignment: assignment,
+                    provider: provider);
+              },
+              child: const Text(
+                'Completar',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w600,
                 ),
               ),
-            ],
-          ),
-        ],
+            );
+          }),
+        ),
+      ],
+
+      // Floating action button (cancelar)
+      floatingActionBuilder: (context, assignment) => NeumorphicButton(
+        style: NeumorphicStyle(
+          depth: 4,
+          intensity: 0.8,
+          color: const Color(0xFFF56565),
+          boxShape: NeumorphicBoxShape.circle(),
+          shadowDarkColor: const Color(0xFFC53030).withOpacity(0.4),
+        ),
+        padding: const EdgeInsets.all(16),
+        onPressed: () {
+          Navigator.pop(context);
+          showCancelDialog(context, assignment, assignmentsProvider);
+        },
+        child: const Icon(
+          Icons.delete_outline,
+          color: Colors.white,
+          size: 28,
+        ),
       ),
     );
-  }
-
-  List<Widget> _buildAssignmentDetails(Operation assignment) {
-    return [
-      buildDetailRow('Fecha', DateFormat('dd/MM/yyyy').format(assignment.date)),
-      buildDetailRow('Hora', assignment.time),
-      buildDetailRow('Estado', 'En curso'),
-      if (assignment.endTime != null)
-        buildDetailRow(
-            'Hora de finalización', assignment.endTime ?? 'No especificada'),
-      if (assignment.endDate != null)
-        buildDetailRow('Fecha de finalización',
-            DateFormat('dd/MM/yyyy').format(assignment.endDate!)),
-      if (assignment.zone != 0)
-        buildDetailRow('Zona', 'Zona ${assignment.zone}'),
-      if (assignment.zone == 0) buildDetailRow("Zona", "Sin zona"),
-      if (assignment.motorship != "" && assignment.motorship != null)
-        buildDetailRow('Motonave', assignment.motorship ?? ''),
-    ];
   }
 
   Widget _buildDeletedWorkersSection(Operation assignment) {
@@ -410,105 +325,8 @@ class _ActiveOperationsViewState extends State<ActiveOperationsView> {
         : const SizedBox();
   }
 
-  Widget _buildActionButtons(BuildContext context, Operation assignment,
-      AssignmentsProvider provider) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, -5),
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            child: NeumorphicButton(
-              style: NeumorphicStyle(
-                depth: 2,
-                intensity: 0.7,
-                color: Colors.white,
-                boxShape:
-                    NeumorphicBoxShape.roundRect(BorderRadius.circular(8)),
-              ),
-              onPressed: () {
-                Navigator.pop(context);
-                _showEditDialog(context, assignment, provider);
-              },
-              child: const Text(
-                'Editar',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  color: Color(0xFF3182CE),
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Consumer<AssignmentsProvider>(
-                builder: (context, provider, child) {
-              return NeumorphicButton(
-                style: NeumorphicStyle(
-                  depth: 2,
-                  intensity: 0.7,
-                  color: const Color(0xFF3182CE),
-                  boxShape:
-                      NeumorphicBoxShape.roundRect(BorderRadius.circular(8)),
-                ),
-                onPressed: () {
-                  Navigator.pop(context);
-                  showCompletionDialog(
-                      context: context,
-                      assignment: assignment,
-                      provider: provider);
-                },
-                child: const Text(
-                  'Completar',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              );
-            }),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildCancelButton(BuildContext context, Operation assignment,
-      AssignmentsProvider provider) {
-    return NeumorphicButton(
-      style: NeumorphicStyle(
-        depth: 4,
-        intensity: 0.8,
-        color: const Color(0xFFF56565),
-        boxShape: NeumorphicBoxShape.circle(),
-        shadowDarkColor: const Color(0xFFC53030).withOpacity(0.4),
-      ),
-      padding: const EdgeInsets.all(16),
-      onPressed: () {
-        Navigator.pop(context);
-        showCancelDialog(context, assignment, provider);
-      },
-      child: const Icon(
-        Icons.delete_outline,
-        color: Colors.white,
-        size: 28,
-      ),
-    );
-  }
-
   void _showEditDialog(BuildContext context, Operation assignment,
-      AssignmentsProvider provider) {
+      OperationsProvider provider) {
     showDialog(
       context: context,
       builder: (BuildContext context) {

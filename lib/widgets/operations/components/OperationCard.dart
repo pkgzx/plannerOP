@@ -3,7 +3,7 @@ import 'package:flutter_neumorphic_plus/flutter_neumorphic.dart';
 import 'package:intl/intl.dart';
 import 'package:plannerop/core/model/operation.dart';
 import 'package:plannerop/utils/operations.dart';
-import 'package:plannerop/utils/foodUtils.dart';
+import 'package:plannerop/utils/feedingUtils.dart';
 
 class OperationCard extends StatelessWidget {
   final Operation assignment;
@@ -85,7 +85,7 @@ class OperationCard extends StatelessWidget {
     );
   }
 
-  // NUEVO: Separar la sección footer en su propio método
+  // Separar la sección footer en su propio método
   Widget _buildFooterSection(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -232,7 +232,7 @@ class OperationCard extends StatelessWidget {
 
   Widget _buildFoodChips(BuildContext context) {
     // Get foods based on assignment times
-    List<String> foods = FoodUtils.determinateFoods(
+    List<String> foods = FeedingUtils.determinateFoods(
         assignment.time, assignment.endTime, context);
 
     if (foods.isEmpty ||

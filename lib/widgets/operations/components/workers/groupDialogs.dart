@@ -4,7 +4,7 @@ import 'package:plannerop/core/model/task.dart';
 import 'package:plannerop/core/model/worker.dart';
 import 'package:plannerop/core/model/workerGroup.dart';
 import 'package:plannerop/store/task.dart';
-import 'package:plannerop/utils/group.dart';
+import 'package:plannerop/utils/groups/groups.dart';
 import 'package:plannerop/utils/toast.dart';
 import 'package:plannerop/widgets/operations/components/serviceSelector.dart';
 import 'package:provider/provider.dart';

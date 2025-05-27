@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:plannerop/store/areas.dart';
-import 'package:plannerop/store/assignments.dart';
+import 'package:plannerop/store/operations.dart';
 import 'package:plannerop/store/auth.dart';
 import 'package:plannerop/store/chargersOp.dart';
 import 'package:plannerop/store/clients.dart';
@@ -101,7 +101,7 @@ class DataManager {
 
   Future<void> _loadAssignments(BuildContext context) async {
     return _loadResource('assignments', context, () async {
-      final provider = Provider.of<AssignmentsProvider>(context, listen: false);
+      final provider = Provider.of<OperationsProvider>(context, listen: false);
       await provider.loadAssignmentsWithPriority(context);
     });
   }

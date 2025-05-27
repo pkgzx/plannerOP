@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:plannerop/store/areas.dart';
-import 'package:plannerop/store/assignments.dart';
+import 'package:plannerop/store/operations.dart';
 import 'package:plannerop/store/chargersOp.dart';
 import 'package:plannerop/store/clients.dart';
 import 'package:plannerop/store/faults.dart';
@@ -248,7 +248,7 @@ Future<void> loadAssignments({
         updateLoadingState(false);
       });
       // Desactivar loading en el provider también
-      Provider.of<AssignmentsProvider>(context, listen: false)
+      Provider.of<OperationsProvider>(context, listen: false)
           .changeIsLoadingOff();
       // showAlertToast(
       //     context, 'La carga de datos está tomando demasiado tiempo');
@@ -262,7 +262,7 @@ Future<void> loadAssignments({
   });
   // No mostrar indicador de carga si ya hay datos disponibles
   final assignmentsProvider =
-      Provider.of<AssignmentsProvider>(context, listen: false);
+      Provider.of<OperationsProvider>(context, listen: false);
   final hasExistingData = assignmentsProvider.assignments.isNotEmpty;
 
   if (!hasExistingData) {
@@ -351,17 +351,18 @@ Future<void> loadClientProgramming(
   bool mounted,
   Function setState,
   bool isLoadingClientProgramming,
-  BuildContext context,
-) async {
+  BuildContext context, {
+  bool forceRefresh = false,
+}) async {
   if (!mounted) return;
 
   final programmingsProvider =
       Provider.of<ProgrammingsProvider>(context, listen: false);
 
-  // Si ya se han cargado clientes, no hacer nada
-  if (programmingsProvider.programmings.isNotEmpty) {
+  // Si no es refresh forzado y ya se han cargado programaciones, no hacer nada
+  if (!forceRefresh && programmingsProvider.programmings.isNotEmpty) {
     debugPrint(
-        'Clientes ya cargados: ${programmingsProvider.programmings.length}');
+        'Programaciones ya cargadas: ${programmingsProvider.programmings.length}');
     return;
   }
 
@@ -373,7 +374,15 @@ Future<void> loadClientProgramming(
   final String formattedDate = DateFormat('yyyy-MM-dd').format(now);
 
   try {
-    await programmingsProvider.fetchProgrammingsByDate(formattedDate, context);
+    if (forceRefresh) {
+      // Si es refresh forzado, usar el nuevo método de refresh
+      await programmingsProvider.refreshProgrammings(context,
+          specificDate: formattedDate);
+    } else {
+      // Si no es refresh forzado, usar el método normal
+      await programmingsProvider.fetchProgrammingsByDate(
+          formattedDate, context);
+    }
 
     if (programmingsProvider.programmings.isNotEmpty) {
       debugPrint(
@@ -382,12 +391,12 @@ Future<void> loadClientProgramming(
       debugPrint('No se cargaron programaciones o la lista está vacía');
     }
   } catch (e, stackTrace) {
-    debugPrint('Error al cargar programaciones: $e');
+    debugPrint('Error al cargar programaciones del cliente: $e');
     debugPrint('Stack trace: $stackTrace');
 
     // Mostrar un mensaje de error más informativo
     if (mounted) {
-      showErrorToast(context, 'Error al cargar programaciones.');
+      showErrorToast(context, 'Error al cargar programaciones del cliente.');
     }
   } finally {
     if (mounted) {

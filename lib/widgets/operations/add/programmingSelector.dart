@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_neumorphic_plus/flutter_neumorphic.dart';
 import 'package:plannerop/core/model/programming.dart';
 import 'package:plannerop/store/programmings.dart';
-import 'package:plannerop/utils/operations.dart';
 import 'package:plannerop/widgets/operations/components/workers/selectorModal.dart';
 import 'package:provider/provider.dart';
 
@@ -24,6 +23,8 @@ class ProgrammingSelector extends StatefulWidget {
 
 class _ProgrammingSelectorState extends State<ProgrammingSelector> {
   List<Programming> _filteredProgrammings = [];
+  List<Programming> _selectableProgrammings = [];
+  List<Programming> _nonSelectableProgrammings = [];
   bool _isLoading = false;
   Programming? _selectedProgramming;
 
@@ -38,34 +39,92 @@ class _ProgrammingSelectorState extends State<ProgrammingSelector> {
     super.didUpdateWidget(oldWidget);
   }
 
+  void _filterProgrammingsByStatus() {
+    final programmingProvider =
+        Provider.of<ProgrammingsProvider>(context, listen: false);
+    final allProgrammings = programmingProvider.programmings;
+
+    _selectableProgrammings =
+        allProgrammings.where((p) => p.status == 'UNASSIGNED').toList();
+
+    _nonSelectableProgrammings = allProgrammings
+        .where((p) => p.status == 'ASSIGNED' || p.status == 'COMPLETED')
+        .toList();
+
+    // Ordenar para que COMPLETED aparezca después de ASSIGNED
+    _nonSelectableProgrammings.sort((a, b) {
+      if (a.status == 'ASSIGNED' && b.status == 'COMPLETED') return -1;
+      if (a.status == 'COMPLETED' && b.status == 'ASSIGNED') return 1;
+      return 0;
+    });
+
+    _filteredProgrammings = [
+      ..._selectableProgrammings,
+      ..._nonSelectableProgrammings
+    ];
+  }
+
+  Color _getStatusColor(String status) {
+    switch (status) {
+      case 'UNASSIGNED':
+        return Colors.green;
+      case 'ASSIGNED':
+        return Colors.orange;
+      case 'COMPLETED':
+        return Colors.blue;
+      default:
+        return Colors.grey;
+    }
+  }
+
+  String _getStatusText(String status) {
+    switch (status) {
+      case 'UNASSIGNED':
+        return 'Disponible';
+      case 'ASSIGNED':
+        return 'Asignado';
+      case 'COMPLETED':
+        return 'Completado';
+      default:
+        return 'Desconocido';
+    }
+  }
+
   void _openProgrammingSelector() {
     showModalBottomSheet(
       context: context,
-      isScrollControlled: true, // Esto permite que ocupe toda la pantalla
+      isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (context) => ProgrammingSelectionModal(
         startDate: widget.startDate!,
         programmings: _filteredProgrammings,
+        selectableProgrammings: _selectableProgrammings,
+        nonSelectableProgrammings: _nonSelectableProgrammings,
         selectedProgramming: _selectedProgramming,
         isLoading: _isLoading,
         onProgrammingSelected: (programming) {
-          setState(() {
-            _selectedProgramming = programming;
-          });
-          widget.onProgrammingSelected(programming);
-          Navigator.pop(context);
+          // Solo permitir selección si es UNASSIGNED
+          if (programming.status == 'UNASSIGNED') {
+            setState(() {
+              _selectedProgramming = programming;
+            });
+            widget.onProgrammingSelected(programming);
+            Navigator.pop(context);
+          }
         },
         onRefresh: () {
           // _loadProgrammings();
         },
+        getStatusColor: _getStatusColor,
+        getStatusText: _getStatusText,
       ),
     );
   }
 
   @override
   Widget build(BuildContext context) {
-    final programmingProvider = Provider.of<ProgrammingsProvider>(context);
-    _filteredProgrammings = programmingProvider.programmings;
+    _filterProgrammingsByStatus();
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -89,22 +148,41 @@ class _ProgrammingSelectorState extends State<ProgrammingSelector> {
                 ),
               ),
               const SizedBox(width: 8),
-              // if (_filteredProgrammings.isNotEmpty && !_isLoading)
+              // Contador de disponibles
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                 decoration: BoxDecoration(
-                  color: Colors.blue.shade50,
+                  color: Colors.green.shade50,
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Text(
-                  '${_filteredProgrammings.length}',
+                  '${_selectableProgrammings.length} disponibles',
                   style: TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.bold,
-                    color: Colors.blue.shade800,
+                    color: Colors.green.shade800,
                   ),
                 ),
               ),
+              if (_nonSelectableProgrammings.isNotEmpty) ...[
+                const SizedBox(width: 4),
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade50,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Text(
+                    '${_nonSelectableProgrammings.length} no disponibles',
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.grey.shade800,
+                    ),
+                  ),
+                ),
+              ],
               const Spacer(),
               if (_isLoading)
                 SizedBox(
@@ -147,7 +225,6 @@ class _ProgrammingSelectorState extends State<ProgrammingSelector> {
                 ),
 
                 // Flecha
-                // if (widget.enabled)
                 const Icon(
                   Icons.arrow_forward_ios,
                   size: 16,
@@ -184,12 +261,16 @@ class _ProgrammingSelectorState extends State<ProgrammingSelector> {
       width: 36,
       height: 36,
       decoration: BoxDecoration(
-        color: Colors.blue.shade50,
+        color: _selectedProgramming != null
+            ? _getStatusColor(_selectedProgramming!.status).withOpacity(0.1)
+            : Colors.blue.shade50,
         borderRadius: BorderRadius.circular(8),
       ),
       child: Icon(
         Icons.event_note,
-        color: const Color(0xFF3182CE),
+        color: _selectedProgramming != null
+            ? _getStatusColor(_selectedProgramming!.status)
+            : const Color(0xFF3182CE),
         size: 18,
       ),
     );
@@ -209,13 +290,39 @@ class _ProgrammingSelectorState extends State<ProgrammingSelector> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          _selectedProgramming!.service,
-          style: const TextStyle(
-            fontWeight: FontWeight.w600,
-            fontSize: 14,
-            color: Color(0xFF2D3748),
-          ),
+        Row(
+          children: [
+            Expanded(
+              child: Text(
+                _selectedProgramming!.service,
+                style: const TextStyle(
+                  fontWeight: FontWeight.w600,
+                  fontSize: 14,
+                  color: Color(0xFF2D3748),
+                ),
+              ),
+            ),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+              decoration: BoxDecoration(
+                color: _getStatusColor(_selectedProgramming!.status)
+                    .withOpacity(0.1),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(
+                  color: _getStatusColor(_selectedProgramming!.status)
+                      .withOpacity(0.3),
+                ),
+              ),
+              child: Text(
+                _getStatusText(_selectedProgramming!.status),
+                style: TextStyle(
+                  fontSize: 10,
+                  fontWeight: FontWeight.bold,
+                  color: _getStatusColor(_selectedProgramming!.status),
+                ),
+              ),
+            ),
+          ],
         ),
         const SizedBox(height: 2),
         Row(
@@ -257,16 +364,18 @@ class _ProgrammingSelectorState extends State<ProgrammingSelector> {
   }
 
   Widget _buildEmptyContent() {
-    final hasNoProgrammings = _filteredProgrammings.isEmpty && !_isLoading;
+    final hasNoSelectableProgrammings =
+        _selectableProgrammings.isEmpty && !_isLoading;
 
     return Text(
-      hasNoProgrammings
-          ? 'No hay programaciones disponibles'
+      hasNoSelectableProgrammings
+          ? 'No hay programaciones disponibles para asignar'
           : 'Seleccionar programación del cliente',
       style: TextStyle(
         fontSize: 14,
         color: const Color(0xFF718096),
-        fontStyle: hasNoProgrammings ? FontStyle.italic : FontStyle.normal,
+        fontStyle:
+            hasNoSelectableProgrammings ? FontStyle.italic : FontStyle.normal,
       ),
     );
   }

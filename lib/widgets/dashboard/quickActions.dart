@@ -196,7 +196,7 @@ class QuickActions extends StatelessWidget {
     // Navegar a la página específica
     if (tabIndex == 1) {
       navigator.push(
-        MaterialPageRoute(builder: (_) => const AsignacionesTab()),
+        MaterialPageRoute(builder: (_) => const OperationsTab()),
       );
     } else if (tabIndex == 2) {
       navigator.push(

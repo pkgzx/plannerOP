@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:plannerop/core/model/operation.dart';
-import 'package:plannerop/store/assignments.dart';
+import 'package:plannerop/store/operations.dart';
 import 'package:provider/provider.dart';
 
 class ShipPersonnelChart extends StatefulWidget {
@@ -213,7 +213,7 @@ class _ShipPersonnelChartState extends State<ShipPersonnelChart> {
 
   @override
   Widget build(BuildContext context) {
-    return Consumer<AssignmentsProvider>(
+    return Consumer<OperationsProvider>(
       builder: (context, assignmentsProvider, child) {
         // Obtener asignaciones del provider
         final assignments = assignmentsProvider.assignments;

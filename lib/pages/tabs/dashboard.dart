@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_neumorphic_plus/flutter_neumorphic.dart';
 import 'package:plannerop/hooks/loaders/loader.dart';
 import 'package:plannerop/store/areas.dart';
-import 'package:plannerop/store/assignments.dart';
+import 'package:plannerop/store/operations.dart';
 import 'package:plannerop/utils/toast.dart';
 import 'package:plannerop/widgets/dashboard/quickActions.dart';
 import 'package:plannerop/widgets/dashboard/recentOps.dart';
@@ -26,169 +26,149 @@ class _DashboardTabState extends State<DashboardTab> {
   bool _isLoadingChargers = false;
   bool _isLoadingClientProgramming = false;
 
+  // Variable para controlar si es la primera carga
+  bool _isInitialLoad = true;
+
   @override
   void initState() {
     super.initState();
-    // Evitar multiples cargas simultáneas
-    bool isLoading = false;
-
     // Usar addPostFrameCallback para programar la carga después del primer frame
     WidgetsBinding.instance.addPostFrameCallback((_) async {
-      if (!isLoading) {
-        isLoading = true;
-        await Future.wait([
-          checkAndLoadWorkersIfNeeded(
-            mounted,
-            setState,
-            _isLoadingWorkers,
-            context,
-          ),
-          loadAreas(
-            mounted,
-            setState,
-            _isLoadingAreas,
-            context,
-          ),
-          loadTask(
-            mounted,
-            setState,
-            _isLoadingTasks,
-            context,
-          ),
-          loadClients(
-            mounted,
-            setState,
-            _isLoadingClients,
-            context,
-          ),
-          loadAssignments(
-            context: context,
-            isMounted: () => mounted, // Retorna el valor actual de mounted
-            setStateCallback: (fn) {
-              if (mounted) setState(fn);
-            },
-            updateLoadingState: (isLoading) {
-              _isLoadingAssignments = isLoading;
-            },
-          ),
-          loadFaults(
-            context: context,
-            isMounted: () => mounted, // Retorna el valor actual de mounted
-            setStateCallback: (fn) {
-              if (mounted) setState(fn);
-            },
-            updateLoadingState: (isLoading) {
-              _isLoadingFaults = isLoading;
-            },
-          ),
-          loadChargersOp(
-            context: context,
-            isMounted: () => mounted, // Retorna el valor actual de mounted
-            setStateCallback: (fn) {
-              if (mounted) setState(fn);
-            },
-            updateLoadingState: (isLoading) {
-              _isLoadingChargers = isLoading;
-            },
-          ),
-          loadClientProgramming(
-              mounted, setState, _isLoadingClientProgramming, context)
-        ]).catchError((error) {
-          debugPrint('Error durante la carga en paralelo: $error');
-          // Continuar aunque haya errores
-        });
-      }
+      await _loadAllData();
+      _isInitialLoad = false;
     });
   }
 
-  Future<void> _loadWorkers() async {
+  // Método unificado para cargar todos los datos
+  Future<void> _loadAllData({bool forceRefresh = false}) async {
     if (!mounted) return;
 
-    setState(() {
-      _isLoadingWorkers = true;
-    });
-
-    final workersProvider =
-        Provider.of<WorkersProvider>(context, listen: false);
-
     try {
-      // Intentar cargar desde la API usando el método que respeta el flag
-      // debugPrint('Cargando trabajadores desde API..++++.');
-      await workersProvider.fetchWorkersIfNeeded(context);
+      // Actualizar estados de carga
+      setState(() {
+        _isLoadingWorkers = true;
+        _isLoadingAreas = true;
+        _isLoadingTasks = true;
+        _isLoadingClients = true;
+        _isLoadingAssignments = true;
+        _isLoadingFaults = true;
+        _isLoadingChargers = true;
+        _isLoadingClientProgramming = true;
+      });
 
-      // Si después de intentar cargar no hay datos, añadir datos de muestra
-      if (workersProvider.workers.isEmpty) {}
+      // Cargar todos los datos en paralelo
+      await Future.wait([
+        checkAndLoadWorkersIfNeeded(
+          mounted,
+          setState,
+          _isLoadingWorkers,
+          context,
+        ),
+        loadAreas(
+          mounted,
+          setState,
+          _isLoadingAreas,
+          context,
+        ),
+        loadTask(
+          mounted,
+          setState,
+          _isLoadingTasks,
+          context,
+        ),
+        loadClients(
+          mounted,
+          setState,
+          _isLoadingClients,
+          context,
+        ),
+        loadAssignments(
+          context: context,
+          isMounted: () => mounted,
+          setStateCallback: (fn) {
+            if (mounted) setState(fn);
+          },
+          updateLoadingState: (isLoading) {
+            _isLoadingAssignments = isLoading;
+          },
+        ),
+        loadFaults(
+          context: context,
+          isMounted: () => mounted,
+          setStateCallback: (fn) {
+            if (mounted) setState(fn);
+          },
+          updateLoadingState: (isLoading) {
+            _isLoadingFaults = isLoading;
+          },
+        ),
+        loadChargersOp(
+          context: context,
+          isMounted: () => mounted,
+          setStateCallback: (fn) {
+            if (mounted) setState(fn);
+          },
+          updateLoadingState: (isLoading) {
+            _isLoadingChargers = isLoading;
+          },
+        ),
+        loadClientProgramming(
+            mounted, setState, _isLoadingClientProgramming, context,
+            forceRefresh: forceRefresh)
+      ]).catchError((error) {
+        debugPrint('Error durante la carga en paralelo: $error');
+        if (mounted) {
+          showErrorToast(context, 'Error al cargar algunos datos');
+        }
+      });
+
+      if (mounted && forceRefresh) {
+        showSuccessToast(context, 'Datos actualizados correctamente');
+      }
     } catch (e) {
-      // Si algo falla, cargar datos de muestra
-
-      // Mostrar un mensaje de error
+      debugPrint('Error general en _loadAllData: $e');
       if (mounted) {
-        showErrorToast(context, 'Error al cargar trabajadores.');
+        showErrorToast(context, 'Error al cargar datos: $e');
       }
     } finally {
+      // Asegurar que todos los estados de carga se desactiven
       if (mounted) {
         setState(() {
           _isLoadingWorkers = false;
+          _isLoadingAreas = false;
+          _isLoadingTasks = false;
+          _isLoadingClients = false;
+          _isLoadingAssignments = false;
+          _isLoadingFaults = false;
+          _isLoadingChargers = false;
+          _isLoadingClientProgramming = false;
         });
+
+        // Asegurar que los providers también deshabiliten sus indicadores
+        try {
+          Provider.of<OperationsProvider>(context, listen: false)
+              .changeIsLoadingOff();
+        } catch (e) {
+          debugPrint('Error al desactivar loading del provider: $e');
+        }
       }
     }
   }
 
-  Future<void> _loadAssignments() async {
-    if (!mounted) return;
-
-    // Configurar un timeout para evitar carga infinita
-    final loadingTimeout = Future.delayed(const Duration(seconds: 10), () {
-      if (mounted && _isLoadingAssignments) {
-        debugPrint('⚠️ Timeout en carga de asignaciones');
-        setState(() {
-          _isLoadingAssignments = false;
-        });
-        // Desactivar loading en el provider también
-        Provider.of<AssignmentsProvider>(context, listen: false)
-            .changeIsLoadingOff();
-        showAlertToast(
-            context, 'La carga de datos está tomando demasiado tiempo');
-      }
-    });
-
-    // No mostrar indicador de carga si ya hay datos disponibles
-    final assignmentsProvider =
-        Provider.of<AssignmentsProvider>(context, listen: false);
-    final hasExistingData = assignmentsProvider.assignments.isNotEmpty;
-
-    if (!hasExistingData) {
-      setState(() {
-        _isLoadingAssignments = true;
-      });
-    }
-
-    try {
-      // Cargar asignaciones con prioridad
-      await assignmentsProvider.loadAssignmentsWithPriority(context);
-    } catch (e) {
-      debugPrint('Error al cargar asignaciones: $e');
-
-      if (mounted && !hasExistingData) {
-        showErrorToast(context, 'Error al cargar asignaciones.');
-      }
-    } finally {
-      // Asegurar que el estado de carga se desactive siempre al finalizar
-      if (mounted) {
-        setState(() {
-          _isLoadingAssignments = false;
-        });
-        // Asegurar que el provider también deshabilite su indicador de carga
-        assignmentsProvider.changeIsLoadingOff();
-      }
-    }
-
-    // No necesitamos esperar el timeout
+  // Método para verificar si algún dato está cargando
+  bool get _isAnyLoading {
+    return _isLoadingWorkers ||
+        _isLoadingAreas ||
+        _isLoadingTasks ||
+        _isLoadingClients ||
+        _isLoadingAssignments ||
+        _isLoadingFaults ||
+        _isLoadingChargers ||
+        _isLoadingClientProgramming;
   }
 
   @override
   Widget build(BuildContext context) {
-    // Obtener la altura de la barra de estado
     final statusBarHeight = MediaQuery.of(context).viewPadding.top;
 
     return Scaffold(
@@ -235,9 +215,7 @@ class _DashboardTabState extends State<DashboardTab> {
                     Row(
                       children: [
                         // Indicador de carga si es necesario
-                        if (_isLoadingAreas ||
-                            _isLoadingWorkers ||
-                            _isLoadingAssignments)
+                        if (_isAnyLoading)
                           Container(
                             margin: const EdgeInsets.only(right: 10),
                             width: 20,
@@ -251,49 +229,11 @@ class _DashboardTabState extends State<DashboardTab> {
                         // Botón de actualización
                         IconButton(
                           icon: const Icon(Icons.refresh, color: Colors.white),
-                          onPressed: _isLoadingAreas ||
-                                  _isLoadingWorkers ||
-                                  _isLoadingAssignments
+                          onPressed: _isAnyLoading
                               ? null
                               : () async {
-                                  try {
-                                    if (!mounted) {
-                                      return;
-                                    }
-
-                                    setState(() {
-                                      _isLoadingWorkers = true;
-                                      _isLoadingAreas = true;
-                                      _isLoadingAssignments = true;
-                                    });
-                                    // Al refrescar manualmente, forzamos la recarga de todo
-                                    await _loadWorkers();
-                                    await loadAreas(
-                                      mounted,
-                                      setState,
-                                      _isLoadingAreas,
-                                      context,
-                                    );
-                                    await _loadAssignments();
-
-                                    if (!mounted) {
-                                      return;
-                                    }
-
-                                    // Forzar actualización final
-                                    setState(() {
-                                      _isLoadingWorkers = false;
-                                      _isLoadingAreas = false;
-                                      _isLoadingAssignments = false;
-                                    });
-                                  } catch (e) {
-                                    // Forzar actualización final
-                                    setState(() {
-                                      _isLoadingWorkers = false;
-                                      _isLoadingAreas = false;
-                                      _isLoadingAssignments = false;
-                                    });
-                                  }
+                                  // Usar el método unificado para refrescar
+                                  await _loadAllData(forceRefresh: true);
                                 },
                         ),
                       ],
@@ -329,7 +269,7 @@ class _DashboardTabState extends State<DashboardTab> {
                           context,
                           Icons.pending_actions_outlined,
                           'Pendientes',
-                          Provider.of<AssignmentsProvider>(context)
+                          Provider.of<OperationsProvider>(context)
                               .pendingAssignments
                               .length
                               .toString()),
@@ -338,7 +278,7 @@ class _DashboardTabState extends State<DashboardTab> {
                           context,
                           Icons.directions_run,
                           'En Curso',
-                          Provider.of<AssignmentsProvider>(context)
+                          Provider.of<OperationsProvider>(context)
                               .inProgressAssignments
                               .length
                               .toString()),
@@ -347,7 +287,7 @@ class _DashboardTabState extends State<DashboardTab> {
                           context,
                           Icons.check_circle_outline,
                           'Finalizadas',
-                          Provider.of<AssignmentsProvider>(context)
+                          Provider.of<OperationsProvider>(context)
                               .completedAssignments
                               .where((a) =>
                                   a.endDate?.month == DateTime.now().month &&
@@ -364,7 +304,7 @@ class _DashboardTabState extends State<DashboardTab> {
 
           // Contenido del dashboard
           Expanded(
-            child: _isLoadingWorkers
+            child: (_isInitialLoad && _isAnyLoading)
                 ? const Center(
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
@@ -383,17 +323,8 @@ class _DashboardTabState extends State<DashboardTab> {
                   )
                 : RefreshIndicator(
                     onRefresh: () async {
-                      // Recargar datos al hacer pull-to-refresh
-                      await Future.wait([
-                        _loadWorkers(),
-                        loadAreas(
-                          mounted,
-                          setState,
-                          _isLoadingAreas,
-                          context,
-                        ),
-                        _loadAssignments(),
-                      ]);
+                      // Usar el método unificado para el pull-to-refresh
+                      await _loadAllData(forceRefresh: true);
                     },
                     child: SingleChildScrollView(
                       physics: const AlwaysScrollableScrollPhysics(),

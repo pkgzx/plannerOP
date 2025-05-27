@@ -8,7 +8,7 @@ import 'package:plannerop/widgets/operations/components/OperationCard.dart';
 import 'package:plannerop/widgets/operations/components/utils.dart';
 import 'package:plannerop/widgets/operations/update/editOperationForm.dart';
 import 'package:provider/provider.dart';
-import 'package:plannerop/store/assignments.dart';
+import 'package:plannerop/store/operations.dart';
 import 'package:plannerop/widgets/operations/components/utils/emptyState.dart';
 import 'package:plannerop/core/model/operation.dart';
 
@@ -51,7 +51,7 @@ class _PendingOperationsViewState extends State<PendingOperationsView> {
         !supervisors.any((s) => s.id == _selectedSupervisorId)) {
       _selectedSupervisorId = null;
     }
-    return Consumer<AssignmentsProvider>(
+    return Consumer<OperationsProvider>(
       builder: (context, assignmentsProvider, child) {
         if (assignmentsProvider.isLoading) {
           return const Center(
@@ -140,8 +140,8 @@ class _PendingOperationsViewState extends State<PendingOperationsView> {
     );
   }
 
-  Widget _buildAssignmentCard(BuildContext context, Operation assignment,
-      AssignmentsProvider provider) {
+  Widget _buildAssignmentCard(
+      BuildContext context, Operation assignment, OperationsProvider provider) {
     return OperationCard(
       assignment: assignment,
       onTap: _showAssignmentDetails,
@@ -178,7 +178,7 @@ class _PendingOperationsViewState extends State<PendingOperationsView> {
   }
 
   void _showAssignmentDetails(BuildContext context, Operation assignment) {
-    final provider = Provider.of<AssignmentsProvider>(context, listen: false);
+    final provider = Provider.of<OperationsProvider>(context, listen: false);
 
     showOperationDetails(
       context: context,
@@ -257,8 +257,8 @@ class _PendingOperationsViewState extends State<PendingOperationsView> {
     );
   }
 
-  void _showStartDialog(BuildContext context, Operation assignment,
-      AssignmentsProvider provider) {
+  void _showStartDialog(
+      BuildContext context, Operation assignment, OperationsProvider provider) {
     // Variable de estado local para el diálogo
     bool isProcessing = false;
 

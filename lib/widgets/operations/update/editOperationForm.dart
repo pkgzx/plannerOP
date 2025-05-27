@@ -4,8 +4,8 @@ import 'package:plannerop/core/model/operation.dart';
 import 'package:plannerop/core/model/client.dart';
 import 'package:plannerop/core/model/worker.dart';
 import 'package:plannerop/core/model/workerGroup.dart';
-import 'package:plannerop/store/assignments.dart';
 import 'package:plannerop/store/clients.dart';
+import 'package:plannerop/store/operations.dart';
 import 'package:plannerop/store/workers.dart';
 import 'package:plannerop/utils/operations.dart';
 import 'package:plannerop/utils/toast.dart';
@@ -516,7 +516,7 @@ class EditOperationFormState extends State<EditOperationForm> {
       final workersProvider =
           Provider.of<WorkersProvider>(context, listen: false);
       final assignmentsProvider =
-          Provider.of<AssignmentsProvider>(context, listen: false);
+          Provider.of<OperationsProvider>(context, listen: false);
 
       // Procesar fecha y hora
       final startDate =
@@ -601,9 +601,10 @@ class EditOperationFormState extends State<EditOperationForm> {
         workersProvider.assignWorkerObject(worker, context);
       }
 
-      for (var worker in removedWorkers) {
-        workersProvider.releaseWorkerObject(worker, context);
-      }
+      // TODO VERIFICAR ESTO EN EL BACKEND
+      // for (var worker in removedWorkers) {
+      //   workersProvider.releaseWorkerObject(worker, context);
+      // }
 
       // Crear la operación actualizada con los valores editables
       final updatedAssignment = Operation(
@@ -679,7 +680,7 @@ Future<void> showEditAssignmentForm(
     backgroundColor: Colors.transparent,
     builder: (context) {
       final assignmentsProvider =
-          Provider.of<AssignmentsProvider>(context, listen: false);
+          Provider.of<OperationsProvider>(context, listen: false);
 
       return EditOperationForm(
         assignment: assignment,

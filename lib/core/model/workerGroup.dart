@@ -9,7 +9,7 @@ class WorkerGroup {
   List<Worker>? workersData;
   final int serviceId;
   final String name;
-  final String id;
+  final String? id;
 
   WorkerGroup({
     this.startTime,

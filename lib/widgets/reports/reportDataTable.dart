@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_neumorphic_plus/flutter_neumorphic.dart';
-import 'package:intl/intl.dart';
+
 import 'package:plannerop/core/model/operation.dart';
-import 'package:plannerop/store/assignments.dart';
+import 'package:plannerop/store/operations.dart';
 import 'package:plannerop/store/workers.dart';
 import 'package:provider/provider.dart';
 
@@ -171,7 +171,7 @@ class _ReportDataTableState extends State<ReportDataTable> {
 
   @override
   Widget build(BuildContext context) {
-    final assignmentsProvider = Provider.of<AssignmentsProvider>(context);
+    final assignmentsProvider = Provider.of<OperationsProvider>(context);
     final usersProvider = Provider.of<WorkersProvider>(context, listen: false);
 
     // Obtenemos las asignaciones del provider

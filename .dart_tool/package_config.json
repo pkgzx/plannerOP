@@ -26,18 +26,6 @@
       "languageVersion": "2.18"
     },
     {
-      "name": "barcode",
-      "rootUri": "file:///C:/Users/BANANOVA/AppData/Local/Pub/Cache/hosted/pub.dev/barcode-2.2.9",
-      "packageUri": "lib/",
-      "languageVersion": "2.12"
-    },
-    {
-      "name": "bidi",
-      "rootUri": "file:///C:/Users/BANANOVA/AppData/Local/Pub/Cache/hosted/pub.dev/bidi-2.0.12",
-      "packageUri": "lib/",
-      "languageVersion": "2.12"
-    },
-    {
       "name": "boolean_selector",
       "rootUri": "file:///C:/Users/BANANOVA/AppData/Local/Pub/Cache/hosted/pub.dev/boolean_selector-2.1.1",
       "packageUri": "lib/",
@@ -338,12 +326,6 @@
       "languageVersion": "3.0"
     },
     {
-      "name": "path_parsing",
-      "rootUri": "file:///C:/Users/BANANOVA/AppData/Local/Pub/Cache/hosted/pub.dev/path_parsing-1.1.0",
-      "packageUri": "lib/",
-      "languageVersion": "3.3"
-    },
-    {
       "name": "path_provider",
       "rootUri": "file:///C:/Users/BANANOVA/AppData/Local/Pub/Cache/hosted/pub.dev/path_provider-2.1.5",
       "packageUri": "lib/",
@@ -380,18 +362,6 @@
       "languageVersion": "3.2"
     },
     {
-      "name": "pdf",
-      "rootUri": "file:///C:/Users/BANANOVA/AppData/Local/Pub/Cache/hosted/pub.dev/pdf-3.11.3",
-      "packageUri": "lib/",
-      "languageVersion": "2.19"
-    },
-    {
-      "name": "pdf_widget_wrapper",
-      "rootUri": "file:///C:/Users/BANANOVA/AppData/Local/Pub/Cache/hosted/pub.dev/pdf_widget_wrapper-1.0.4",
-      "packageUri": "lib/",
-      "languageVersion": "2.18"
-    },
-    {
       "name": "pedantic",
       "rootUri": "file:///C:/Users/BANANOVA/AppData/Local/Pub/Cache/hosted/pub.dev/pedantic-1.11.1",
       "packageUri": "lib/",
@@ -422,22 +392,10 @@
       "languageVersion": "3.2"
     },
     {
-      "name": "printing",
-      "rootUri": "file:///C:/Users/BANANOVA/AppData/Local/Pub/Cache/hosted/pub.dev/printing-5.14.2",
-      "packageUri": "lib/",
-      "languageVersion": "3.3"
-    },
-    {
       "name": "provider",
       "rootUri": "file:///C:/Users/BANANOVA/AppData/Local/Pub/Cache/hosted/pub.dev/provider-6.1.2",
       "packageUri": "lib/",
       "languageVersion": "2.12"
-    },
-    {
-      "name": "qr",
-      "rootUri": "file:///C:/Users/BANANOVA/AppData/Local/Pub/Cache/hosted/pub.dev/qr-3.0.2",
-      "packageUri": "lib/",
-      "languageVersion": "3.4"
     },
     {
       "name": "share_plus",
@@ -650,7 +608,7 @@
       "languageVersion": "3.6"
     }
   ],
-  "generated": "2025-05-22T15:55:51.697806Z",
+  "generated": "2025-05-27T13:32:41.241003Z",
   "generator": "pub",
   "generatorVersion": "3.6.1",
   "flutterRoot": "file:///C:/Users/BANANOVA/dev/flutter",

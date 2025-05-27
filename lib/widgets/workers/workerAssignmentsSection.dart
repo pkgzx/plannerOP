@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:plannerop/core/model/operation.dart';
 import 'package:plannerop/core/model/worker.dart';
 import 'package:intl/intl.dart';
-import 'package:plannerop/store/assignments.dart';
+import 'package:plannerop/store/operations.dart';
 import 'package:plannerop/utils/operations.dart';
 import 'package:provider/provider.dart';
 
@@ -20,7 +20,7 @@ class WorkerAssignmentsSection extends StatelessWidget {
   Widget build(BuildContext context) {
     // Simulación de asignaciones actuales
     final List<Operation> assignments =
-        Provider.of<AssignmentsProvider>(context).assignments;
+        Provider.of<OperationsProvider>(context).assignments;
 
     if (assignments.isEmpty) {
       return Container();

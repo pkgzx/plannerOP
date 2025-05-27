@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:plannerop/store/areas.dart';
-import 'package:plannerop/store/assignments.dart';
 import 'package:plannerop/store/auth.dart';
 import 'package:plannerop/store/chargersOp.dart';
 import 'package:plannerop/store/clients.dart';
 import 'package:plannerop/store/faults.dart';
 import 'package:plannerop/store/feedings.dart';
+import 'package:plannerop/store/operations.dart';
 import 'package:plannerop/store/programmings.dart';
 import 'package:plannerop/store/task.dart';
 import 'package:plannerop/store/user.dart';
@@ -25,18 +25,18 @@ Future<void> main() async {
   runApp(
     MultiProvider(
       providers: [
-        ChangeNotifierProvider(create: (_) => AssignmentsProvider()),
-        ChangeNotifierProvider(create: (context) => WorkersProvider()),
-        ChangeNotifierProvider(create: (context) => AuthProvider()),
-        ChangeNotifierProvider(create: (context) => UserProvider()),
-        ChangeNotifierProvider(create: (context) => AreasProvider()),
-        ChangeNotifierProvider(create: (context) => TasksProvider()),
-        ChangeNotifierProvider(create: (context) => ClientsProvider()),
-        ChangeNotifierProvider(create: (context) => FaultsProvider()),
-        ChangeNotifierProvider(create: (context) => ChargersOpProvider()),
-        ChangeNotifierProvider(create: (context) => WorkerGroupsProvider()),
-        ChangeNotifierProvider(create: (context) => FeedingProvider()),
-        ChangeNotifierProvider(create: (context) => ProgrammingsProvider()),
+        ChangeNotifierProvider(create: (_) => OperationsProvider()),
+        ChangeNotifierProvider(create: (_) => WorkersProvider()),
+        ChangeNotifierProvider(create: (_) => AuthProvider()),
+        ChangeNotifierProvider(create: (_) => UserProvider()),
+        ChangeNotifierProvider(create: (_) => AreasProvider()),
+        ChangeNotifierProvider(create: (_) => TasksProvider()),
+        ChangeNotifierProvider(create: (_) => ClientsProvider()),
+        ChangeNotifierProvider(create: (_) => FaultsProvider()),
+        ChangeNotifierProvider(create: (_) => ChargersOpProvider()),
+        ChangeNotifierProvider(create: (_) => WorkerGroupsProvider()),
+        ChangeNotifierProvider(create: (_) => FeedingProvider()),
+        ChangeNotifierProvider(create: (_) => ProgrammingsProvider()),
       ],
       child: const App(),
     ),
@@ -68,7 +68,7 @@ class _AppState extends State<App> {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      navigatorKey: navigatorKey, // Importante: añadir el navigatorKey aquí
+      navigatorKey: navigatorKey,
       title: 'Planeador de Operaciones',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(

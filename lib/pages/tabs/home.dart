@@ -10,7 +10,7 @@ import 'package:plannerop/pages/tabs/workers.dart';
 import 'package:plannerop/store/auth.dart';
 import 'package:plannerop/store/user.dart';
 import 'package:provider/provider.dart';
-import 'package:plannerop/store/assignments.dart';
+import 'package:plannerop/store/operations.dart';
 import 'package:plannerop/utils/toast.dart';
 
 class Home extends StatefulWidget {
@@ -36,7 +36,7 @@ class _HomeState extends State<Home> {
     // Inicializar los widgets con sus claves
     _widgetOptions = [
       DashboardTab(),
-      AsignacionesTab(),
+      OperationsTab(),
       ReportesTab(),
       WorkersTab(),
     ];
@@ -187,15 +187,15 @@ class _HomeState extends State<Home> {
   void _refreshDashboard() {
     // debugPrint('🔄 Refrescando Dashboard...');
     final assignmentsProvider =
-        Provider.of<AssignmentsProvider>(context, listen: false);
+        Provider.of<OperationsProvider>(context, listen: false);
     // Actualizar silenciosamente sin mostrar indicadores de carga
     assignmentsProvider.refreshActiveAssignments(context);
   }
 
   void _refreshAsignaciones() {
-    // debugPrint('🔄 Refrescando Asignaciones...');
+    // debugPrint('🔄 Refrescando Operaciones...');
     final assignmentsProvider =
-        Provider.of<AssignmentsProvider>(context, listen: false);
+        Provider.of<OperationsProvider>(context, listen: false);
     // Refrescar solo asignaciones activas y pendientes
     assignmentsProvider.refreshActiveAssignments(context);
   }

@@ -5,7 +5,7 @@ import 'package:plannerop/utils/operations.dart';
 import 'package:plannerop/widgets/operations/components/OperationCard.dart';
 import 'package:plannerop/widgets/operations/components/workers/buildWorkerItem.dart';
 import 'package:plannerop/widgets/operations/components/utils/emptyState.dart';
-import 'package:plannerop/store/assignments.dart';
+import 'package:plannerop/store/operations.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import 'package:intl/date_symbol_data_local.dart';
@@ -121,7 +121,7 @@ class _HistoryOperationsViewState extends State<HistoryOperationsView> {
 
   @override
   Widget build(BuildContext context) {
-    return Consumer<AssignmentsProvider>(
+    return Consumer<OperationsProvider>(
       builder: (context, provider, child) {
         if (provider.isLoading) {
           return const Center(child: CircularProgressIndicator());
@@ -416,124 +416,11 @@ class _HistoryOperationsViewState extends State<HistoryOperationsView> {
       assignment: assignment,
       statusColor: const Color(0xFF38A169),
       statusText: "Completada",
+
+      // Para operaciones completadas, solo mostrar información sin funcionalidad
       workersBuilder: (assignment, context) {
         // Build workers groups if any
         List<Widget> sections = [];
-
-        // if (assignment.groups.any((group) {
-        //   final groupWorkers = assignment.workers
-        //       .where((w) => group.workers.contains(w.id))
-        //       .toList();
-        //   return groupWorkers.isNotEmpty;
-        // })) {
-        //   sections.add(
-        //     buildDetailSection(
-        //       title: 'Grupos de Trabajadores',
-        //       children: assignment.groups
-        //           .map((group) {
-        //             // Process each group...
-        //             final groupWorkers = assignment.workers
-        //                 .where((w) => group.workers.contains(w.id))
-        //                 .toList();
-
-        //             if (groupWorkers.isEmpty) return Container();
-
-        //             return Column(
-        //               crossAxisAlignment: CrossAxisAlignment.start,
-        //               children: [
-        //                 // Group header
-        //                 Container(
-        //                   padding: const EdgeInsets.all(10),
-        //                   margin: const EdgeInsets.only(bottom: 10),
-        //                   decoration: BoxDecoration(
-        //                     color: const Color(0xFFE6FFFA),
-        //                     borderRadius: BorderRadius.circular(8),
-        //                   ),
-        //                   child: Row(
-        //                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        //                     children: [
-        //                       Expanded(
-        //                         child: Text(
-        //                           group.name,
-        //                           style: const TextStyle(
-        //                             fontWeight: FontWeight.w600,
-        //                             color: Color(0xFF2D3748),
-        //                           ),
-        //                         ),
-        //                       ),
-        //                       Container(
-        //                         padding: const EdgeInsets.symmetric(
-        //                             horizontal: 8, vertical: 4),
-        //                         decoration: BoxDecoration(
-        //                           color: Colors.white,
-        //                           borderRadius: BorderRadius.circular(12),
-        //                         ),
-        //                         child: Text(
-        //                           '${groupWorkers.length} trabajadores',
-        //                           style: const TextStyle(
-        //                             fontSize: 12,
-        //                             color: Color(0xFF4A5568),
-        //                           ),
-        //                         ),
-        //                       ),
-        //                     ],
-        //                   ),
-        //                 ),
-
-        //                 // Workers list
-        //                 Padding(
-        //                   padding: const EdgeInsets.all(10),
-        //                   child: Column(
-        //                     children: groupWorkers
-        //                         .map((worker) => buildWorkerItem(
-        //                             worker, context,
-        //                             isFinished: true))
-        //                         .toList(),
-        //                   ),
-        //                 ),
-        //               ],
-        //             );
-        //           })
-        //           .where((widget) => widget != Container())
-        //           .toList(),
-        //     ),
-        //   );
-        // }
-
-        // Add individual workers section
-        final Set<int> groupedWorkerIds = {};
-        for (var group in assignment.groups) {
-          groupedWorkerIds.addAll(group.workers);
-        }
-
-        // final individualWorkers = assignment.workers
-        //     .where((worker) => !groupedWorkerIds.contains(worker.id))
-        //     .toList();
-
-        // if (individualWorkers.isNotEmpty) {
-        //   sections.add(
-        //     buildDetailSection(
-        //       title: 'Trabajadores Individuales',
-        //       children: individualWorkers
-        //           .map((worker) =>
-        //               buildWorkerItem(worker, context, isFinished: true))
-        //           .toList(),
-        //     ),
-        //   );
-        // }
-
-        // Add finished workers section if applicable
-        if (assignment.workersFinished.isNotEmpty) {
-          sections.add(
-            buildDetailSection(
-              title: 'Trabajadores Finalizados',
-              children: assignment.workersFinished
-                  .map((worker) =>
-                      buildWorkerItem(worker, context, isFinished: true))
-                  .toList(),
-            ),
-          );
-        }
 
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,

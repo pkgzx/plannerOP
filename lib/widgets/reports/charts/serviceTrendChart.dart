@@ -4,7 +4,7 @@ import 'dart:math' as math;
 import 'package:plannerop/core/model/task.dart';
 import 'package:provider/provider.dart';
 import 'package:plannerop/store/workers.dart';
-import 'package:plannerop/store/assignments.dart';
+import 'package:plannerop/store/operations.dart';
 import 'package:plannerop/core/model/operation.dart';
 import 'package:plannerop/store/task.dart';
 
@@ -187,7 +187,7 @@ class _ServiceTrendChartState extends State<ServiceTrendChart> {
 
   @override
   Widget build(BuildContext context) {
-    return Consumer3<AssignmentsProvider, WorkersProvider, TasksProvider>(
+    return Consumer3<OperationsProvider, WorkersProvider, TasksProvider>(
       builder: (context, assignmentsProvider, workersProvider, tasksProvider,
           child) {
         // Verificar el estado de los providers
@@ -239,7 +239,7 @@ class _ServiceTrendChartState extends State<ServiceTrendChart> {
   }
 
   Widget _buildContent(
-      AssignmentsProvider assignmentsProvider, TasksProvider tasksProvider) {
+      OperationsProvider assignmentsProvider, TasksProvider tasksProvider) {
     if (_isLoading ||
         assignmentsProvider.isLoading ||
         tasksProvider.isLoading) {

@@ -5,14 +5,14 @@ import 'package:plannerop/widgets/operations/pendingOperations.dart';
 import 'package:plannerop/widgets/operations/historyOperations.dart';
 import 'package:plannerop/widgets/operations/add/addOperationDialog.dart';
 
-class AsignacionesTab extends StatefulWidget {
-  const AsignacionesTab({super.key});
+class OperationsTab extends StatefulWidget {
+  const OperationsTab({super.key});
 
   @override
-  _AsignacionesTabState createState() => _AsignacionesTabState();
+  _OperationsTabState createState() => _OperationsTabState();
 }
 
-class _AsignacionesTabState extends State<AsignacionesTab>
+class _OperationsTabState extends State<OperationsTab>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
   final TextEditingController _searchController = TextEditingController();
@@ -63,7 +63,7 @@ class _AsignacionesTabState extends State<AsignacionesTab>
                 controller: _searchController,
                 autofocus: true,
                 decoration: InputDecoration(
-                  hintText: 'Buscar asignaciones...',
+                  hintText: 'Buscar operaciones...',
                   border: InputBorder.none,
                   hintStyle: TextStyle(
                       color: Colors.white.withOpacity(0.7)), // Texto más claro

@@ -142,8 +142,8 @@ class _LoginPageState extends State<LoginPage> {
                               _formKey,
                               context,
                               mounted,
-                              _usernameController.text,
-                              _passwordController.text,
+                              _usernameController.text.trim(),
+                              _passwordController.text.trim(),
                             );
                           }
                         },

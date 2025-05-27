@@ -1,8 +1,8 @@
 import 'package:flutter_neumorphic_plus/flutter_neumorphic.dart';
+import 'package:plannerop/store/operations.dart';
 import 'package:plannerop/utils/operations.dart';
 import 'package:plannerop/widgets/operations/components/utils/emptyState.dart';
 import 'package:provider/provider.dart';
-import 'package:plannerop/store/assignments.dart';
 import 'package:plannerop/core/model/operation.dart';
 import 'package:intl/intl.dart';
 
@@ -11,7 +11,7 @@ class RecentOps extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Consumer<AssignmentsProvider>(
+    return Consumer<OperationsProvider>(
       builder: (context, provider, child) {
         // Obtener las asignaciones ordenadas por fecha reciente
         final allAssignments = [...provider.assignments];

@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:plannerop/core/model/worker.dart';
 import 'package:plannerop/core/model/workerGroup.dart';
-import 'package:plannerop/store/assignments.dart';
+import 'package:plannerop/store/operations.dart';
+
 import 'package:plannerop/utils/toast.dart';
 import 'package:plannerop/widgets/operations/add/addOperationDialog.dart';
 import 'package:plannerop/widgets/operations/update/editOperationForm.dart';
@@ -61,7 +62,7 @@ void removeWorker({
   // Si estamos en modo edición, llamar a la API
   if (inEditMode && assignmentId != null) {
     final assignmentsProvider =
-        Provider.of<AssignmentsProvider>(context, listen: false);
+        Provider.of<OperationsProvider>(context, listen: false);
 
     assignmentsProvider.removeGroupFromAssignment(
       [worker.id],
@@ -156,7 +157,7 @@ void _syncGroupDeletionWithBackend(
 ) {
   // Obtener el provider de asignaciones
   final assignmentsProvider =
-      Provider.of<AssignmentsProvider>(context, listen: false);
+      Provider.of<OperationsProvider>(context, listen: false);
 
   // Buscar el contexto del formulario de edición
   BuildContext? editFormContext =

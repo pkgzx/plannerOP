@@ -4,7 +4,7 @@ import 'package:plannerop/core/model/task.dart';
 import 'package:plannerop/core/model/worker.dart';
 import 'package:plannerop/core/model/operation.dart';
 import 'package:plannerop/core/model/workerGroup.dart';
-import 'package:plannerop/store/assignments.dart';
+import 'package:plannerop/store/operations.dart';
 import 'package:plannerop/store/workerGroup.dart';
 import 'package:plannerop/store/workers.dart';
 import 'package:plannerop/utils/toast.dart';
@@ -88,7 +88,7 @@ class _SelectedWorkersListState extends State<SelectedWorkersList> {
     });
 
     final assignmentsProvider =
-        Provider.of<AssignmentsProvider>(context, listen: false);
+        Provider.of<OperationsProvider>(context, listen: false);
     final workersProvider =
         Provider.of<WorkersProvider>(context, listen: false);
 
@@ -380,7 +380,7 @@ class _SelectedWorkersListState extends State<SelectedWorkersList> {
     // Eliminar el grupo del provider local
     final groupsProvider =
         Provider.of<WorkerGroupsProvider>(context, listen: false);
-    groupsProvider.removeGroup(group.id);
+    groupsProvider.removeGroup(group.id ?? "");
 
     // Eliminar el grupo de la lista local
     setState(() {
@@ -422,7 +422,7 @@ class _SelectedWorkersListState extends State<SelectedWorkersList> {
     if (widget.inEditMode) {
       // Obtener el provider de asignaciones
       final assignmentsProvider =
-          Provider.of<AssignmentsProvider>(context, listen: false);
+          Provider.of<OperationsProvider>(context, listen: false);
 
       // Buscar el ID de la operación actual
       // (Necesitamos acceder a este ID desde algún lugar)
@@ -749,7 +749,7 @@ class _SelectedWorkersListState extends State<SelectedWorkersList> {
                                     widget.assignmentId != null) {
                                   // Obtener el provider para la llamada al backend
                                   final assignmentsProvider =
-                                      Provider.of<AssignmentsProvider>(context,
+                                      Provider.of<OperationsProvider>(context,
                                           listen: false);
 
                                   // Llamar al mismo método que se usa para grupos, pero solo con este trabajador

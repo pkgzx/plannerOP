@@ -12,6 +12,46 @@ class ProgrammingsProvider extends ChangeNotifier {
   bool get isLoading => _isLoading;
   String? get error => _error;
 
+  // NUEVO MÉTODO: Actualizar estado de una programación
+  Future<bool> updateProgrammingStatus(
+      int programmingId, String newStatus, BuildContext context) async {
+    try {
+      debugPrint(
+          'Actualizando estado de programación $programmingId a $newStatus');
+
+      final success = await _programmingsService.updateProgrammingStatus(
+          programmingId, newStatus, context);
+
+      if (success) {
+        // Actualizar la programación en la lista local si existe
+        final index = _programmings.indexWhere((p) => p.id == programmingId);
+        if (index >= 0) {
+          _programmings[index] = Programming(
+            id: _programmings[index].id,
+            service_request: _programmings[index].service_request,
+            service: _programmings[index].service,
+            dateStart: _programmings[index].dateStart,
+            timeStart: _programmings[index].timeStart,
+            ubication: _programmings[index].ubication,
+            client: _programmings[index].client,
+            status: newStatus, // ACTUALIZAR ESTADO
+            id_operation: _programmings[index].id_operation,
+            id_user: _programmings[index].id_user,
+          );
+          notifyListeners();
+        }
+
+        debugPrint('Programación $programmingId actualizada exitosamente');
+        return true;
+      }
+
+      return false;
+    } catch (e) {
+      debugPrint('Error al actualizar estado de programación: $e');
+      return false;
+    }
+  }
+
   Future<void> fetchProgrammingsByDate(
       String date, BuildContext context) async {
     // Usar Future.microtask para ejecutar notifyListeners() después de que termine la construcción
@@ -41,5 +81,76 @@ class ProgrammingsProvider extends ChangeNotifier {
         notifyListeners();
       });
     }
+  }
+
+  // NUEVO MÉTODO: Buscar programación por ID
+  Future<Programming?> fetchProgrammingById(
+      int programmingId, BuildContext context) async {
+    try {
+      // Primero buscar en la lista actual
+      try {
+        return _programmings.firstWhere((p) => p.id == programmingId);
+      } catch (e) {
+        // Si no está en la lista actual, buscar en el backend
+        debugPrint(
+            'Programación $programmingId no encontrada en caché, buscando en backend...');
+      }
+
+      // Si no está en la lista actual, hacer llamada al backend
+      return await _programmingsService.getProgrammingById(
+          programmingId, context);
+    } catch (e) {
+      debugPrint('Error al buscar programación por ID: $e');
+      return null;
+    }
+  }
+
+  // NUEVO MÉTODO: Refrescar programaciones forzadamente
+  Future<void> refreshProgrammings(BuildContext context,
+      {String? specificDate}) async {
+    debugPrint('Refrescando programaciones del cliente...');
+
+    // Determinar qué fecha usar
+    final String dateToFetch = specificDate ??
+        DateTime.now().toIso8601String().split('T')[0]; // Formato YYYY-MM-DD
+
+    _isLoading = true;
+    _error = null;
+    notifyListeners();
+
+    try {
+      final programmings = await _programmingsService.getProgrammingsByDate(
+          dateToFetch, context);
+
+      // Limpiar la lista actual y cargar nuevas programaciones
+      _programmings.clear();
+      _programmings.addAll(programmings);
+
+      debugPrint(
+          'Programaciones refrescadas: ${_programmings.length} encontradas');
+    } catch (e) {
+      _error = 'Error al refrescar programaciones: $e';
+      debugPrint('Error al refrescar programaciones: $e');
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  // Método para agregar una programación a la lista sin duplicados
+  void addProgrammingToCache(Programming programming) {
+    final index = _programmings.indexWhere((p) => p.id == programming.id);
+    if (index >= 0) {
+      _programmings[index] = programming;
+    } else {
+      _programmings.add(programming);
+    }
+    notifyListeners();
+  }
+
+  // NUEVO MÉTODO: Limpiar caché
+  void clearCache() {
+    _programmings.clear();
+    notifyListeners();
   }
 }
