@@ -497,7 +497,7 @@ class OperationsProvider extends ChangeNotifier {
     }
   }
 
-// NUEVO MÉTODO: Refrescar una operación específica después de crearla
+//  Refrescar una operación específica después de crearla
   Future<void> _refreshCreatedOperation(
       int operationId, BuildContext context) async {
     try {
@@ -507,13 +507,13 @@ class OperationsProvider extends ChangeNotifier {
       final refreshedOperations = await _assignmentService
           .fetchAssignmentsByStatus(context, ['PENDING', 'INPROGRESS']);
 
-      // Buscar la operación específica en la respuesta
-      final refreshedOperation = refreshedOperations.firstWhere(
-        (op) => op.id == operationId,
-        orElse: () => null as Operation,
-      );
+      // Buscar la operación específica en la respuesta usando where (más seguro)
+      final matchingOperations =
+          refreshedOperations.where((op) => op.id == operationId).toList();
 
-      if (refreshedOperation != null) {
+      if (matchingOperations.isNotEmpty) {
+        final refreshedOperation = matchingOperations.first;
+
         debugPrint(
             'Operación refrescada exitosamente con ${refreshedOperation.groups.length} grupos');
 
@@ -528,6 +528,8 @@ class OperationsProvider extends ChangeNotifier {
       } else {
         debugPrint(
             'No se pudo encontrar la operación $operationId en la respuesta del backend');
+        debugPrint(
+            'Operaciones encontradas: ${refreshedOperations.map((op) => op.id).toList()}');
       }
     } catch (e) {
       debugPrint('Error al refrescar operación creada: $e');

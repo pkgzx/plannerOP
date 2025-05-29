@@ -92,15 +92,15 @@ class ProgrammingsProvider extends ChangeNotifier {
         return _programmings.firstWhere((p) => p.id == programmingId);
       } catch (e) {
         // Si no está en la lista actual, buscar en el backend
-        debugPrint(
-            'Programación $programmingId no encontrada en caché, buscando en backend...');
+        // debugPrint(
+        //     'Programación $programmingId no encontrada en caché, buscando en backend...');
       }
 
       // Si no está en la lista actual, hacer llamada al backend
       return await _programmingsService.getProgrammingById(
           programmingId, context);
     } catch (e) {
-      debugPrint('Error al buscar programación por ID: $e');
+      // debugPrint('Error al buscar programación por ID: $e');
       return null;
     }
   }
@@ -108,7 +108,7 @@ class ProgrammingsProvider extends ChangeNotifier {
   // NUEVO MÉTODO: Refrescar programaciones forzadamente
   Future<void> refreshProgrammings(BuildContext context,
       {String? specificDate}) async {
-    debugPrint('Refrescando programaciones del cliente...');
+    // debugPrint('Refrescando programaciones del cliente...');
 
     // Determinar qué fecha usar
     final String dateToFetch = specificDate ??

@@ -118,8 +118,12 @@ Widget buildFilterBar(
   String? _selectedArea,
   int? _selectedSupervisorId,
   BuildContext context,
-  Function setState,
-) {
+  Function setState, {
+  Function(String?)? onAreaChanged,
+  Function(int?)? onSupervisorChanged,
+  Function()? onClearFilters,
+  Function()? onToggleFilters, // AGREGAR ESTE PARÁMETRO
+}) {
   return Container(
     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
     decoration: BoxDecoration(
@@ -155,11 +159,7 @@ Widget buildFilterBar(
                     : const Color(0xFFE2E8F0),
               ),
               padding: const EdgeInsets.all(8),
-              onPressed: () {
-                setState(() {
-                  _showFilters = !_showFilters;
-                });
-              },
+              onPressed: onToggleFilters, // USAR EL CALLBACK
               child: Icon(
                 Icons.filter_list,
                 size: 18,
@@ -196,9 +196,9 @@ Widget buildFilterBar(
                         )),
                   ],
                   onChanged: (value) {
-                    setState(() {
-                      _selectedArea = value;
-                    });
+                    if (onAreaChanged != null) {
+                      onAreaChanged(value);
+                    }
                   },
                 ),
               ),
@@ -216,14 +216,12 @@ Widget buildFilterBar(
                   value: _selectedSupervisorId,
                   hint: Text('Todos los supervisores'),
                   isExpanded: true,
-                  // Personalizar cómo se muestra el elemento seleccionado
                   selectedItemBuilder: (BuildContext context) {
-                    return supervisors.map<Widget>((User supervisor) {
-                      return Container(
+                    return [
+                      Container(
                         alignment: Alignment.centerLeft,
-                        constraints: BoxConstraints(minWidth: 100),
                         child: Text(
-                          supervisor.name,
+                          'Todos los supervisores',
                           overflow: TextOverflow.ellipsis,
                           maxLines: 1,
                           style: TextStyle(
@@ -231,14 +229,25 @@ Widget buildFilterBar(
                             fontWeight: FontWeight.w500,
                           ),
                         ),
-                      );
-                    }).toList()
-                      ..insert(0,
-                          Text('Todos los supervisores')); // Para el caso null
+                      ),
+                      ...supervisors.map<Widget>((User supervisor) {
+                        return Container(
+                          alignment: Alignment.centerLeft,
+                          constraints: BoxConstraints(minWidth: 100),
+                          child: Text(
+                            supervisor.name,
+                            overflow: TextOverflow.ellipsis,
+                            maxLines: 1,
+                            style: TextStyle(
+                              color: Color(0xFF2D3748),
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        );
+                      }).toList(),
+                    ];
                   },
-                  // Limitar altura máxima del menú desplegable
                   menuMaxHeight: 300,
-                  // Separación entre elementos
                   itemHeight: 60,
                   items: [
                     DropdownMenuItem<int>(
@@ -270,15 +279,14 @@ Widget buildFilterBar(
                                 ),
                               ),
                             ),
-                            // En el menú desplegado podemos mostrar el nombre completo
                             child: Text(supervisor.name),
                           ),
                         )),
                   ],
                   onChanged: (value) {
-                    setState(() {
-                      _selectedSupervisorId = value;
-                    });
+                    if (onSupervisorChanged != null) {
+                      onSupervisorChanged(value);
+                    }
                   },
                 ),
               ),
@@ -298,10 +306,9 @@ Widget buildFilterBar(
                 padding:
                     const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                 onPressed: () {
-                  setState(() {
-                    _selectedArea = null;
-                    _selectedSupervisorId = null;
-                  });
+                  if (onClearFilters != null) {
+                    onClearFilters();
+                  }
                 },
                 child: Text(
                   'Limpiar filtros',

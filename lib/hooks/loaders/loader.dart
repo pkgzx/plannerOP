@@ -209,7 +209,7 @@ Future<void> loadTask(
       // Esto ahora lo hace automáticamente el provider
       // _loadDefaultTasks(tasksProvider);
     } else {
-      debugPrint('Tareas cargadas con éxito: ${tasksProvider.tasks.length}');
+      // debugPrint('Tareas cargadas con éxito: ${tasksProvider.tasks.length}');
     }
   } catch (e) {
     debugPrint('Error al cargar tareas: $e');

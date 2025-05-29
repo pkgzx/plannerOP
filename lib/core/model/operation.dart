@@ -107,4 +107,9 @@ class Operation {
       id_clientProgramming: json['id_clientProgramming'],
     );
   }
+
+  @override
+  String toString() {
+    return 'Operation{id: $id, area: $area, date: $date, time: $time, status: $status, endTime: $endTime, endDate: $endDate, zone: $zone, motorship: $motorship, userId: $userId, areaId: $areaId, clientId: $clientId}';
+  }
 }

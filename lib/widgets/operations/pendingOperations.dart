@@ -51,6 +51,7 @@ class _PendingOperationsViewState extends State<PendingOperationsView> {
         !supervisors.any((s) => s.id == _selectedSupervisorId)) {
       _selectedSupervisorId = null;
     }
+
     return Consumer<OperationsProvider>(
       builder: (context, assignmentsProvider, child) {
         if (assignmentsProvider.isLoading) {
@@ -65,16 +66,6 @@ class _PendingOperationsViewState extends State<PendingOperationsView> {
         var filteredAssignments = pendingAssignments.where((assignment) {
           // Filtrar por texto de búsqueda
           bool matchesSearch = true;
-          // if (widget.searchQuery.isNotEmpty) {
-          //   final matchesTask = assignment.task
-          //       .toLowerCase()
-          //       .contains(widget.searchQuery.toLowerCase());
-          //   final matchesWorker = assignment.workers.any((worker) => worker.name
-          //       .toString()
-          //       .toLowerCase()
-          //       .contains(widget.searchQuery.toLowerCase()));
-          //   matchesSearch = matchesTask || matchesWorker;
-          // }
 
           // Filtrar por área seleccionada
           bool matchesArea = true;
@@ -99,8 +90,37 @@ class _PendingOperationsViewState extends State<PendingOperationsView> {
           child: ListView(
             padding: const EdgeInsets.all(16),
             children: [
-              buildFilterBar(areas, supervisors, _showFilters, _selectedArea,
-                  _selectedSupervisorId, context, setState),
+              buildFilterBar(
+                areas,
+                supervisors,
+                _showFilters,
+                _selectedArea,
+                _selectedSupervisorId,
+                context,
+                setState,
+                onAreaChanged: (String? area) {
+                  setState(() {
+                    _selectedArea = area;
+                  });
+                },
+                onSupervisorChanged: (int? supervisorId) {
+                  setState(() {
+                    _selectedSupervisorId = supervisorId;
+                  });
+                },
+                onClearFilters: () {
+                  setState(() {
+                    _selectedArea = null;
+                    _selectedSupervisorId = null;
+                  });
+                },
+                onToggleFilters: () {
+                  // AGREGAR ESTE CALLBACK
+                  setState(() {
+                    _showFilters = !_showFilters;
+                  });
+                },
+              ),
               filteredAssignments.isEmpty
                   ? EmptyState(
                       message: pendingAssignments.isEmpty

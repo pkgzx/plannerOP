@@ -71,7 +71,25 @@ class _ActiveOperationsViewState extends State<ActiveOperationsView> {
         activeAssignments.sort((a, b) => b.date.compareTo(a.date));
 
         // Aplicar filtros
-        var filteredAssignments = _applyFilters(activeAssignments);
+        var filteredAssignments = activeAssignments.where((assignment) {
+          // Filtrar por texto de búsqueda
+          bool matchesSearch = true;
+
+          // Filtrar por área seleccionada
+          bool matchesArea = true;
+          if (_selectedArea != null && _selectedArea!.isNotEmpty) {
+            matchesArea = assignment.area == _selectedArea;
+          }
+
+          // Filtrar por supervisor seleccionado
+          bool matchesSupervisor = true;
+          if (_selectedSupervisorId != null) {
+            matchesSupervisor =
+                assignment.inChagers.contains(_selectedSupervisorId);
+          }
+
+          return matchesSearch && matchesArea && matchesSupervisor;
+        }).toList();
 
         return RefreshIndicator(
           onRefresh: () async {
@@ -80,8 +98,37 @@ class _ActiveOperationsViewState extends State<ActiveOperationsView> {
           },
           child: Column(
             children: [
-              buildFilterBar(areas, supervisors, _showFilters, _selectedArea,
-                  _selectedSupervisorId, context, setState),
+              buildFilterBar(
+                areas,
+                supervisors,
+                _showFilters,
+                _selectedArea,
+                _selectedSupervisorId,
+                context,
+                setState,
+                onAreaChanged: (String? area) {
+                  setState(() {
+                    _selectedArea = area;
+                  });
+                },
+                onSupervisorChanged: (int? supervisorId) {
+                  setState(() {
+                    _selectedSupervisorId = supervisorId;
+                  });
+                },
+                onClearFilters: () {
+                  setState(() {
+                    _selectedArea = null;
+                    _selectedSupervisorId = null;
+                  });
+                },
+                onToggleFilters: () {
+                  // AGREGAR ESTE CALLBACK
+                  setState(() {
+                    _showFilters = !_showFilters;
+                  });
+                },
+              ),
               Expanded(
                 child: filteredAssignments.isEmpty
                     ? _buildEmptyState(activeAssignments)
@@ -248,8 +295,8 @@ class _ActiveOperationsViewState extends State<ActiveOperationsView> {
         ),
         const SizedBox(width: 12),
         Expanded(
-          child: Consumer<OperationsProvider>(
-              builder: (context, provider, child) {
+          child:
+              Consumer<OperationsProvider>(builder: (context, provider, child) {
             return NeumorphicButton(
               style: NeumorphicStyle(
                 depth: 2,
@@ -325,8 +372,8 @@ class _ActiveOperationsViewState extends State<ActiveOperationsView> {
         : const SizedBox();
   }
 
-  void _showEditDialog(BuildContext context, Operation assignment,
-      OperationsProvider provider) {
+  void _showEditDialog(
+      BuildContext context, Operation assignment, OperationsProvider provider) {
     showDialog(
       context: context,
       builder: (BuildContext context) {

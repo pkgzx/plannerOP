@@ -3,15 +3,16 @@ import 'package:flutter_neumorphic_plus/flutter_neumorphic.dart';
 import 'package:intl/intl.dart';
 import 'package:plannerop/core/model/operation.dart';
 import 'package:plannerop/store/operations.dart';
+import 'package:plannerop/services/operations/operationReports.dart';
 import 'package:plannerop/utils/toast.dart';
 import 'package:plannerop/widgets/reports/charts/areaChart.dart';
+import 'package:plannerop/widgets/reports/charts/hourlyDistributionChart.dart';
 import 'package:plannerop/widgets/reports/reportFilter.dart';
-import 'package:plannerop/widgets/reports/reportDataTable.dart';
-import 'package:plannerop/widgets/reports/exportOptions.dart';
+import 'package:plannerop/widgets/reports/exports/reportDataTable.dart';
+import 'package:plannerop/widgets/reports/exports/exportOptions.dart';
 import 'package:plannerop/widgets/reports/charts/shipPersonnelChart.dart';
 import 'package:plannerop/widgets/reports/charts/zoneDistributionChart.dart';
 import 'package:plannerop/widgets/reports/charts/workerStatusChart.dart';
-import 'package:plannerop/widgets/reports/charts/serviceTrendChart.dart';
 import 'package:provider/provider.dart';
 
 class ReportesTab extends StatefulWidget {
@@ -25,27 +26,24 @@ class _ReportesTabState extends State<ReportesTab> {
   // Filtros actuales
   String _selectedPeriod = "Hoy";
   String _selectedArea = "Todas";
-  int? _selectedZone; // Filtro de zona
-  String? _selectedMotorship; // Filtro de motonave
-  String? _selectedStatus; // Filtro de estado
-  DateTime _startDate = DateTime.now() // llevar a las 00:00
-      .subtract(Duration(hours: DateTime.now().hour))
-      .subtract(Duration(minutes: DateTime.now().minute));
-  DateTime _endDate = DateTime.now()
-      .add(Duration(days: 1))
-      .subtract(Duration(hours: DateTime.now().hour))
-      .subtract(Duration(minutes: DateTime.now().minute))
-      .subtract(Duration(seconds: DateTime.now().second));
-  // llevar a las 23:59
+  int? _selectedZone;
+  String? _selectedMotorship;
+  String? _selectedStatus;
+
+  // Inicializar fechas correctamente para "Hoy"
+  late DateTime _startDate;
+  late DateTime _endDate;
 
   bool _isFiltering = false;
   bool _isExporting = false;
-  bool _showCharts = true; // Estado para alternar entre gráficos y tabla
-  String _selectedChart =
-      "Distribución por Áreas"; // Gráfico seleccionado por defecto
+  bool _showCharts = true;
+  String _selectedChart = "Distribución por Áreas";
+
+  // Variables para control de carga
+  bool _isLoadingFilterData = false;
 
   // Opciones para los filtros
-  final List<String> _periods = ["Hoy", "Mes", "Personalizado"];
+  final List<String> _periods = ["Hoy", "Personalizado"];
 
   final List<String> _statuses = [
     "Completada",
@@ -55,9 +53,12 @@ class _ReportesTabState extends State<ReportesTab> {
   ];
 
   List<String> _areas = [];
-  List<int> _zones =
-      List.generate(10, (index) => index + 1); // Zonas del 1 al 10
+  List<int> _zones = List.generate(10, (index) => index + 1);
   List<String> _motorships = [];
+
+  // Servicio para obtener datos
+  final PaginatedOperationsService _operationsService =
+      PaginatedOperationsService();
 
   // Opciones de gráficos
   final List<Map<String, dynamic>> _chartOptions = [
@@ -78,7 +79,7 @@ class _ReportesTabState extends State<ReportesTab> {
       'icon': Icons.people_outline_rounded,
     },
     {
-      'title': 'Tendencia de Servicios',
+      'title': 'Distribución de Trabajadores por Horas',
       'icon': Icons.trending_up_rounded,
     },
   ];
@@ -86,36 +87,76 @@ class _ReportesTabState extends State<ReportesTab> {
   @override
   void initState() {
     super.initState();
+
+    // Inicializar fechas para "Hoy"
+    final now = DateTime.now();
+    _startDate = DateTime(now.year, now.month, now.day);
+    _endDate = DateTime(now.year, now.month, now.day, 23, 59, 59);
+
     // Cargar datos para los filtros cuando se inicia el widget
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _loadFilterData();
     });
   }
 
-  // Método para cargar datos de filtro
-  void _loadFilterData() {
-    final assignmentsProvider =
-        Provider.of<OperationsProvider>(context, listen: false);
-    final List<Operation> assignments = assignmentsProvider.assignments;
-
-    // Extraer áreas únicas
-    final areasSet = assignments.map((a) => a.area).toSet();
-    final areasList = ['Todas', ...areasSet];
-
-    // Extraer motonaves únicas
-    final motorshipsSet = assignments
-        .where((a) => a.motorship != null && a.motorship!.isNotEmpty)
-        .map((a) => a.motorship!)
-        .toSet();
-    final motorshipsList = motorshipsSet.toList()..sort();
+  // Método actualizado para cargar datos de filtro desde la API
+  Future<void> _loadFilterData() async {
+    if (_isLoadingFilterData) return;
 
     setState(() {
-      _areas = areasList;
-      _motorships = motorshipsList;
+      _isLoadingFilterData = true;
     });
+
+    try {
+      // Obtener un rango amplio de datos para extraer opciones de filtro
+      final DateTime rangeStart =
+          DateTime.now().subtract(const Duration(days: 30));
+      final DateTime rangeEnd = DateTime.now().add(const Duration(days: 1));
+
+      final List<Operation> operations =
+          await _operationsService.fetchOperationsByDateRange(
+        context,
+        rangeStart,
+        rangeEnd,
+      );
+
+      if (!mounted) return;
+
+      // Extraer áreas únicas
+      final areasSet = operations.map((a) => a.area).toSet();
+      final areasList = ['Todas', ...areasSet.toList()..sort()];
+
+      // Extraer motonaves únicas
+      final motorshipsSet = operations
+          .where((a) => a.motorship != null && a.motorship!.isNotEmpty)
+          .map((a) => a.motorship!)
+          .toSet();
+      final motorshipsList = motorshipsSet.toList()..sort();
+
+      setState(() {
+        _areas = areasList;
+        _motorships = motorshipsList;
+        _isLoadingFilterData = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+
+      setState(() {
+        _isLoadingFilterData = false;
+      });
+
+      // Fallback a valores por defecto
+      setState(() {
+        _areas = ['Todas'];
+        _motorships = [];
+      });
+
+      debugPrint('Error cargando datos de filtro: $e');
+      showErrorToast(context, 'Error al cargar opciones de filtro');
+    }
   }
 
-  // Método para aplicar filtros
+  // Método para aplicar filtros (actualizado para manejar fechas correctamente)
   void _applyFilter({
     String? period,
     String? area,
@@ -126,15 +167,61 @@ class _ReportesTabState extends State<ReportesTab> {
     DateTime? endDate,
   }) {
     setState(() {
-      if (period != null) _selectedPeriod = period;
+      if (period != null) {
+        _selectedPeriod = period;
+
+        // Solo actualizar fechas automáticamente si no vienen fechas personalizadas
+        if (startDate == null && endDate == null) {
+          // Actualizar fechas según el período seleccionado
+          final now = DateTime.now();
+          switch (period) {
+            case 'Hoy':
+              _startDate = DateTime(now.year, now.month, now.day);
+              _endDate = DateTime(now.year, now.month, now.day, 23, 59, 59);
+              break;
+            case 'Ayer':
+              final yesterday = now.subtract(const Duration(days: 1));
+              _startDate =
+                  DateTime(yesterday.year, yesterday.month, yesterday.day);
+              _endDate = DateTime(
+                  yesterday.year, yesterday.month, yesterday.day, 23, 59, 59);
+              break;
+            case 'Semana':
+              _startDate = now.subtract(Duration(days: now.weekday - 1));
+              _endDate = DateTime(now.year, now.month, now.day, 23, 59, 59);
+              break;
+            case 'Mes':
+              _startDate = DateTime(now.year, now.month, 1);
+              _endDate = DateTime(now.year, now.month, now.day, 23, 59, 59);
+              break;
+            case 'Personalizado':
+              // Para personalizado, mantener las fechas actuales
+              break;
+          }
+        }
+      }
+
+      // Actualizar otros filtros solo si se proporcionan
       if (area != null) _selectedArea = area;
-      _selectedZone = zone;
-      _selectedMotorship = motorship;
-      _selectedStatus = status;
-      if (startDate != null) _startDate = startDate;
-      if (endDate != null) _endDate = endDate;
+      if (zone != null || zone == null)
+        _selectedZone = zone; // Permitir null para limpiar
+      if (motorship != null || motorship == null)
+        _selectedMotorship = motorship; // Permitir null para limpiar
+      if (status != null || status == null)
+        _selectedStatus = status; // Permitir null para limpiar
+
+      // Si se proporcionan fechas personalizadas, usarlas
+      if (startDate != null && endDate != null) {
+        _startDate = startDate;
+        _endDate = endDate;
+      }
+
       _isFiltering = false;
     });
+
+    debugPrint(
+        'Filtros aplicados: period=$_selectedPeriod, area=$_selectedArea, zone=$_selectedZone, status=$_selectedStatus');
+    debugPrint('Fechas: ${_startDate.toString()} - ${_endDate.toString()}');
   }
 
   // Mostrar panel de filtro
@@ -193,6 +280,18 @@ class _ReportesTabState extends State<ReportesTab> {
             onPressed: _toggleFilterPanel,
             tooltip: 'Filtros',
           ),
+          if (_isLoadingFilterData)
+            const Padding(
+              padding: EdgeInsets.all(16.0),
+              child: SizedBox(
+                width: 20,
+                height: 20,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                ),
+              ),
+            ),
         ],
       ),
       body: SafeArea(
@@ -200,7 +299,7 @@ class _ReportesTabState extends State<ReportesTab> {
           children: [
             if (_isFiltering)
               ReportFilter(
-                periods: _periods,
+                periods: const [], // Lista vacía, ya no se usa
                 areas: _areas,
                 zones: _zones,
                 motorships: _motorships,
@@ -219,7 +318,7 @@ class _ReportesTabState extends State<ReportesTab> {
             if (_isExporting)
               ExportOptions(
                 periodName: _selectedPeriod,
-                startDate: _startDate.subtract(Duration(days: 1)),
+                startDate: _startDate,
                 endDate: _endDate,
                 area: _selectedArea,
                 zone: _selectedZone,
@@ -247,11 +346,8 @@ class _ReportesTabState extends State<ReportesTab> {
                   ? _buildSelectedChart()
                   : ReportDataTable(
                       periodName: _selectedPeriod,
-                      startDate: DateTime(_startDate.year, _startDate.month,
-                              _startDate.day, 0, 0, 0)
-                          .subtract(Duration(days: 1)),
-                      endDate: DateTime(_endDate.year, _endDate.month,
-                          _endDate.day, 23, 59, 59),
+                      startDate: _startDate,
+                      endDate: _endDate,
                       area: _selectedArea,
                       zone: _selectedZone,
                       motorship: _selectedMotorship,
@@ -305,18 +401,6 @@ class _ReportesTabState extends State<ReportesTab> {
                 fontSize: 16,
                 fontWeight: FontWeight.w500,
               ),
-              // selectedItemBuilder: (context) {
-              //   return _chartOptions.map((item) {
-              //     return Row(
-              //       children: [
-              //         Icon(_getSelectedChartIcon(),
-              //             color: const Color(0xFF4299E1), size: 20),
-              //         const SizedBox(width: 12),
-              //         Text(_selectedChart),
-              //       ],
-              //     );
-              //   }).toList();
-              // },
               onChanged: (String? newValue) {
                 if (newValue != null) {
                   setState(() {
@@ -454,7 +538,7 @@ class _ReportesTabState extends State<ReportesTab> {
             ),
           ),
         );
-      case 'Tendencia de Servicios':
+      case 'Distribución de Trabajadores por Horas':
         return Padding(
           padding: const EdgeInsets.all(16.0),
           child: Neumorphic(
@@ -464,15 +548,14 @@ class _ReportesTabState extends State<ReportesTab> {
               boxShape: NeumorphicBoxShape.roundRect(BorderRadius.circular(16)),
               color: Colors.white,
             ),
-            child: Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: ServiceTrendChart(
-                startDate: _startDate,
-                endDate: _endDate,
-                area: _selectedArea,
-                zone: _selectedZone,
-                motorship: _selectedMotorship,
-                status: _selectedStatus,
+            child: Center(
+              child: Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: HourlyDistributionChart(
+                  startDate: _startDate,
+                  endDate: _endDate,
+                  area: _selectedArea,
+                ),
               ),
             ),
           ),
@@ -485,17 +568,17 @@ class _ReportesTabState extends State<ReportesTab> {
   // Mostrar filtros activos en formato chip
   Widget _buildActiveFilters() {
     String dateRange;
-    if (_selectedPeriod == "Personalizado") {
+    if (_isSameDay(_startDate, _endDate)) {
+      dateRange = DateFormat('dd/MM/yyyy').format(_startDate);
+    } else {
       dateRange =
           "${DateFormat('dd/MM/yyyy').format(_startDate)} - ${DateFormat('dd/MM/yyyy').format(_endDate)}";
-    } else {
-      dateRange = _selectedPeriod;
     }
 
     List<String> activeFilters = [];
 
     // Añadir filtros activos
-    activeFilters.add("Periodo: $dateRange");
+    activeFilters.add("Fecha: $dateRange");
     if (_selectedArea != 'Todas') activeFilters.add("Área: $_selectedArea");
     if (_selectedZone != null) activeFilters.add("Zona: $_selectedZone");
     if (_selectedMotorship != null) {
@@ -554,5 +637,11 @@ class _ReportesTabState extends State<ReportesTab> {
         ],
       ),
     );
+  }
+
+  bool _isSameDay(DateTime date1, DateTime date2) {
+    return date1.year == date2.year &&
+        date1.month == date2.month &&
+        date1.day == date2.day;
   }
 }
