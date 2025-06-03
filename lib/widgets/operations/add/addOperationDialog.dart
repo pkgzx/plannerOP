@@ -694,7 +694,7 @@ class AddOperationDialogState extends State<AddOperationDialog> {
 
       // Si hubo error al guardar
       if (!success) {
-        showValidationError(context,
+        showErrorToast(context,
             'Error al guardar la operación: ${operationsProvider.error}');
         return false;
       }
@@ -710,7 +710,7 @@ class AddOperationDialogState extends State<AddOperationDialog> {
       return true;
     } catch (e) {
       debugPrint('Error en _validateFields: $e');
-      showValidationError(context, 'Error al procesar los datos: $e');
+      showErrorToast(context, 'Error al procesar los datos: $e');
       return false;
     }
   }

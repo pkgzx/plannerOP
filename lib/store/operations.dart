@@ -22,6 +22,7 @@ class OperationsProvider extends ChangeNotifier {
   List<Operation> get assignments => _assignments;
   bool get isLoading => _isLoading;
   String? get error => _error;
+  BuildContext? _lastContext;
 
   List<Operation> get pendingAssignments =>
       _assignments.where((a) => a.status == 'PENDING').toList();
@@ -220,8 +221,6 @@ class OperationsProvider extends ChangeNotifier {
     });
   }
 
-  BuildContext? _lastContext;
-
   // Método para refrescar solo asignaciones activas
   Future<void> refreshActiveAssignments(BuildContext context) async {
     _lastContext = context;
@@ -294,12 +293,12 @@ class OperationsProvider extends ChangeNotifier {
   }
 
 // Añadir este método al provider de asignaciones
-  Future<bool> removeGroupFromAssignment(
-      List<int> workerIds, BuildContext context, int assigmentId) async {
+  Future<bool> removeGroupFromAssignment(Map<String, List<int>> workersGroups,
+      BuildContext context, int assigmentId) async {
     try {
       // Llamar al servicio para eliminar el grupo en el backend
       final success = await _assignmentService.removeGroupFromAssignment(
-          assigmentId, context, workerIds);
+          assigmentId, context, workersGroups);
 
       if (success) {
         // Si fue exitoso, actualizar la operación local
@@ -308,7 +307,7 @@ class OperationsProvider extends ChangeNotifier {
           // Crear una copia actualizada de la operación sin el grupo
           final updatedGroups = _assignments[index]
               .groups
-              .where((g) => !workerIds.contains(g.id))
+              .where((g) => !workersGroups.containsKey(g.id))
               .toList();
 
           // Actualizar la operación

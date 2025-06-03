@@ -247,7 +247,6 @@ class WorkerDetailDialog extends StatelessWidget {
       context: context,
       builder: (context) => WorkerIncapacitationDialog(
         worker: worker,
-        specialtyColor: specialtyColor,
         onIncapacitate: (worker, startDate, endDate) {
           // Esta función se invoca desde dentro del diálogo WorkerIncapacitationDialog
           if (onIncapacitateWorker != null) {

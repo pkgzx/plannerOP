@@ -227,7 +227,10 @@ void showOperationDetails({
       if (assignment.endDate != null)
         buildDetailRow('Fecha de finalización',
             DateFormat('dd/MM/yyyy').format(assignment.endDate!)),
-      buildDetailRow('Zona', 'Zona ${assignment.zone}'),
+      if (assignment.zone != 0 && assignment.zone != null)
+        buildDetailRow('Zona', 'Zona ${assignment.zone}'),
+      if (assignment.zone == 0 || assignment.zone == null)
+        buildDetailRow('Zona', 'N/A'),
       if (assignment.motorship != null && assignment.motorship!.isNotEmpty)
         buildDetailRow('Motonave', assignment.motorship!),
 

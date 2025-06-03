@@ -288,39 +288,62 @@ class AssignmentService {
     }
   }
 
-// Método para eliminar un grupo de una operación
-  Future<bool> removeGroupFromAssignment(
-      int operationId, BuildContext context, List<int> workerIds) async {
+// Método para eliminar trabajadores de grupos de una operación (uno por uno)
+  Future<bool> removeGroupFromAssignment(int operationId, BuildContext context,
+      Map<String, List<int>> workersGroups) async {
     try {
       final token =
           Provider.of<AuthProvider>(context, listen: false).accessToken;
 
-      // Endpoint para eliminar un grupo específico de una operación
+      // Endpoint para eliminar trabajadores específicos de una operación
       var url = Uri.parse('$API_URL/operation/$operationId');
 
-      Map<String, dynamic> body = {
-        "workers": {
-          "disconnect": workerIds.map((id) => {"id": id}).toList()
+      bool allSuccessful = true;
+
+      // Iterar sobre cada grupo y cada trabajador
+      for (var entry in workersGroups.entries) {
+        final groupId = entry.key;
+        final workerIds = entry.value;
+
+        // Enviar una petición por cada trabajador
+        for (var workerId in workerIds) {
+          Map<String, dynamic> body = {
+            "workers": {
+              "disconnect": [
+                {"id_group": groupId, "id": workerId}
+              ]
+            }
+          };
+
+          debugPrint('Removiendo trabajador $workerId del grupo $groupId');
+          debugPrint('Body: ${jsonEncode(body)}');
+
+          var response = await http.patch(url,
+              headers: {
+                'Authorization': 'Bearer $token',
+                'Content-Type': 'application/json'
+              },
+              body: jsonEncode(body));
+
+          if (response.statusCode == 200 || response.statusCode == 204) {
+            debugPrint(
+                'Trabajador $workerId removido exitosamente del grupo $groupId');
+          } else {
+            debugPrint(
+                'Error al remover trabajador $workerId del grupo $groupId: ${response.statusCode} - ${response.body}');
+            allSuccessful = false;
+            // Opcional: Continuar con los demás trabajadores o hacer break aquí
+            // break; // Descomentar si quieres parar en el primer error
+          }
+
+          // Opcional: Añadir un pequeño delay entre peticiones para evitar sobrecargar el servidor
+          await Future.delayed(Duration(milliseconds: 100));
         }
-      };
-
-      var response = await http.patch(url,
-          headers: {
-            'Authorization': 'Bearer $token',
-            'Content-Type': 'application/json'
-          },
-          body: jsonEncode(body));
-
-      if (response.statusCode == 200 || response.statusCode == 204) {
-        // debugPrint('Grupo eliminado con éxito');
-        return true;
-      } else {
-        debugPrint(
-            'Error al eliminar grupo: ${response.statusCode} - ${response.body}');
-        return false;
       }
+
+      return allSuccessful;
     } catch (e) {
-      debugPrint('Excepción al eliminar grupo: $e');
+      debugPrint('Excepción al eliminar trabajadores de grupos: $e');
       return false;
     }
   }
@@ -419,8 +442,6 @@ class AssignmentService {
         for (var operation in jsonResponse) {
           // Nuevo mapa para trabajadores finalizados
           Map<int, Worker> finishedWorkersMap = {};
-          debugPrint(
-              "Operacion: ${operation['id']}, Grupos: ${operation['workerGroups']?.length ?? 0}");
 
           // Lista para grupos de trabajadores
           List<WorkerGroup> operationGroups = [];

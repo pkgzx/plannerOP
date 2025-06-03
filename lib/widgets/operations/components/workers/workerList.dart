@@ -23,8 +23,10 @@ class SelectedWorkersList extends StatefulWidget {
   final List<Worker> availableWorkers;
   final List<WorkerGroup>? initialGroups;
   final int? assignmentId;
+  Function(WorkerGroup, List<Worker>)? onWorkersAddedToGroup;
+  Function(WorkerGroup, List<Worker>)? onWorkersRemovedFromGroup;
 
-  const SelectedWorkersList({
+  SelectedWorkersList({
     Key? key,
     required this.selectedWorkers,
     required this.selectedGroups,
@@ -36,6 +38,8 @@ class SelectedWorkersList extends StatefulWidget {
     this.onDeletedWorkersChanged,
     this.initialGroups,
     this.assignmentId,
+    this.onWorkersAddedToGroup,
+    this.onWorkersRemovedFromGroup,
   }) : super(key: key);
 
   @override
@@ -151,6 +155,7 @@ class _SelectedWorkersListState extends State<SelectedWorkersList> {
       onWorkersChanged: (updatedWorkers) {
         // Aquí está el cambio clave: No pasamos automáticamente la lista actualizada
         // sino que preservamos los trabajadores que no estaban exclusivamente en este grupo
+        debugPrint("Workersss*******************");
         widget.onWorkersChanged(updatedWorkers);
       },
       onRemoveFromLocal: () {
@@ -190,6 +195,8 @@ class _SelectedWorkersListState extends State<SelectedWorkersList> {
           onDeletedWorkersChanged: widget.onDeletedWorkersChanged,
           onWorkersChanged: widget.onWorkersChanged,
           onGroupsChanged: widget.onGroupsChanged,
+          onWorkersAddedToGroup: widget.onWorkersAddedToGroup,
+          onWorkersRemovedFromGroup: widget.onWorkersRemovedFromGroup,
         ),
 
         // Información adicional

@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:plannerop/core/model/fault.dart';
+import 'package:plannerop/core/model/incapacity.dart';
 import 'package:plannerop/core/model/worker.dart';
 import 'package:plannerop/services/workers/workers.dart';
 import 'package:plannerop/dto/workers/fetchWorkers.dart';
 import 'package:plannerop/store/faults.dart';
+import 'package:plannerop/store/incapacities.dart';
 import 'package:provider/provider.dart';
 
 class WorkersProvider with ChangeNotifier {
@@ -403,27 +405,27 @@ class WorkersProvider with ChangeNotifier {
     }
   }
 
-  // Mantener métodos específicos para incapacitación
-  Future<bool> incapacitateWorker(Worker worker, DateTime startDate,
-      DateTime endDate, BuildContext context) async {
-    // Crear una copia del trabajador con los nuevos datos
-    final updatedWorker = Worker(
-        id: worker.id,
-        name: worker.name,
-        area: worker.area,
-        phone: worker.phone,
-        document: worker.document,
-        status: WorkerStatus.incapacitated,
-        startDate: worker.startDate,
-        endDate: worker.endDate,
-        code: worker.code,
-        incapacityStartDate: startDate,
-        incapacityEndDate: endDate,
-        failures: worker.failures);
+  // // Mantener métodos específicos para incapacitación
+  // Future<bool> incapacitateWorker(Worker worker, DateTime startDate,
+  //     DateTime endDate, BuildContext context) async {
+  //   // Crear una copia del trabajador con los nuevos datos
+  //   final updatedWorker = Worker(
+  //       id: worker.id,
+  //       name: worker.name,
+  //       area: worker.area,
+  //       phone: worker.phone,
+  //       document: worker.document,
+  //       status: WorkerStatus.incapacitated,
+  //       startDate: worker.startDate,
+  //       endDate: worker.endDate,
+  //       code: worker.code,
+  //       incapacityStartDate: startDate,
+  //       incapacityEndDate: endDate,
+  //       failures: worker.failures);
 
-    // Usar el método general
-    return updateWorker(worker, updatedWorker, context);
-  }
+  //   // Usar el método general
+  //   return updateWorker(worker, updatedWorker, context);
+  // }
 
   // Y para retiro
   Future<bool> retireWorker(
@@ -502,31 +504,6 @@ class WorkersProvider with ChangeNotifier {
     }
   }
 
-  // // Método para liberar un trabajador (cambia su estado a disponible)
-  // // MANTIENE LA FIRMA ORIGINAL
-  // void releaseWorker(Worker worker) {
-  //   final index = _workers.indexWhere((w) => w.name == worker.name);
-  //   if (index >= 0) {
-  //     final updatedWorker = Worker(
-  //         id: worker.id,
-  //         name: worker.name,
-  //         area: worker.area,
-  //         phone: worker.phone,
-  //         document: worker.document,
-  //         status: WorkerStatus.available,
-  //         startDate: worker.startDate,
-  //         endDate: null,
-  //         code: worker.code,
-  //         incapacityEndDate: worker.incapacityEndDate,
-  //         incapacityStartDate: worker.incapacityStartDate,
-  //         failures: worker.failures);
-  //     _workers[index] = updatedWorker;
-  //     notifyListeners();
-  //   }
-  // }
-
-  // Agregar estos métodos a la clase WorkersProvider
-
   Map<String, dynamic> workerToMap(Worker worker) {
     return {
       'id': worker.document,
@@ -536,9 +513,61 @@ class WorkersProvider with ChangeNotifier {
     };
   }
 
-  // Método para liberar un trabajador (cambia su estado a disponible)
-  // MANTIENE LA FIRMA ORIGINAL
-  // Actualiza estos métodos en WorkersProvider
+  Future<bool> incapacitateWorker(
+    Worker worker,
+    DateTime startDate,
+    DateTime endDate,
+    BuildContext context, {
+    String? tipo,
+    String? causa,
+  }) async {
+    try {
+      // 1. Primero registrar la incapacidad en /inability
+      if (tipo != null && causa != null) {
+        final incapacityProvider =
+            Provider.of<IncapacityProvider>(context, listen: false);
+
+        final incapacity = Incapacity(
+          workerId: worker.id,
+          type: incapacityProvider.mapStringToType(tipo),
+          cause: incapacityProvider.mapStringToCause(causa),
+          startDate: startDate,
+          endDate: endDate,
+        );
+
+        final incapacitySuccess =
+            await incapacityProvider.registerIncapacity(incapacity, context);
+        if (!incapacitySuccess) {
+          debugPrint('Error al registrar incapacidad en /inability');
+          return false;
+        }
+      }
+
+      // 2. Luego actualizar el worker (como ya se hacía)
+      final updatedWorker = Worker(
+        id: worker.id,
+        name: worker.name,
+        area: worker.area,
+        phone: worker.phone,
+        document: worker.document,
+        status: WorkerStatus.incapacitated,
+        startDate: worker.startDate,
+        endDate: worker.endDate,
+        code: worker.code,
+        incapacityStartDate: startDate,
+        incapacityEndDate: endDate,
+        failures: worker.failures,
+        deactivationDate: worker.deactivationDate,
+      );
+
+      return updateWorker(worker, updatedWorker, context);
+    } catch (e) {
+      debugPrint('Error en incapacitateWorker: $e');
+      return false;
+    }
+  }
+
+  // ...existing code...
 
   // Método para asignar un trabajador en el backend
   Future<bool> assignWorkerObject(Worker worker, BuildContext context) async {
@@ -575,40 +604,4 @@ class WorkersProvider with ChangeNotifier {
       return false;
     }
   }
-
-  // // Método para liberar un trabajador en el backend
-  // Future<bool> releaseWorkerObject(Worker worker, BuildContext context) async {
-  //   try {
-  //     // Llamar al servicio para actualizar el estado en el backend
-  //     final success = await _workerService.updateWorkerStatus(
-  //         worker.id, "available", context);
-
-  //     if (success) {
-  //       // Actualizar estado localmente
-  //       final index = _workers.indexWhere((w) => w.id == worker.id);
-  //       if (index >= 0) {
-  //         final updatedWorker = Worker(
-  //             id: worker.id,
-  //             name: worker.name,
-  //             area: worker.area,
-  //             phone: worker.phone,
-  //             document: worker.document,
-  //             status: WorkerStatus.available,
-  //             startDate: worker.startDate,
-  //             endDate: null,
-  //             code: worker.code,
-  //             incapacityEndDate: worker.incapacityEndDate,
-  //             incapacityStartDate: worker.incapacityStartDate,
-  //             failures: worker.failures);
-  //         _workers[index] = updatedWorker;
-  //         notifyListeners();
-  //       }
-  //       return true;
-  //     }
-  //     return false;
-  //   } catch (e) {
-  //     debugPrint('Error al liberar trabajador: $e');
-  //     return false;
-  //   }
-  // }
 }
