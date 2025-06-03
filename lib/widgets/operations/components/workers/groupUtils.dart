@@ -5,7 +5,7 @@ import 'package:plannerop/store/operations.dart';
 
 import 'package:plannerop/utils/toast.dart';
 import 'package:plannerop/widgets/operations/add/addOperationDialog.dart';
-import 'package:plannerop/widgets/operations/update/editOperationForm.dart';
+import 'package:plannerop/widgets/operations/edit/editOperationForm.dart';
 import 'package:provider/provider.dart';
 
 // Eliminar un grupo de trabajadores

@@ -6,7 +6,7 @@ import 'package:plannerop/utils/operations.dart';
 import 'package:plannerop/utils/toast.dart';
 import 'package:plannerop/widgets/operations/components/OperationCard.dart';
 import 'package:plannerop/widgets/operations/components/utils.dart';
-import 'package:plannerop/widgets/operations/update/editOperationForm.dart';
+import 'package:plannerop/widgets/operations/edit/editOperationForm.dart';
 import 'package:provider/provider.dart';
 import 'package:plannerop/store/operations.dart';
 import 'package:plannerop/widgets/operations/components/utils/emptyState.dart';

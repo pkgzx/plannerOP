@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_neumorphic_plus/flutter_neumorphic.dart';
 import 'package:plannerop/store/programmings.dart';
-import 'package:plannerop/widgets/operations/activeOperations.dart';
+import 'package:plannerop/widgets/operations/views/activeOperations.dart';
 import 'package:plannerop/widgets/operations/pendingOperations.dart';
-import 'package:plannerop/widgets/operations/historyOperations.dart';
+import 'package:plannerop/widgets/operations/views/historyOperations.dart';
 import 'package:plannerop/widgets/operations/add/addOperationDialog.dart';
 import 'package:provider/provider.dart';
 import 'dart:async';
