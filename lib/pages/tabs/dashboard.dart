@@ -58,26 +58,26 @@ class _DashboardTabState extends State<DashboardTab> {
 
       // Cargar todos los datos en paralelo
       await Future.wait([
+        loadTask(
+          () => mounted,
+          setState,
+          _isLoadingTasks,
+          context,
+        ),
         checkAndLoadWorkersIfNeeded(
-          mounted,
+          () => mounted,
           setState,
           _isLoadingWorkers,
           context,
         ),
         loadAreas(
-          mounted,
+          () => mounted,
           setState,
           _isLoadingAreas,
           context,
         ),
-        loadTask(
-          mounted,
-          setState,
-          _isLoadingTasks,
-          context,
-        ),
         loadClients(
-          mounted,
+          () => mounted,
           setState,
           _isLoadingClients,
           context,
@@ -113,7 +113,7 @@ class _DashboardTabState extends State<DashboardTab> {
           },
         ),
         loadClientProgramming(
-            mounted, setState, _isLoadingClientProgramming, context,
+            () => mounted, setState, _isLoadingClientProgramming, context,
             forceRefresh: forceRefresh)
       ]).catchError((error) {
         debugPrint('Error durante la carga en paralelo: $error');

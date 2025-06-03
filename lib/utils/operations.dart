@@ -528,7 +528,7 @@ void showCancelDialog(
 
                           Navigator.pop(dialogContext);
                           showSuccessToast(
-                              context, 'Asignación cancelada exitosamente');
+                              context, 'Operación cancelada exitosamente');
                         } catch (e) {
                           debugPrint('Error al cancelar operación: $e');
 
@@ -636,17 +636,19 @@ Widget buildNonEditableField({
   );
 }
 
-List<Widget> getServicesGroups(BuildContext context, List<WorkerGroup> groups) {
+Future<List<Widget>> getServicesGroups(
+    BuildContext context, List<WorkerGroup> groups) async {
   List<Widget> serviceWidgets = [];
   for (var group in groups) {
-    serviceWidgets.add(getServiceGroup(context, group));
+    serviceWidgets.add(await getServiceGroup(context, group));
   }
   return serviceWidgets;
 }
 
-Widget getServiceGroup(BuildContext context, WorkerGroup group) {
+Future<Widget> getServiceGroup(BuildContext context, WorkerGroup group) async {
   final serviceProvider = Provider.of<TasksProvider>(context, listen: false);
-  final service = serviceProvider.getTaskNameByIdService(group.serviceId);
+  final service = await serviceProvider.getTaskNameByIdServiceAsync(
+      group.serviceId, context);
 
   return Row(
     children: [
@@ -679,10 +681,11 @@ Future<String?> getClientName(BuildContext context, int clientId) async {
 }
 
 // Método auxiliar para obtener el nombre del servicio
-String getServiceName(BuildContext context, int serviceId) {
+Future<String> getServiceName(BuildContext context, int serviceId) async {
   try {
     final serviceProvider = Provider.of<TasksProvider>(context, listen: false);
-    return serviceProvider.getTaskNameByIdService(serviceId);
+    return await serviceProvider.getTaskNameByIdServiceAsync(
+        serviceId, context);
   } catch (e) {
     return 'Servicio desconocido';
   }

@@ -112,10 +112,12 @@ class _SelectedWorkersListState extends State<SelectedWorkersList> {
     await _calculateWorkerHours();
 
     final result = await createWorkerGroup(
-        context: context,
-        filteredWorkers: _filteredWorkers,
-        workerHours: _workerHours,
-        selectedWorkers: widget.selectedWorkers);
+      context: context,
+      filteredWorkers: _filteredWorkers,
+      workerHours: _workerHours,
+      selectedWorkers: widget.selectedWorkers,
+      existingGroups: widget.selectedGroups,
+    );
 
     if (result != null) {
       final newGroup = result.group;
@@ -141,7 +143,7 @@ class _SelectedWorkersListState extends State<SelectedWorkersList> {
 
   // Eliminar un grupo
   void _onDeleteGroup(WorkerGroup group, int assignmentId) {
-    // Optimización: Solo eliminar los trabajadores que pertenecen ÚNICAMENTE a este grupo
+    //  Solo eliminar los trabajadores que pertenecen ÚNICAMENTE a este grupo
     deleteWorkerGroup(
       context: context,
       group: group,
@@ -155,7 +157,6 @@ class _SelectedWorkersListState extends State<SelectedWorkersList> {
       onWorkersChanged: (updatedWorkers) {
         // Aquí está el cambio clave: No pasamos automáticamente la lista actualizada
         // sino que preservamos los trabajadores que no estaban exclusivamente en este grupo
-        debugPrint("Workersss*******************");
         widget.onWorkersChanged(updatedWorkers);
       },
       onRemoveFromLocal: () {

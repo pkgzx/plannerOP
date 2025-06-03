@@ -84,6 +84,8 @@ Future<GroupCreationResult?> createWorkerGroup({
   required List<Worker> filteredWorkers,
   required Map<int, double> workerHours,
   required List<Worker> selectedWorkers,
+  // NUEVO: Añadir parámetro para grupos existentes
+  List<WorkerGroup>? existingGroups,
 }) async {
   // Paso 1: Mostrar diálogo para seleccionar horarios
   final scheduleData = await _showGroupScheduleDialog(context);
@@ -101,15 +103,46 @@ Future<GroupCreationResult?> createWorkerGroup({
     return null;
   }
 
-  // Paso 2: Mostrar diálogo para seleccionar trabajadores
+  // NUEVO: Crear lista completa de trabajadores ya seleccionados
+  List<Worker> allSelectedWorkers = [];
+
+  // Añadir trabajadores individuales
+  allSelectedWorkers.addAll(selectedWorkers);
+
+  // Añadir trabajadores de grupos existentes
+  if (existingGroups != null) {
+    for (var group in existingGroups) {
+      if (group.workersData != null) {
+        allSelectedWorkers.addAll(group.workersData!);
+      }
+    }
+  }
+
+  // Remover duplicados basados en ID
+  final uniqueWorkerIds = <int>{};
+  allSelectedWorkers = allSelectedWorkers.where((worker) {
+    if (uniqueWorkerIds.contains(worker.id)) {
+      return false;
+    }
+    uniqueWorkerIds.add(worker.id);
+    return true;
+  }).toList();
+
+  debugPrint(
+      "🔍 Total trabajadores ya seleccionados: ${allSelectedWorkers.length}");
+  debugPrint("   - Individuales: ${selectedWorkers.length}");
+  debugPrint(
+      "   - En grupos: ${allSelectedWorkers.length - selectedWorkers.length}");
+
+  // Paso 2: Mostrar diálogo para seleccionar trabajadores con la lista completa
   final workers = await showDialog<List<Worker>>(
     context: context,
     builder: (context) => WorkerSelectionDialog(
       selectedWorkers: const [],
       availableWorkers: filteredWorkers,
       workerHours: workerHours,
-      title: 'Seleccionar trabajadores para el grupo',
-      allSelectedWorkers: selectedWorkers,
+      title: 'Seleccionar trabajadores',
+      allSelectedWorkers: allSelectedWorkers, // CORREGIDO: Pasar lista completa
     ),
   );
 

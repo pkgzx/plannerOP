@@ -320,7 +320,7 @@ class EditOperationFormState extends State<EditOperationForm> {
               children: [
                 const Expanded(
                   child: Text(
-                    'Editar Asignación',
+                    'Editar Operación',
                     style: TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
@@ -852,7 +852,7 @@ Future<void> showEditAssignmentForm(
             );
 
             if (success) {
-              showSuccessToast(context, 'Asignación actualizada correctamente');
+              showSuccessToast(context, 'Operación actualizada correctamente');
             } else {
               showErrorToast(context, 'No se pudo actualizar la operación');
             }

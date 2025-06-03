@@ -224,14 +224,27 @@ class _ActiveOperationsViewState extends State<ActiveOperationsView> {
     }).toList();
   }
 
-  void _showAssignmentDetails(BuildContext context, Operation assignment) {
+  void _showAssignmentDetails(
+      BuildContext context, Operation assignment) async {
     final assignmentsProvider =
         Provider.of<OperationsProvider>(context, listen: false);
     final feedingProvider =
         Provider.of<FeedingProvider>(context, listen: false);
 
-    // Cargar datos de alimentación para esta operación
-    feedingProvider.loadFeedingStatusForOperation(assignment.id ?? 0, context);
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => const Center(
+        child: CircularProgressIndicator(),
+      ),
+    );
+
+    try {
+      await feedingProvider.loadFeedingStatusForOperation(
+          assignment.id ?? 0, context);
+    } catch (e) {
+      debugPrint('Error cargando alimentación: $e');
+    }
 
     List<String> foods = FeedingUtils.determinateFoodsWithDeliveryStatus(
         assignment.time, assignment.endTime, context);
@@ -390,7 +403,7 @@ class _ActiveOperationsViewState extends State<ActiveOperationsView> {
               assignment: assignment,
               onSave: (updatedAssignment) {
                 provider.updateAssignment(updatedAssignment, context);
-                showSuccessToast(context, 'Asignación actualizada');
+                showSuccessToast(context, 'Operación actualizada');
                 Navigator.pop(context);
               },
               onCancel: () => Navigator.pop(context),

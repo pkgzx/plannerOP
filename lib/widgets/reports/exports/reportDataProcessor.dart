@@ -10,12 +10,12 @@ import 'package:plannerop/widgets/reports/exports/WorkerReportRow.dart';
 import 'package:provider/provider.dart';
 
 class ReportDataProcessor {
-  static ReportData processOperations(
+  static Future<ReportData> processOperations(
     List<Operation> operations,
     String reportTitle,
     String dateRange,
     BuildContext context,
-  ) {
+  ) async {
     final List<WorkerReportRow> workerRows = [];
     final List<GeneralReportRow> generalRows = [];
 
@@ -43,7 +43,7 @@ class ReportDataProcessor {
       final clientName = _getClientName(clientsProvider, operation.clientId);
       final supervisorNames =
           _getSupervisorNames(chargersProvider, operation.inChagers);
-      final taskName = _getTaskName(tasksProvider, operation);
+      final taskName = await _getTaskName(tasksProvider, operation, context);
 
       // Actualizar estadísticas de estado
       switch (operation.status.toUpperCase()) {
@@ -197,13 +197,15 @@ class ReportDataProcessor {
     }
   }
 
-  static String _getTaskName(TasksProvider tasksProvider, Operation operation) {
+  static Future<String> _getTaskName(TasksProvider tasksProvider,
+      Operation operation, BuildContext context) async {
     try {
       // Intentar obtener el nombre de la tarea del primer grupo si existe
       if (operation.groups.isNotEmpty) {
         final firstGroup = operation.groups.first;
         if (firstGroup.serviceId > 0) {
-          return tasksProvider.getTaskNameByIdService(firstGroup.serviceId);
+          return await tasksProvider.getTaskNameByIdServiceAsync(
+              firstGroup.serviceId, context);
         }
       }
       return 'Tarea no especificada';
@@ -376,6 +378,10 @@ class ReportDataProcessor {
   }
 
   static DateTime _parseDateTime(DateTime date, String time) {
+    if (time.isEmpty) {
+      return date; // Si no hay hora, solo devolvemos la fecha
+    }
+
     final timeParts = time.split(':');
     final hour = int.parse(timeParts[0]);
     final minute = timeParts.length > 1 ? int.parse(timeParts[1]) : 0;

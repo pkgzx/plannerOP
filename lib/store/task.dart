@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/scheduler.dart';
 import 'package:plannerop/core/model/task.dart';
 import 'package:plannerop/services/task/task.dart';
 
@@ -8,8 +9,6 @@ class TasksProvider extends ChangeNotifier {
   bool _isLoading = false;
   String? _error;
   bool _hasBeenLoaded = false;
-
-  // Flag que marca si se ha intentado cargar desde API
   bool _hasAttemptedLoading = false;
 
   List<Task> get tasks => _tasks;
@@ -20,68 +19,134 @@ class TasksProvider extends ChangeNotifier {
 
   // Método para cargar tareas solo si es necesario
   Future<void> loadTasksIfNeeded(BuildContext context) async {
-    // Si ya están cargadas o se está cargando, no hacer nada
     if (_isLoading || _hasAttemptedLoading) {
       return;
     }
-
     return loadTasks(context);
   }
 
-  String getTaskNameByIdService(int id) {
-    final task = _tasks.firstWhere((task) => task.id == id,
-        orElse: () => Task(id: 0, name: ''));
-    return task.name;
+  // MEJORADO: Método asíncrono con mejor debugging
+  Future<String> getTaskNameByIdServiceAsync(
+      int id, BuildContext context) async {
+    debugPrint('🔍 getTaskNameByIdServiceAsync called with ID: $id');
+    debugPrint('   - _hasAttemptedLoading: $_hasAttemptedLoading');
+    debugPrint('   - _isLoading: $_isLoading');
+    debugPrint('   - _tasks.length: ${_tasks.length}');
+
+    // Si no se han cargado las tareas aún, cargarlas
+    if (!_hasAttemptedLoading && !_isLoading) {
+      debugPrint('   - Iniciando carga de tareas...');
+
+      // Usar scheduler para cargar después del build
+      SchedulerBinding.instance.addPostFrameCallback((_) {
+        loadTasks(context);
+      });
+
+      // Esperar a que se inicie la carga
+      await Future.delayed(const Duration(milliseconds: 200));
+    }
+
+    // Esperar a que terminen de cargar con timeout
+    int maxWaitCycles = 50; // 5 segundos máximo
+    int waitCycle = 0;
+
+    while (_isLoading && waitCycle < maxWaitCycles) {
+      debugPrint('   - Esperando carga... ciclo $waitCycle');
+      await Future.delayed(const Duration(milliseconds: 100));
+      waitCycle++;
+    }
+
+    if (waitCycle >= maxWaitCycles) {
+      debugPrint('   - ⚠️ Timeout esperando carga de tareas');
+      return 'Error: Timeout cargando servicios';
+    }
+
+    // Verificar si tenemos tareas cargadas
+    debugPrint('   - Tareas disponibles después de la carga: ${_tasks.length}');
+    if (_tasks.isEmpty) {
+      debugPrint('   - ⚠️ No hay tareas cargadas');
+      return 'No hay servicios disponibles';
+    }
+
+    // Buscar la tarea
+    final task = _tasks.firstWhere(
+      (task) => task.id == id,
+      orElse: () => Task(id: 0, name: ''),
+    );
+
+    debugPrint('   - Tarea encontrada: ${task.id} - "${task.name}"');
+
+    // Debug: Mostrar todas las tareas disponibles si no se encuentra
+    if (task.name.isEmpty && id > 0) {
+      debugPrint('   - 🔍 Tareas disponibles:');
+      for (var t in _tasks.take(10)) {
+        // Mostrar solo las primeras 10
+        debugPrint('     * ID: ${t.id}, Nombre: "${t.name}"');
+      }
+      if (_tasks.length > 10) {
+        debugPrint('     ... y ${_tasks.length - 10} más');
+      }
+    }
+
+    return task.name.isNotEmpty ? task.name : 'Servicio ID $id no encontrado';
   }
 
-  // Cargar las tareas desde el API
+  // MEJORADO: Cargar las tareas desde el API
   Future<void> loadTasks(BuildContext context) async {
-    // Si ya está cargando, prevenir múltiples llamadas
-    if (_isLoading) return;
+    if (_isLoading) {
+      debugPrint('🔄 loadTasks ya está en progreso, saltando...');
+      return;
+    }
 
+    debugPrint('🔄 Iniciando carga de tareas desde API...');
     try {
       _isLoading = true;
       _error = null;
-      notifyListeners();
+      _safeNotifyListeners();
 
       final result = await _taskService.fetchTasks(context);
-      // Marcar que ya se intentó cargar desde la API
       _hasAttemptedLoading = true;
 
       if (result.isSuccess) {
-        // Incluso si la lista está vacía, la guardamos
         _tasks = result.tasks;
         _hasBeenLoaded = true;
+
+        debugPrint('✅ Tareas cargadas exitosamente: ${_tasks.length}');
+
+        // Debug: Mostrar algunas tareas cargadas
+        if (_tasks.isNotEmpty) {
+          debugPrint('📋 Primeras tareas cargadas:');
+          for (var task in _tasks.take(5)) {
+            debugPrint('   - ID: ${task.id}, Nombre: "${task.name}"');
+          }
+          if (_tasks.length > 5) {
+            debugPrint('   ... y ${_tasks.length - 5} más');
+          }
+        }
       } else {
         _error = result.errorMessage ?? 'Error al cargar tareas';
-        // Si falló, cargar tareas por defecto
-        loadDefaultTasks();
+        debugPrint('❌ Error cargando tareas: $_error');
       }
     } catch (e) {
       _error = 'Error inesperado: $e';
-      // Si hay error, cargar tareas por defecto
-      loadDefaultTasks();
+      debugPrint('💥 Excepción cargando tareas: $e');
     } finally {
       _isLoading = false;
-      notifyListeners();
+      debugPrint('🏁 Carga de tareas finalizada. isLoading: $_isLoading');
+      _safeNotifyListeners();
     }
   }
 
-  // Método para cargar tareas por defecto
-  void loadDefaultTasks() {
-    // Solo cargar las tareas por defecto si la lista actual está vacía
-    if (_tasks.isNotEmpty) return;
-
-    _tasks = [
-      Task(id: 1, name: "SERVICIO DE ESTIBAJE"),
-      Task(id: 2, name: "SERVICIO DE WINCHERO"),
-      Task(id: 3, name: "SERVICIO DE PORTALONERO"),
-      Task(id: 4, name: "SERVICIO DE RETIRO"),
-      // Añade más tareas predeterminadas según necesites
-    ];
-
-    // Marcar como cargadas
-    _hasBeenLoaded = true;
+  // Método para notificar de forma segura
+  void _safeNotifyListeners() {
+    if (SchedulerBinding.instance.schedulerPhase ==
+        SchedulerPhase.persistentCallbacks) {
+      SchedulerBinding.instance.addPostFrameCallback((_) {
+        notifyListeners();
+      });
+    } else {
+      notifyListeners();
+    }
   }
 
   // Lista de nombres de tareas
@@ -90,5 +155,48 @@ class TasksProvider extends ChangeNotifier {
   Task getTaskByName(String name) {
     return _tasks.firstWhere((task) => task.name == name,
         orElse: () => Task(id: 0, name: ''));
+  }
+
+  // MEJORADO: Método síncrono con mejor debugging
+  String getTaskNameByIdService(int id) {
+    final task = _tasks.firstWhere((task) => task.id == id,
+        orElse: () => Task(id: 0, name: ''));
+
+    debugPrint(
+        '🔍 getTaskNameByIdService: ID=$id, encontrado="${task.name}", total_tareas=${_tasks.length}');
+
+    if (task.name.isEmpty && id > 0) {
+      if (_tasks.isEmpty) {
+        return 'Cargando servicios...';
+      } else {
+        return 'Servicio ID $id no encontrado';
+      }
+    }
+
+    return task.name.isEmpty ? 'Servicio no especificado' : task.name;
+  }
+
+  // NUEVO: Método para buscar manualmente una tarea (para debugging)
+  void debugSearchTask(int id) {
+    debugPrint('🔍 DEBUG: Buscando tarea con ID $id');
+    debugPrint('   - Total tareas: ${_tasks.length}');
+    debugPrint('   - hasAttemptedLoading: $_hasAttemptedLoading');
+    debugPrint('   - isLoading: $_isLoading');
+
+    for (var task in _tasks) {
+      if (task.id == id) {
+        debugPrint('   - ✅ ENCONTRADA: ID=${task.id}, Nombre="${task.name}"');
+        return;
+      }
+    }
+
+    debugPrint('   - ❌ NO ENCONTRADA');
+    debugPrint(
+        '   - IDs disponibles: ${_tasks.map((t) => t.id).take(20).toList()}');
+  }
+
+  // NUEVO: Método para verificar si existe una tarea
+  bool hasTaskWithId(int id) {
+    return _tasks.any((task) => task.id == id);
   }
 }

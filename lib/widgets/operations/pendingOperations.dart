@@ -340,7 +340,7 @@ class _PendingOperationsViewState extends State<PendingOperationsView> {
                           Navigator.pop(dialogContext);
 
                           // Mostrar mensaje de éxito
-                          showSuccessToast(context, "Asignación iniciada");
+                          showSuccessToast(context, "Operación iniciada");
                         } catch (e) {
                           // En caso de error, volver a habilitar el botón
                           if (context.mounted) {

@@ -17,6 +17,7 @@ class _LoginPageState extends State<LoginPage> {
   final FocusNode _usernameFocusNode = FocusNode();
   final FocusNode _passwordFocusNode = FocusNode();
   bool _isLoading = false;
+  bool _passVisibility = true;
 
   void _onFocusChange() {
     setState(() {});
@@ -118,14 +119,24 @@ class _LoginPageState extends State<LoginPage> {
                         child: TextFormField(
                           controller: _passwordController,
                           focusNode: _passwordFocusNode,
-                          decoration: const InputDecoration(
+                          obscureText: _passVisibility,
+                          decoration: InputDecoration(
                             labelText: 'Contraseña',
                             prefixIcon: Icon(Icons.lock),
                             border: InputBorder.none,
                             filled: true,
                             fillColor: Colors.white,
+                            suffixIcon: IconButton(
+                              icon: _passVisibility
+                                  ? Icon(Icons.visibility_off)
+                                  : Icon(Icons.visibility),
+                              onPressed: () {
+                                _passVisibility = !_passVisibility;
+
+                                setState(() {});
+                              },
+                            ),
                           ),
-                          obscureText: true,
                           validator: (value) {
                             if (value == null || value.isEmpty) {
                               return 'Por favor ingrese su contraseña';

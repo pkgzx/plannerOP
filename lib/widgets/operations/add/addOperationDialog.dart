@@ -347,7 +347,7 @@ class AddOperationDialogState extends State<AddOperationDialog> {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   const Text(
-                    'Nueva Asignación',
+                    'Nueva Operación',
                     style: TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
@@ -374,6 +374,59 @@ class AddOperationDialogState extends State<AddOperationDialog> {
                 availableWorkers: _allWorkers,
                 selectedGroups: _selectedGroups,
                 onGroupsChanged: updateSelectedGroups,
+                inEditMode: false, // Estamos creando, no editando
+                deletedWorkers: const [], // No hay trabajadores eliminados en creación
+                onDeletedWorkersChanged: null, // No aplicable en creación
+                assignmentId: null, // No hay ID porque aún no se ha creado
+                onWorkersAddedToGroup: null, // No aplicable en creación
+                onWorkersRemovedFromGroup: (group, removedWorkers) {
+                  // CALLBACK para remover trabajadores de grupos
+                  setState(() {
+                    // Encontrar el grupo y remover los trabajadores
+                    final groupIndex =
+                        _selectedGroups.indexWhere((g) => g.id == group.id);
+                    if (groupIndex >= 0) {
+                      final currentGroup = _selectedGroups[groupIndex];
+
+                      // Crear grupo actualizado sin los trabajadores removidos
+                      final updatedWorkers = currentGroup.workers
+                          .where((workerId) =>
+                              !removedWorkers.any((w) => w.id == workerId))
+                          .toList();
+
+                      final updatedWorkersData = currentGroup.workersData
+                          ?.where((w) => !removedWorkers
+                              .any((removed) => removed.id == w.id))
+                          .toList();
+
+                      if (updatedWorkers.isEmpty) {
+                        // Si el grupo queda vacío, eliminarlo completamente
+                        _selectedGroups.removeAt(groupIndex);
+                      } else {
+                        // Actualizar el grupo con los trabajadores restantes
+                        final updatedGroup = WorkerGroup(
+                          id: currentGroup.id,
+                          name: currentGroup.name,
+                          startTime: currentGroup.startTime,
+                          endTime: currentGroup.endTime,
+                          startDate: currentGroup.startDate,
+                          endDate: currentGroup.endDate,
+                          serviceId: currentGroup.serviceId,
+                          workers: updatedWorkers,
+                          workersData: updatedWorkersData,
+                        );
+                        _selectedGroups[groupIndex] = updatedGroup;
+                      }
+                    }
+                  });
+
+                  // Actualizar horarios cuando se modifican los grupos
+                  _processGroupSchedules();
+
+                  // Mostrar mensaje de confirmación
+                  showSuccessToast(context,
+                      "Trabajador${removedWorkers.length > 1 ? 'es' : ''} removido${removedWorkers.length > 1 ? 's' : ''} del grupo");
+                },
               ),
               const SizedBox(height: 12),
 

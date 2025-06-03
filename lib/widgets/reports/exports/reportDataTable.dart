@@ -221,7 +221,18 @@ class _ReportDataTableState extends State<ReportDataTable> {
         Expanded(
           child: filteredData.isEmpty
               ? _buildEmptyState()
-              : _buildDataTable(filteredData, usersProvider),
+              : FutureBuilder<Widget>(
+                  future: _buildDataTable(filteredData, usersProvider),
+                  builder: (context, snapshot) {
+                    if (snapshot.connectionState == ConnectionState.waiting) {
+                      return const Center(child: CircularProgressIndicator());
+                    }
+                    if (snapshot.hasError) {
+                      return Center(child: Text('Error: ${snapshot.error}'));
+                    }
+                    return snapshot.data ?? const SizedBox();
+                  },
+                ),
         ),
       ],
     );
@@ -282,8 +293,9 @@ class _ReportDataTableState extends State<ReportDataTable> {
     );
   }
 
-  Widget _buildDataTable(List<Operation> data, WorkersProvider usersProvider) {
-    final rows = _buildExpandedRows(data);
+  Future<Widget> _buildDataTable(
+      List<Operation> data, WorkersProvider usersProvider) async {
+    final rows = await _buildExpandedRows(data);
 
     return SingleChildScrollView(
       scrollDirection: Axis.vertical,
@@ -312,14 +324,14 @@ class _ReportDataTableState extends State<ReportDataTable> {
             _buildDataColumn('Hora Fin', 11),
             _buildDataColumn('Estado', 12),
           ],
-          rows: rows,
+          rows: await rows,
         ),
       ),
     );
   }
 
   // Método para expandir las filas con un trabajador por fila (igual que en Excel)
-  List<DataRow> _buildExpandedRows(List<Operation> data) {
+  Future<List<DataRow>> _buildExpandedRows(List<Operation> data) async {
     List<DataRow> rows = [];
 
     // Para alternar colores por operación
@@ -340,7 +352,7 @@ class _ReportDataTableState extends State<ReportDataTable> {
           : const Color(0xFFEDF2F7);
 
       // Obtener información adicional
-      final taskName = _getTaskName(assignment);
+      final taskName = await _getTaskName(assignment);
       final clientName = _getClientName(assignment.clientId);
       final supervisorNames = _getSupervisorNames(assignment.inChagers);
 
@@ -464,13 +476,14 @@ class _ReportDataTableState extends State<ReportDataTable> {
   }
 
   // Métodos auxiliares para obtener información adicional
-  String _getTaskName(Operation assignment) {
+  Future<String> _getTaskName(Operation assignment) async {
     try {
       final tasksProvider = Provider.of<TasksProvider>(context, listen: false);
       if (assignment.groups.isNotEmpty) {
         final firstGroup = assignment.groups.first;
         if (firstGroup.serviceId > 0) {
-          return tasksProvider.getTaskNameByIdService(firstGroup.serviceId);
+          return await tasksProvider.getTaskNameByIdServiceAsync(
+              firstGroup.serviceId, context);
         }
       }
       return 'Tarea no especificada';

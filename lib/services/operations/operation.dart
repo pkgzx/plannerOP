@@ -118,7 +118,7 @@ class AssignmentService {
         final jsonResponse = jsonDecode(response.body);
         List<Operation> operations = [];
         for (var operation in jsonResponse) {
-          // debugPrint('Asignación: $operation');
+          // debugPrint('Operación: $operation');
 
           var mapWorkers = operation['workers'];
           List<Worker> workersAssignment = [];
@@ -392,7 +392,7 @@ class AssignmentService {
           await http.delete(url, headers: {'Authorization': 'Bearer $token'});
 
       if (response.statusCode == 200 || response.statusCode == 204) {
-        // debugPrint('Asignación eliminada con éxito');
+        // debugPrint('Operación eliminada con éxito');
         return true;
       } else {
         debugPrint(
@@ -610,9 +610,9 @@ class AssignmentService {
 
           // DIAGNÓSTICO: Mostrar información sobre los trabajadores procesados
           // debugPrint(
-          //     'Asignación ${operation['id']}: Trabajadores activos: ${workersMap.length}, finalizados: ${finishedWorkersMap.length}');
+          //     'Operación ${operation['id']}: Trabajadores activos: ${workersMap.length}, finalizados: ${finishedWorkersMap.length}');
           // debugPrint(
-          //     'Asignación ${operation['id']}: Grupos: ${operationGroups.length}');
+          //     'Operación ${operation['id']}: Grupos: ${operationGroups.length}');
           List<int> inChargers = [];
           var inChargeData =
               operation['inChargeOperation'] ?? operation['inCharge'] ?? [];
@@ -698,7 +698,7 @@ class AssignmentService {
           body: jsonEncode(body));
 
       if (response.statusCode == 200) {
-        // debugPrint('Asignación completada con éxito');
+        // debugPrint('Operación completada con éxito');
         // debugPrint("Response200: ${response.body}");
         return true;
       } else {

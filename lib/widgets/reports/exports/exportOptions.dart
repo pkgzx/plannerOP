@@ -189,7 +189,7 @@ class _ExportOptionsState extends State<ExportOptions> {
       }
 
       // Procesar datos
-      final reportData = ReportDataProcessor.processOperations(
+      final reportData = await ReportDataProcessor.processOperations(
           _filteredAssignments, _getReportTitle(), _getDateRange(), context);
 
       // Generar Excel

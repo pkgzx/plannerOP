@@ -5,6 +5,7 @@ import 'package:plannerop/services/programmings/programmings.dart';
 class ProgrammingsProvider extends ChangeNotifier {
   final ProgrammingsService _programmingsService = ProgrammingsService();
   List<Programming> _programmings = [];
+  List<Programming> _overdueProgrammings = [];
   bool _isLoading = false;
   String? _error;
 
@@ -12,7 +13,40 @@ class ProgrammingsProvider extends ChangeNotifier {
   bool get isLoading => _isLoading;
   String? get error => _error;
 
-  // NUEVO MÉTODO: Actualizar estado de una programación
+  List<Programming> get overdueProgrammings => _overdueProgrammings;
+  int get overdueCount => _overdueProgrammings.length;
+  bool get hasOverdueProgrammings => _overdueProgrammings.isNotEmpty;
+
+  // Método que se llama cada vez que se cargan programaciones
+  void _checkForOverdueProgrammings() {
+    final now = DateTime.now();
+    _overdueProgrammings = _programmings.where((programming) {
+      // Solo programaciones no asignadas
+      if (programming.status != 'UNASSIGNED') return false;
+
+      try {
+        final programmingDateTime =
+            _combineDateAndTime(programming.dateStart, programming.timeStart);
+        return programmingDateTime.isBefore(now);
+      } catch (e) {
+        return false;
+      }
+    }).toList();
+
+    // Notificar cambios
+    notifyListeners();
+  }
+
+  DateTime _combineDateAndTime(String dateStr, String timeStr) {
+    final date = DateTime.parse(dateStr);
+    final timeParts = timeStr.split(':');
+    final hours = int.parse(timeParts[0]);
+    final minutes = int.parse(timeParts[1]);
+
+    return DateTime(date.year, date.month, date.day, hours, minutes);
+  }
+
+  // Actualizar estado de una programación
   Future<bool> updateProgrammingStatus(
       int programmingId, String newStatus, BuildContext context) async {
     try {
@@ -73,6 +107,8 @@ class ProgrammingsProvider extends ChangeNotifier {
         _isLoading = false;
         notifyListeners();
       });
+
+      _checkForOverdueProgrammings();
     } catch (e) {
       _error = 'Error al obtener programaciones: $e';
 

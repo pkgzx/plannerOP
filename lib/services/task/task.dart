@@ -21,11 +21,13 @@ class TaskService {
       );
 
       if (response.statusCode == 200) {
+        debugPrint('Tareas obtenidas correctamente: ${response.body}');
         final jsonResponse = jsonDecode(response.body);
 
         final List<Task> tasks = [];
         for (var t in jsonResponse) {
           try {
+            if (t['status'] != 'ACTIVE') continue; // Filtrar tareas inactivas
             tasks.add(Task.fromJson(t));
           } catch (e) {
             debugPrint('Error procesando tarea: $e');

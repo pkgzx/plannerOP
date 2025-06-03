@@ -759,7 +759,7 @@ class _WorkerDetailsSectionState extends State<WorkerDetailsSection> {
     // Configurar según el estado
     switch (widget.worker.status) {
       case WorkerStatus.assigned:
-        title = 'Información de Asignación';
+        title = 'Información de Operación';
         icon = Icons.assignment_turned_in;
         color = Colors.amber[700]!;
         if (widget.worker.endDate != null) {

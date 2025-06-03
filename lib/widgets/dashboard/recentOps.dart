@@ -107,8 +107,23 @@ class RecentOps extends StatelessWidget {
                                 title: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    ...getServicesGroups(
-                                        context, assignment.groups),
+                                    FutureBuilder<List<Widget>>(
+                                      future: getServicesGroups(context, assignment.groups),
+                                      builder: (context, snapshot) {
+                                        if (snapshot.connectionState == ConnectionState.waiting) {
+                                          return const CircularProgressIndicator(strokeWidth: 2);
+                                        } else if (snapshot.hasError) {
+                                          return Text('Error: ${snapshot.error}');
+                                        } else if (snapshot.hasData) {
+                                          return Column(
+                                            crossAxisAlignment: CrossAxisAlignment.start,
+                                            children: snapshot.data!,
+                                          );
+                                        } else {
+                                          return const SizedBox.shrink();
+                                        }
+                                      },
+                                    )
                                   ],
                                 ),
                                 subtitle: Text(
