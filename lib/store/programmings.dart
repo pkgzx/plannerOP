@@ -161,9 +161,6 @@ class ProgrammingsProvider extends ChangeNotifier {
       // Limpiar la lista actual y cargar nuevas programaciones
       _programmings.clear();
       _programmings.addAll(programmings);
-
-      debugPrint(
-          'Programaciones refrescadas: ${_programmings.length} encontradas');
     } catch (e) {
       _error = 'Error al refrescar programaciones: $e';
       debugPrint('Error al refrescar programaciones: $e');

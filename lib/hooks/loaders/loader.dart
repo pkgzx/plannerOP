@@ -164,7 +164,6 @@ Future<void> loadAreas(
       // Si no hay áreas, cargar algunas predeterminadas
     }
   } catch (e, stackTrace) {
-    debugPrint('Error al cargar áreas: $e');
     debugPrint('Stack trace: $stackTrace');
 
     // Mostrar un mensaje de error más informativo
@@ -296,7 +295,6 @@ Future<bool> loadClients(
 
   // Si ya se han cargado clientes, no hacer nada
   if (clientsProvider.clients.isNotEmpty) {
-    debugPrint('Clientes ya cargados: ${clientsProvider.clients.length}');
     return true;
   }
 
@@ -308,11 +306,8 @@ Future<bool> loadClients(
     await clientsProvider.fetchClients(context);
 
     if (clientsProvider.clients.isNotEmpty) {
-      debugPrint(
-          'Clientes cargados con éxito: ${clientsProvider.clients.length}');
       return true;
     } else {
-      debugPrint('No se cargaron clientes o la lista está vacía');
       return false;
     }
   } catch (e, stackTrace) {
@@ -348,8 +343,6 @@ Future<void> loadClientProgramming(
 
   // Si no es refresh forzado y ya se han cargado programaciones, no hacer nada
   if (!forceRefresh && programmingsProvider.programmings.isNotEmpty) {
-    debugPrint(
-        'Programaciones ya cargadas: ${programmingsProvider.programmings.length}');
     return;
   }
 
@@ -371,10 +364,7 @@ Future<void> loadClientProgramming(
           formattedDate, context);
     }
 
-    if (programmingsProvider.programmings.isNotEmpty) {
-      debugPrint(
-          'Programaciones cargadas con éxito: ${programmingsProvider.programmings.length}');
-    } else {
+    if (!programmingsProvider.programmings.isNotEmpty) {
       debugPrint('No se cargaron programaciones o la lista está vacía');
     }
   } catch (e, stackTrace) {

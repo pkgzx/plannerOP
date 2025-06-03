@@ -192,38 +192,6 @@ class _ActiveOperationsViewState extends State<ActiveOperationsView> {
     );
   }
 
-  List<Operation> _applyFilters(List<Operation> assignments) {
-    return assignments.where((assignment) {
-      // Filtrar por texto de búsqueda
-      bool matchesSearch = true;
-      // if (widget.searchQuery.isNotEmpty) {
-      //   final matchesTask = assignment.task
-      //       .toLowerCase()
-      //       .contains(widget.searchQuery.toLowerCase());
-      //   final matchesWorker = assignment.workers.any((worker) => worker.name
-      //       .toString()
-      //       .toLowerCase()
-      //       .contains(widget.searchQuery.toLowerCase()));
-      //   matchesSearch = matchesTask || matchesWorker;
-      // }
-
-      // Filtrar por área seleccionada
-      bool matchesArea = true;
-      if (_selectedArea != null && _selectedArea!.isNotEmpty) {
-        matchesArea = assignment.area == _selectedArea;
-      }
-
-      // Filtrar por supervisor seleccionado
-      bool matchesSupervisor = true;
-      if (_selectedSupervisorId != null) {
-        matchesSupervisor =
-            assignment.inChagers.contains(_selectedSupervisorId);
-      }
-
-      return matchesSearch && matchesArea && matchesSupervisor;
-    }).toList();
-  }
-
   void _showAssignmentDetails(
       BuildContext context, Operation assignment) async {
     final assignmentsProvider =
@@ -231,58 +199,90 @@ class _ActiveOperationsViewState extends State<ActiveOperationsView> {
     final feedingProvider =
         Provider.of<FeedingProvider>(context, listen: false);
 
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) => const Center(
-        child: CircularProgressIndicator(),
-      ),
-    );
-
-    try {
-      await feedingProvider.loadFeedingStatusForOperation(
-          assignment.id ?? 0, context);
-    } catch (e) {
-      debugPrint('Error cargando alimentación: $e');
-    }
-
-    List<String> foods = FeedingUtils.determinateFoodsWithDeliveryStatus(
-        assignment.time, assignment.endTime, context);
-
-    bool tieneDerechoAlimentacion = foods.isNotEmpty;
-
-    // Usar la función unificada showOperationDetails
+    // ✅ MOSTRAR DIÁLOGO CON FUTUREBUILDER PARA EVITAR RECARGAS
     showOperationDetails(
       context: context,
       assignment: assignment,
       statusColor: const Color(0xFF38A169),
       statusText: 'EN CURSO',
-
-      // Configuración específica para grupos activos
       alimentacionStatus: alimentacionStatus,
-      foods: foods,
-      onAlimentacionChanged: tieneDerechoAlimentacion
-          ? (workerId, entregada) {
-              if (foods.isNotEmpty) {
-                feedingProvider.markFeeding(
-                  operationId: assignment.id ?? 0,
-                  workerId: workerId,
-                  foodType: foods[0],
-                  context: context,
-                );
-              }
-            }
-          : null,
+      foods: [], // Se calculará en el FutureBuilder
       setState: () => setState(() {}),
 
-      // Workers builder para trabajadores eliminados
+      // ✅ USAR FUTUREBUILDER PARA CARGAR DATOS DE ALIMENTACIÓN
       workersBuilder: (assignment, context) {
-        return assignment.deletedWorkers.isNotEmpty
-            ? _buildDeletedWorkersSection(assignment)
-            : const SizedBox();
+        return FutureBuilder<void>(
+          future: _loadFeedingDataOnce(
+              feedingProvider, assignment.id ?? 0, context),
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return Container(
+                padding: const EdgeInsets.all(16),
+                child: Row(
+                  children: [
+                    const SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    ),
+                    const SizedBox(width: 12),
+                    Text(
+                      'Cargando información de alimentación...',
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: Colors.grey[600],
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            }
+
+            // ✅ DATOS CARGADOS, CALCULAR FOODS Y MOSTRAR CONTENIDO
+            List<String> foods =
+                FeedingUtils.determinateFoodsWithDeliveryStatus(
+                    assignment.time, assignment.endTime, context);
+
+            bool tieneDerechoAlimentacion = foods.isNotEmpty;
+
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Mostrar trabajadores eliminados si los hay
+                if (assignment.deletedWorkers.isNotEmpty)
+                  _buildDeletedWorkersSection(assignment),
+
+                // Configurar callback de alimentación ahora que los datos están listos
+                if (tieneDerechoAlimentacion)
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Colors.green.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: Colors.green.withOpacity(0.3)),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(Icons.restaurant, color: Colors.green, size: 16),
+                        const SizedBox(width: 8),
+                        Text(
+                          'Alimentación disponible: ${foods.join(", ")}',
+                          style: const TextStyle(
+                            fontSize: 12,
+                            color: Colors.green,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+              ],
+            );
+          },
+        );
       },
 
-      // Action buttons
+      // Action buttons (sin cambios)
       actionsBuilder: (context, assignment) => [
         Expanded(
           child: NeumorphicButton(
@@ -338,7 +338,7 @@ class _ActiveOperationsViewState extends State<ActiveOperationsView> {
         ),
       ],
 
-      // Floating action button (cancelar)
+      // Floating action button (sin cambios)
       floatingActionBuilder: (context, assignment) => NeumorphicButton(
         style: NeumorphicStyle(
           depth: 4,
@@ -359,6 +359,17 @@ class _ActiveOperationsViewState extends State<ActiveOperationsView> {
         ),
       ),
     );
+  }
+
+  // ✅ MÉTODO AUXILIAR PARA CARGAR DATOS UNA SOLA VEZ
+  Future<void> _loadFeedingDataOnce(FeedingProvider feedingProvider,
+      int operationId, BuildContext context) async {
+    try {
+      await feedingProvider.loadFeedingStatusForOperation(operationId, context);
+    } catch (e) {
+      debugPrint('Error cargando alimentación: $e');
+      // No relanzar la excepción para evitar errores en la UI
+    }
   }
 
   Widget _buildDeletedWorkersSection(Operation assignment) {

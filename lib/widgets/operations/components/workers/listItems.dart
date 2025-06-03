@@ -104,7 +104,6 @@ Widget buildWorkerList({
     );
   }
 
-  debugPrint("groups: ${selectedGroups.length}");
 
   return Container(
     key: ValueKey(

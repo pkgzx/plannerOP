@@ -21,7 +21,6 @@ class TaskService {
       );
 
       if (response.statusCode == 200) {
-        debugPrint('Tareas obtenidas correctamente: ${response.body}');
         final jsonResponse = jsonDecode(response.body);
 
         final List<Task> tasks = [];
@@ -39,7 +38,6 @@ class TaskService {
           isSuccess: true,
         );
       } else {
-        debugPrint('Error en API: ${response.statusCode} - ${response.body}');
         return FetchTasksDto(
           tasks: [],
           isSuccess: false,

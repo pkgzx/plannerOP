@@ -320,7 +320,7 @@ class WorkerService {
     }
   }
 
-  // Modificar el método registerWorker en WorkerService
+  // Método para registrar un nuevo trabajador
   Future<Map<String, dynamic>> registerWorker(
       Worker worker, BuildContext context) async {
     try {
@@ -350,9 +350,6 @@ class WorkerService {
             'id_user': user.id,
             'code': worker.code,
           }));
-
-      // debugPrint('Lo que envio: ${response.request}');
-      // debugPrint('Respuesta API: ${response.statusCode} - ${response.body}');
 
       if (response.statusCode == 201) {
         return {

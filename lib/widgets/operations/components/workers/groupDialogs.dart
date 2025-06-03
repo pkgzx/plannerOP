@@ -128,12 +128,6 @@ Future<GroupCreationResult?> createWorkerGroup({
     return true;
   }).toList();
 
-  debugPrint(
-      "🔍 Total trabajadores ya seleccionados: ${allSelectedWorkers.length}");
-  debugPrint("   - Individuales: ${selectedWorkers.length}");
-  debugPrint(
-      "   - En grupos: ${allSelectedWorkers.length - selectedWorkers.length}");
-
   // Paso 2: Mostrar diálogo para seleccionar trabajadores con la lista completa
   final workers = await showDialog<List<Worker>>(
     context: context,

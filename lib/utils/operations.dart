@@ -199,7 +199,6 @@ void showOperationDetails({
   // Event handlers
   VoidCallback? onClose,
 }) {
-  debugPrint("Groups: ${assignment.groups}");
   // Get in-charge users
   final inChargersFormat =
       Provider.of<ChargersOpProvider>(context, listen: false)
@@ -636,35 +635,96 @@ Widget buildNonEditableField({
   );
 }
 
+Map<int, String> _servicesCache = {};
+
 Future<List<Widget>> getServicesGroups(
     BuildContext context, List<WorkerGroup> groups) async {
   List<Widget> serviceWidgets = [];
   for (var group in groups) {
-    serviceWidgets.add(await getServiceGroup(context, group));
+    final serviceWidget = await getServiceGroup(context, group);
+    if (serviceWidget != null) {
+      serviceWidgets.add(serviceWidget);
+    }
   }
   return serviceWidgets;
 }
 
-Future<Widget> getServiceGroup(BuildContext context, WorkerGroup group) async {
-  final serviceProvider = Provider.of<TasksProvider>(context, listen: false);
-  final service = await serviceProvider.getTaskNameByIdServiceAsync(
-      group.serviceId, context);
+Future<Widget?> getServiceGroup(BuildContext context, WorkerGroup group) async {
+  // ✅ VERIFICAR SI EL CONTEXT AÚN ES VÁLIDO
+  if (!context.mounted) {
+    debugPrint('Context no está montado, retornando widget por defecto');
+    return _buildDefaultServiceWidget(group);
+  }
 
+  try {
+    String serviceName;
+
+    // ✅ USAR CACHE PARA EVITAR LLAMADAS REPETIDAS
+    if (_servicesCache.containsKey(group.serviceId)) {
+      serviceName = _servicesCache[group.serviceId]!;
+    } else {
+      // ✅ VERIFICAR NUEVAMENTE ANTES DE ACCEDER AL PROVIDER
+      if (!context.mounted) {
+        return _buildDefaultServiceWidget(group);
+      }
+
+      final serviceProvider =
+          Provider.of<TasksProvider>(context, listen: false);
+      serviceName = await serviceProvider.getTaskNameByIdServiceAsync(
+          group.serviceId, context);
+
+      // Guardar en cache
+      _servicesCache[group.serviceId] = serviceName;
+    }
+
+    // ✅ VERIFICAR UNA VEZ MÁS ANTES DE RETORNAR EL WIDGET
+    if (!context.mounted) {
+      return _buildDefaultServiceWidget(group);
+    }
+
+    return Row(
+      children: [
+        Icon(
+          Icons.design_services,
+          size: 12,
+          color: const Color(0xFF3182CE),
+        ),
+        const SizedBox(width: 4),
+        Expanded(
+          child: Text(
+            serviceName,
+            style: const TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.bold,
+              color: Color(0xFF2D3748),
+            ),
+          ),
+        ),
+      ],
+    );
+  } catch (e) {
+    debugPrint('Error en getServiceGroup: $e');
+    return _buildDefaultServiceWidget(group);
+  }
+}
+
+// ✅ WIDGET POR DEFECTO CUANDO NO SE PUEDE OBTENER EL SERVICIO
+Widget _buildDefaultServiceWidget(WorkerGroup group) {
   return Row(
     children: [
       Icon(
         Icons.design_services,
         size: 12,
-        color: const Color(0xFF3182CE),
+        color: const Color(0xFF718096), // Color más suave para indicar error
       ),
       const SizedBox(width: 4),
       Expanded(
         child: Text(
-          service,
+          'Servicio ${group.serviceId}', // Mostrar el ID como fallback
           style: const TextStyle(
             fontSize: 14,
             fontWeight: FontWeight.bold,
-            color: Color(0xFF2D3748),
+            color: Color(0xFF718096),
           ),
         ),
       ),

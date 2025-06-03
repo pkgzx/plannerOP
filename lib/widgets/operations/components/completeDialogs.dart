@@ -458,7 +458,6 @@ void showGroupCompletionDialog(
   bool isProcessing = false;
   DateTime selectedDate = DateTime.now();
   TimeOfDay selectedTime = TimeOfDay.now();
-  debugPrint("GroupId $groupId");
 
   // Formatear fecha y hora para mostrar
   String formattedDate = DateFormat('dd/MM/yyyy').format(selectedDate);

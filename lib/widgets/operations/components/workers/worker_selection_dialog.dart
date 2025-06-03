@@ -142,8 +142,6 @@ class _WorkerSelectionDialogState extends State<WorkerSelectionDialog> {
     final filteredWorkers = _getFilteredWorkers(context);
     final areas = _getAreas(context);
 
-    debugPrint("All selected workers: ${widget.allSelectedWorkers.length}");
-
     return Dialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       child: Container(
