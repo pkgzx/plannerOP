@@ -177,7 +177,7 @@ class _HomeState extends State<Home> {
           _refreshDashboard();
         } else if (tabIndex == 1) {
           // Refrescar Asignaciones
-          _refreshAsignaciones();
+          _refreshOperations();
         }
       });
     }
@@ -185,15 +185,13 @@ class _HomeState extends State<Home> {
 
   // Métodos específicos para refrescar cada tab
   void _refreshDashboard() {
-    // debugPrint('🔄 Refrescando Dashboard...');
     final assignmentsProvider =
         Provider.of<OperationsProvider>(context, listen: false);
     // Actualizar silenciosamente sin mostrar indicadores de carga
     assignmentsProvider.refreshActiveAssignments(context);
   }
 
-  void _refreshAsignaciones() {
-    // debugPrint('🔄 Refrescando Operaciones...');
+  void _refreshOperations() {
     final assignmentsProvider =
         Provider.of<OperationsProvider>(context, listen: false);
     // Refrescar solo asignaciones activas y pendientes

@@ -1,4 +1,5 @@
 import 'package:flutter_neumorphic_plus/flutter_neumorphic.dart';
+import 'package:plannerop/mapper/operation.dart';
 import 'package:plannerop/store/operations.dart';
 import 'package:plannerop/utils/operations.dart';
 import 'package:plannerop/widgets/operations/components/utils/emptyState.dart';
@@ -108,15 +109,20 @@ class RecentOps extends StatelessWidget {
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     FutureBuilder<List<Widget>>(
-                                      future: getServicesGroups(context, assignment.groups),
+                                      future: getServicesGroups(
+                                          context, assignment.groups),
                                       builder: (context, snapshot) {
-                                        if (snapshot.connectionState == ConnectionState.waiting) {
-                                          return const CircularProgressIndicator(strokeWidth: 2);
+                                        if (snapshot.connectionState ==
+                                            ConnectionState.waiting) {
+                                          return const CircularProgressIndicator(
+                                              strokeWidth: 2);
                                         } else if (snapshot.hasError) {
-                                          return Text('Error: ${snapshot.error}');
+                                          return Text(
+                                              'Error: ${snapshot.error}');
                                         } else if (snapshot.hasData) {
                                           return Column(
-                                            crossAxisAlignment: CrossAxisAlignment.start,
+                                            crossAxisAlignment:
+                                                CrossAxisAlignment.start,
                                             children: snapshot.data!,
                                           );
                                         } else {

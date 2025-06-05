@@ -1,3 +1,6 @@
+import 'package:plannerop/mapper/incapacity.dart';
+import 'package:plannerop/utils/date.dart';
+
 class Incapacity {
   final String? id;
   final IncapacityType type;
@@ -25,17 +28,26 @@ class Incapacity {
   // Método corregido para el formato que espera la API
   Map<String, dynamic> toJson() {
     return {
-      'dateDisableStart': startDate != null ? _formatDate(startDate!) : null,
-      'dateDisableEnd': endDate != null ? _formatDate(endDate!) : null,
+      'dateDisableStart': startDate != null ? formatDate(startDate!) : null,
+      'dateDisableEnd': endDate != null ? formatDate(endDate!) : null,
       'type': _mapTypeToApi(type),
       'cause': _mapCauseToApi(cause),
       'id_worker': workerId,
     };
   }
 
-  // Formatear fecha en formato YYYY-MM-DD
-  String _formatDate(DateTime date) {
-    return '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
+  static Incapacity fromJson(Map<String, dynamic> json) {
+    return Incapacity(
+      id: json['id']?.toString() ?? "",
+      workerId: json['id_worker'] ?? 0,
+      type: mapApiToType(json['type']),
+      cause: mapApiToCause(json['cause']),
+      startDate: DateTime.parse(json['dateDisableStart']),
+      endDate: DateTime.parse(json['dateDisableEnd']),
+      createdAt: json['createdAt'] != null
+          ? DateTime.parse(json['createdAt'])
+          : DateTime.now(),
+    );
   }
 
   // Mapear tipo a los valores que espera la API

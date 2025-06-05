@@ -12,8 +12,20 @@ class TaskService {
   final String API_URL = dotenv.get('API_URL');
 
   // Método para obtener tareas con token directo
-  Future<FetchTasksDto> fetchTasksWithToken(String token) async {
+  Future<FetchTasksDto> fetchTasks(BuildContext context) async {
     try {
+      final authProvider = Provider.of<AuthProvider>(context, listen: false);
+      final String token = authProvider.accessToken;
+
+      if (token.isEmpty) {
+        debugPrint('No hay token disponible');
+        return FetchTasksDto(
+          tasks: [],
+          isSuccess: false,
+          errorMessage: 'No hay token disponible',
+        );
+      }
+
       var url = Uri.parse('$API_URL/task');
       var response = await http.get(
         url,
@@ -46,32 +58,6 @@ class TaskService {
       }
     } catch (e) {
       debugPrint('Error en fetchTasks: $e');
-      return FetchTasksDto(
-        tasks: [],
-        isSuccess: false,
-        errorMessage: 'Error: $e',
-      );
-    }
-  }
-
-  // Método que utiliza el contexto para obtener el token
-  Future<FetchTasksDto> fetchTasks(BuildContext context) async {
-    try {
-      final authProvider = Provider.of<AuthProvider>(context, listen: false);
-      final String token = authProvider.accessToken;
-
-      if (token.isEmpty) {
-        debugPrint('No hay token disponible');
-        return FetchTasksDto(
-          tasks: [],
-          isSuccess: false,
-          errorMessage: 'No hay token disponible',
-        );
-      }
-
-      return await fetchTasksWithToken(token);
-    } catch (e) {
-      debugPrint('Error en contexto de fetchTasks: $e');
       return FetchTasksDto(
         tasks: [],
         isSuccess: false,

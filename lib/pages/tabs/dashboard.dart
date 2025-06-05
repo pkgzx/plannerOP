@@ -1,12 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_neumorphic_plus/flutter_neumorphic.dart';
 import 'package:plannerop/hooks/loaders/loader.dart';
-import 'package:plannerop/store/areas.dart';
 import 'package:plannerop/store/operations.dart';
 import 'package:plannerop/utils/toast.dart';
 import 'package:plannerop/widgets/dashboard/quickActions.dart';
 import 'package:plannerop/widgets/dashboard/recentOps.dart';
-import 'package:plannerop/store/workers.dart';
 import 'package:provider/provider.dart';
 
 class DashboardTab extends StatefulWidget {
@@ -25,7 +23,6 @@ class _DashboardTabState extends State<DashboardTab> {
   bool _isLoadingFaults = false;
   bool _isLoadingChargers = false;
   bool _isLoadingClientProgramming = false;
-
   // Variable para controlar si es la primera carga
   bool _isInitialLoad = true;
 

@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_neumorphic_plus/flutter_neumorphic.dart';
 import 'package:intl/intl.dart';
 import 'package:plannerop/core/model/operation.dart';
-import 'package:plannerop/store/operations.dart';
 import 'package:plannerop/services/operations/operationReports.dart';
 import 'package:plannerop/utils/toast.dart';
 import 'package:plannerop/widgets/reports/charts/areaChart.dart';
@@ -13,7 +12,6 @@ import 'package:plannerop/widgets/reports/exports/exportOptions.dart';
 import 'package:plannerop/widgets/reports/charts/shipPersonnelChart.dart';
 import 'package:plannerop/widgets/reports/charts/zoneDistributionChart.dart';
 import 'package:plannerop/widgets/reports/charts/workerStatusChart.dart';
-import 'package:provider/provider.dart';
 
 class ReportesTab extends StatefulWidget {
   const ReportesTab({Key? key}) : super(key: key);
@@ -41,9 +39,6 @@ class _ReportesTabState extends State<ReportesTab> {
 
   // Variables para control de carga
   bool _isLoadingFilterData = false;
-
-  // Opciones para los filtros
-  final List<String> _periods = ["Hoy", "Personalizado"];
 
   final List<String> _statuses = [
     "Completada",

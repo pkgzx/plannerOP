@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:plannerop/core/model/operation.dart';
 import 'package:plannerop/core/model/workerGroup.dart';
+import 'package:plannerop/mapper/operation.dart';
 import 'package:plannerop/store/clients.dart';
 import 'package:plannerop/store/chargersOp.dart';
 import 'package:plannerop/store/task.dart';
@@ -114,7 +115,7 @@ class ReportDataProcessor {
             for (final workerId in group.workers) {
               String workerName = 'Trabajador #$workerId';
               String workerDni =
-                  workersProvider.getWorkerById(workerId)?.document ?? '-';
+                  workersProvider.getWorkerById(workerId).document ?? '-';
 
               // Buscar datos del trabajador
               if (group.workersData != null && group.workersData!.isNotEmpty) {
@@ -225,7 +226,7 @@ class ReportDataProcessor {
   ) {
     return WorkerReportRow(
       operationId: operation.id!,
-      status: _getHumanReadableStatus(operation.status),
+      status: getOperationStatusText(operation.status),
       area: operation.area,
       client: clientName,
       supervisors: supervisorNames,
@@ -256,7 +257,7 @@ class ReportDataProcessor {
   ) {
     return WorkerReportRow(
       operationId: operation.id!,
-      status: _getHumanReadableStatus(operation.status),
+      status: getOperationStatusText(operation.status),
       area: operation.area,
       client: clientName,
       supervisors: supervisorNames,
@@ -289,7 +290,7 @@ class ReportDataProcessor {
   ) {
     return GeneralReportRow(
       operationId: operation.id!,
-      status: _getHumanReadableStatus(operation.status),
+      status: getOperationStatusText(operation.status),
       area: operation.area,
       client: clientName,
       supervisors: supervisorNames,
@@ -387,20 +388,5 @@ class ReportDataProcessor {
     final minute = timeParts.length > 1 ? int.parse(timeParts[1]) : 0;
 
     return DateTime(date.year, date.month, date.day, hour, minute);
-  }
-
-  static String _getHumanReadableStatus(String status) {
-    switch (status.toUpperCase()) {
-      case 'COMPLETED':
-        return 'Completada';
-      case 'INPROGRESS':
-        return 'En Curso';
-      case 'PENDING':
-        return 'Pendiente';
-      case 'CANCELED':
-        return 'Cancelada';
-      default:
-        return status;
-    }
   }
 }

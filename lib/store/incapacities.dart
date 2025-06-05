@@ -43,18 +43,6 @@ class IncapacityProvider with ChangeNotifier {
     }
   }
 
-  // Obtener incapacidades por trabajador
-  Future<List<Incapacity>> getIncapacitiesByWorker(
-      int workerId, BuildContext context) async {
-    try {
-      return await _incapacityService.getIncapacitiesByWorker(
-          workerId, context);
-    } catch (e) {
-      debugPrint('Error al obtener incapacidades: $e');
-      return [];
-    }
-  }
-
   // Nuevo método para obtener la incapacidad actual de un trabajador
   Future<Incapacity?> getCurrentIncapacityForWorker(
     int workerId,

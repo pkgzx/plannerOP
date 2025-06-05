@@ -12,7 +12,7 @@ import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class OperationsProvider extends ChangeNotifier {
-  final AssignmentService _assignmentService = AssignmentService();
+  final OperationService _operationService = OperationService();
   List<Operation> _assignments = [];
   bool _isLoading = false;
   String? _error;
@@ -125,7 +125,7 @@ class OperationsProvider extends ChangeNotifier {
       }
 
       // Si no, enviar petición para completar sólo este grupo/trabajador
-      final success = await _assignmentService.completePartialAssignment(
+      final success = await _operationService.completeGroupOperation(
         assignment.id ?? 0,
         workerIdsToSend,
         groupId,
@@ -142,7 +142,6 @@ class OperationsProvider extends ChangeNotifier {
 
         if (index >= 0) {
           // Obtener conjunto de IDs de los trabajadores completados
-          final completedWorkerIds = workers.map((w) => w.id).toSet();
 
           // Si es un grupo, eliminarlo de la lista de grupos
           if (groupId != "individual" && !groupId.startsWith("worker_")) {
@@ -229,8 +228,8 @@ class OperationsProvider extends ChangeNotifier {
 
     try {
       // Refrescar solo asignaciones activas y pendientes
-      final updatedAssignments = await _assignmentService
-          .fetchAssignmentsByStatus(context, ['INPROGRESS', 'PENDING']);
+      final updatedAssignments = await _operationService
+          .fetchOperationsByStatus(context, ['INPROGRESS', 'PENDING']);
 
       if (updatedAssignments.isNotEmpty) {
         // Actualizar lista existente
@@ -254,7 +253,7 @@ class OperationsProvider extends ChangeNotifier {
       int id, DateTime endDate, String endTime, BuildContext context) async {
     // debugPrint('Completando operación...');
     try {
-      final success = await _assignmentService.completeAssigment(
+      final success = await _operationService.completeOperation(
           id, 'COMPLETED', endDate, endTime, context);
 
       if (success) {
@@ -297,7 +296,7 @@ class OperationsProvider extends ChangeNotifier {
       BuildContext context, int assigmentId) async {
     try {
       // Llamar al servicio para eliminar el grupo en el backend
-      final success = await _assignmentService.removeGroupFromAssignment(
+      final success = await _operationService.removeGroupFromOperation(
           assigmentId, context, workersGroups);
 
       if (success) {
@@ -356,13 +355,13 @@ class OperationsProvider extends ChangeNotifier {
 
     try {
       // debugPrint('Intentando cargar asignaciones desde API...');
-      final assignments = await _assignmentService.fetchAssignments(context);
+      final operations = await _operationService.fetchOperations(context);
 
       // Limpiar lista existente
       _assignments.clear();
 
       // Añadir nuevas asignaciones
-      _assignments.addAll(assignments);
+      _assignments.addAll(operations);
     } catch (e, stackTrace) {
       debugPrint('Error al cargar asignaciones: $e');
       debugPrint('Stack trace: $stackTrace');
@@ -397,7 +396,7 @@ class OperationsProvider extends ChangeNotifier {
       notifyListeners();
 
       // Llamar al servicio para conectar los trabajadores en el backend
-      final success = await _assignmentService.connectWorkersToAssignment(
+      final success = await _operationService.connectWorkersToOperation(
           assignmentId, individualWorkerIds, groupsToConnect, context);
 
       _isLoading = false;
@@ -456,7 +455,7 @@ class OperationsProvider extends ChangeNotifier {
       CreateOperationDto response = CreateOperationDto(id: 0, isSuccess: false);
       if (context != null) {
         response =
-            await _assignmentService.createAssignment(newAssignment, context);
+            await _operationService.createOperation(newAssignment, context);
         newAssignment.id = response.id;
       }
 
@@ -503,8 +502,8 @@ class OperationsProvider extends ChangeNotifier {
       debugPrint('Refrescando operación creada con ID: $operationId');
 
       // Obtener la operación específica del backend
-      final refreshedOperations = await _assignmentService
-          .fetchAssignmentsByStatus(context, ['PENDING', 'INPROGRESS']);
+      final refreshedOperations = await _operationService
+          .fetchOperationsByStatus(context, ['PENDING', 'INPROGRESS']);
 
       // Buscar la operación específica en la respuesta usando where (más seguro)
       final matchingOperations =
@@ -588,7 +587,7 @@ class OperationsProvider extends ChangeNotifier {
 
       // debugPrint('Actualizando estado de la operación en el backend...');
 
-      await _assignmentService.updateStatusAssignment(id, status, context);
+      await _operationService.updateStatusOperation(id, status, context);
 
       await _saveAssignments();
       notifyListeners();
@@ -658,15 +657,18 @@ class OperationsProvider extends ChangeNotifier {
   // Añadir este nuevo método al AssignmentsProvider
   Future<bool> updateAssignment(
       Operation updatedAssignment, BuildContext context) async {
-    debugPrint('Actualizando operación2...');
     try {
       _isLoading = true;
       _error = null;
       notifyListeners();
 
       // Actualizar en el backend
-      final success = await _assignmentService.updateAssignmentToComplete(
-          updatedAssignment, context);
+      final success = await _operationService.completeOperation(
+          updatedAssignment.id ?? 0,
+          updatedAssignment.status,
+          updatedAssignment.endDate ?? DateTime.now(),
+          updatedAssignment.endTime ?? '',
+          context);
 
       if (success) {
         // Actualizar en la lista local
@@ -704,8 +706,8 @@ class OperationsProvider extends ChangeNotifier {
 
     try {
       // Primera fase: Cargar asignaciones activas y pendientes (alta prioridad)
-      final highPriorityAssignments = await _assignmentService
-          .fetchAssignmentsByStatus(context, ['INPROGRESS', 'PENDING']);
+      final highPriorityAssignments = await _operationService
+          .fetchOperationsByStatus(context, ['INPROGRESS', 'PENDING']);
 
       // Actualizar primero las asignaciones de alta prioridad
       if (highPriorityAssignments.isNotEmpty) {
@@ -737,8 +739,8 @@ class OperationsProvider extends ChangeNotifier {
       BuildContext context) async {
     // debugPrint('Cargando asignaciones completadas en segundo plano...');
     try {
-      final completedAssignments = await _assignmentService
-          .fetchAssignmentsByStatus(context, ['COMPLETED']);
+      final completedAssignments = await _operationService
+          .fetchOperationsByStatus(context, ['COMPLETED']);
 
       if (completedAssignments.isNotEmpty) {
         // Actualizar solo las asignaciones completadas

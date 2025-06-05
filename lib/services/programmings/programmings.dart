@@ -92,7 +92,7 @@ class ProgrammingsService {
     }
   }
 
-  /// NUEVO MÉTODO: Obtener una programación específica por ID
+  /// Obtener una programación específica por ID
   Future<Programming?> getProgrammingById(
       int programmingId, BuildContext context) async {
     try {

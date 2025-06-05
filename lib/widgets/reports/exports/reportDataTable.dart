@@ -2,12 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_neumorphic_plus/flutter_neumorphic.dart';
 import 'package:intl/intl.dart';
 import 'package:plannerop/core/model/operation.dart';
+import 'package:plannerop/mapper/operation.dart';
 import 'package:plannerop/store/operations.dart';
 import 'package:plannerop/store/workers.dart';
 import 'package:plannerop/store/task.dart';
 import 'package:plannerop/store/clients.dart';
 import 'package:plannerop/store/chargersOp.dart';
-import 'package:plannerop/utils/charts/translate.dart';
+
 import 'package:provider/provider.dart';
 
 class ReportDataTable extends StatefulWidget {
@@ -561,23 +562,7 @@ class _ReportDataTableState extends State<ReportDataTable> {
   }
 
   Widget _buildStatusWidget(String status) {
-    Color color;
-    switch (status.toUpperCase()) {
-      case 'COMPLETED':
-        color = const Color(0xFF38A169);
-        break;
-      case 'INPROGRESS':
-        color = const Color(0xFF3182CE);
-        break;
-      case 'PENDING':
-        color = const Color(0xFFDD6B20);
-        break;
-      case 'CANCELED':
-        color = const Color(0xFFE53E3E);
-        break;
-      default:
-        color = const Color(0xFF718096);
-    }
+    Color color = getStatusColor(status);
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
@@ -587,7 +572,7 @@ class _ReportDataTableState extends State<ReportDataTable> {
         border: Border.all(color: color.withOpacity(0.2)),
       ),
       child: Text(
-        normalizeStatus(status),
+        getOperationStatusText(status),
         style: TextStyle(
           color: color,
           fontWeight: FontWeight.w500,
@@ -649,21 +634,5 @@ class _ReportDataTableState extends State<ReportDataTable> {
         ],
       ),
     );
-  }
-}
-
-// Función helper para normalizar estados (agregar al final del archivo)
-String normalizeStatus(String status) {
-  switch (status.toUpperCase()) {
-    case 'COMPLETED':
-      return 'Completada';
-    case 'INPROGRESS':
-      return 'En Curso';
-    case 'PENDING':
-      return 'Pendiente';
-    case 'CANCELED':
-      return 'Cancelada';
-    default:
-      return status;
   }
 }

@@ -5,6 +5,7 @@ import 'package:plannerop/core/model/operation.dart';
 import 'package:plannerop/core/model/programming.dart';
 import 'package:plannerop/core/model/user.dart';
 import 'package:plannerop/core/model/workerGroup.dart';
+import 'package:plannerop/mapper/operation.dart';
 import 'package:plannerop/store/operations.dart';
 import 'package:plannerop/store/chargersOp.dart';
 import 'package:plannerop/store/clients.dart';
@@ -73,11 +74,11 @@ Widget _buildProgrammingDetailCard(Programming programming) {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
               decoration: BoxDecoration(
-                color: _getProgrammingStatusColor(programming.status),
+                color: getStatusColor(programming.status),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Text(
-                _getProgrammingStatusText(programming.status),
+                getOperationStatusText(programming.status),
                 style: const TextStyle(
                   color: Colors.white,
                   fontWeight: FontWeight.w600,
@@ -144,38 +145,6 @@ Widget _buildProgrammingDetailRow(String label, String value) {
       ],
     ),
   );
-}
-
-// Función para obtener el color según el estado de la programación
-Color _getProgrammingStatusColor(String status) {
-  switch (status.toUpperCase()) {
-    case 'UNASSIGNED':
-      return Colors.orange;
-    case 'ASSIGNED':
-      return Colors.blue;
-    case 'COMPLETED':
-      return Colors.green;
-    case 'CANCELLED':
-      return Colors.red;
-    default:
-      return Colors.grey;
-  }
-}
-
-// Función para obtener el texto del estado en español
-String _getProgrammingStatusText(String status) {
-  switch (status.toUpperCase()) {
-    case 'UNASSIGNED':
-      return 'Sin Asignar';
-    case 'ASSIGNED':
-      return 'Asignada';
-    case 'COMPLETED':
-      return 'Completada';
-    case 'CANCELLED':
-      return 'Cancelada';
-    default:
-      return status;
-  }
 }
 
 /// Shows assignment details in a modal bottom sheet
@@ -342,17 +311,17 @@ void showOperationDetails({
                           const SizedBox(height: 20),
                         ],
 
-                        // Groups section with enhanced support
-                        buildGroupsSection(
-                          context,
-                          assignment.groups,
-                          'Grupos de trabajo',
-                          assignment: assignment,
-                          alimentacionStatus: alimentacionStatus,
-                          foods: foods,
-                          onAlimentacionChanged: onAlimentacionChanged,
-                          setState: setState,
-                        ),
+                        // // Groups section with enhanced support
+                        // buildGroupsSection(
+                        //   context,
+                        //   assignment.groups,
+                        //   'Grupos de trabajo',
+                        //   assignment: assignment,
+                        //   alimentacionStatus: alimentacionStatus,
+                        //   foods: foods,
+                        //   onAlimentacionChanged: onAlimentacionChanged,
+                        //   setState: setState,
+                        // ),
 
                         // In-charges section
                         if (inChargersFormat.isNotEmpty) ...[
@@ -456,21 +425,6 @@ Widget buildDetailRow(String label, String value) {
   );
 }
 
-Color getStatusColor(String status) {
-  switch (status.toUpperCase()) {
-    case 'PENDING':
-      return Colors.orange;
-    case 'INPROGRESS':
-      return Colors.blue;
-    case 'COMPLETED':
-      return Colors.green;
-    case 'CANCELLED':
-      return Colors.red;
-    default:
-      return Colors.grey;
-  }
-}
-
 // Método para mostrar el diálogo de cancelación (agregarlo si no existe)
 void showCancelDialog(
     BuildContext context, Operation assignment, OperationsProvider provider) {
@@ -522,7 +476,7 @@ void showCancelDialog(
                           debugPrint('Cancelando operación ${assignment.id}');
 
                           // Aquí iría la llamada a la API para cancelar
-                          final success = await provider.updateAssignmentStatus(
+                          await provider.updateAssignmentStatus(
                               assignment.id ?? 0, 'CANCELED', context);
 
                           Navigator.pop(dialogContext);
@@ -748,21 +702,5 @@ Future<String> getServiceName(BuildContext context, int serviceId) async {
         serviceId, context);
   } catch (e) {
     return 'Servicio desconocido';
-  }
-}
-
-// Helper para obtener el ícono según el estado
-IconData getStatusIcon(String status) {
-  switch (status.toUpperCase()) {
-    case 'PENDING':
-      return Icons.pending_outlined;
-    case 'INPROGRESS':
-      return Icons.sync;
-    case 'COMPLETED':
-      return Icons.check_circle_outline;
-    case 'CANCELED':
-      return Icons.cancel_outlined;
-    default:
-      return Icons.pending_outlined;
   }
 }

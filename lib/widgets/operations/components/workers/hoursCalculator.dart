@@ -39,7 +39,7 @@ Future<WorkerHoursResult> calculateWorkerHours(
     }
 
     if (assignment.endDate != null && assignment.endTime != null) {
-      final double assignmentHours = calculateAssignmentDuration(assignment);
+      // final double assignmentHours = calculateAssignmentDuration(assignment);
 
       // Asignar estas horas a cada trabajador de la operación
       // for (var worker in assignment.workers) {
@@ -47,8 +47,6 @@ Future<WorkerHoursResult> calculateWorkerHours(
       // }
     }
   }
-
-  final Set<int> selectedWorkerIds = selectedWorkers.map((w) => w.id).toSet();
 
   return WorkerHoursResult(hoursMap, availableWorkers);
 }

@@ -4,7 +4,7 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:http/http.dart' as http;
 import 'package:plannerop/core/model/incapacity.dart';
 import 'package:plannerop/store/auth.dart';
-import 'package:plannerop/utils/constants.dart';
+import 'package:plannerop/utils/date.dart';
 import 'package:provider/provider.dart';
 
 class IncapacityService {
@@ -40,38 +40,6 @@ class IncapacityService {
     }
   }
 
-  Future<List<Incapacity>> getIncapacitiesByWorker(
-      int workerId, BuildContext context) async {
-    try {
-      final authProvider = Provider.of<AuthProvider>(context, listen: false);
-      final String token = authProvider.accessToken;
-
-      if (token.isEmpty) {
-        debugPrint('No hay token disponible');
-        return [];
-      }
-
-      var url = Uri.parse('$API_URL/inability/worker/$workerId');
-      var response = await http.get(
-        url,
-        headers: {
-          'Authorization': 'Bearer $token',
-        },
-      );
-
-      if (response.statusCode == 200) {
-        final List<dynamic> jsonResponse = jsonDecode(response.body);
-        return jsonResponse.map((json) => _incapacityFromJson(json)).toList();
-      } else {
-        debugPrint('Error al obtener incapacidades: ${response.statusCode}');
-        return [];
-      }
-    } catch (e) {
-      debugPrint('Error en getIncapacitiesByWorker: $e');
-      return [];
-    }
-  }
-
   //  método para buscar incapacidades con filtros
   Future<List<Incapacity>> searchIncapacities({
     int? workerId,
@@ -99,11 +67,11 @@ class IncapacityService {
       }
 
       if (dateDisableStart != null) {
-        queryParams.add('dateDisableStart=${_formatDate(dateDisableStart)}');
+        queryParams.add('dateDisableStart=${formatDate(dateDisableStart)}');
       }
 
       if (dateDisableEnd != null) {
-        queryParams.add('dateDisableEnd=${_formatDate(dateDisableEnd)}');
+        queryParams.add('dateDisableEnd=${formatDate(dateDisableEnd)}');
       }
 
       if (types != null && types.isNotEmpty) {
@@ -133,7 +101,7 @@ class IncapacityService {
 
       if (response.statusCode == 200) {
         final List<dynamic> jsonResponse = jsonDecode(response.body);
-        return jsonResponse.map((json) => _incapacityFromJson(json)).toList();
+        return jsonResponse.map((json) => Incapacity.fromJson(json)).toList();
       } else {
         debugPrint('Error al buscar incapacidades: ${response.statusCode}');
         return [];
@@ -141,51 +109,6 @@ class IncapacityService {
     } catch (e) {
       debugPrint('Error en searchIncapacities: $e');
       return [];
-    }
-  }
-
-  // Método auxiliar para formatear fechas
-  String _formatDate(DateTime date) {
-    return '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
-  }
-
-  // ...existing code...
-
-  Incapacity _incapacityFromJson(Map<String, dynamic> json) {
-    return Incapacity(
-      id: json['id']?.toString() ?? "",
-      workerId: json['id_worker'] ?? 0,
-      type: _mapApiToType(json['type']),
-      cause: _mapApiToCause(json['cause']),
-      startDate: DateTime.parse(json['dateDisableStart']),
-      endDate: DateTime.parse(json['dateDisableEnd']),
-      createdAt: json['createdAt'] != null
-          ? DateTime.parse(json['createdAt'])
-          : DateTime.now(),
-    );
-  }
-
-  IncapacityType _mapApiToType(String apiType) {
-    switch (apiType) {
-      case 'INITIAL':
-        return IncapacityType.INITIAL;
-      case 'EXTENSION':
-        return IncapacityType.EXTENSION;
-      default:
-        return IncapacityType.INITIAL;
-    }
-  }
-
-  IncapacityCause _mapApiToCause(String apiCause) {
-    switch (apiCause) {
-      case 'LABOR':
-        return IncapacityCause.LABOR;
-      case 'TRANSIT':
-        return IncapacityCause.TRANSIT;
-      case 'DISEASE':
-        return IncapacityCause.DISEASE;
-      default:
-        return IncapacityCause.DISEASE;
     }
   }
 }

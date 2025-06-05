@@ -6,7 +6,7 @@ import 'package:plannerop/core/model/operation.dart';
 import 'package:plannerop/services/operations/operationReports.dart';
 
 import 'package:plannerop/utils/charts/mapper.dart';
-import 'package:plannerop/utils/charts/translate.dart';
+
 import 'package:plannerop/utils/toast.dart';
 import 'package:plannerop/widgets/reports/exports/excelGenerator.dart';
 import 'package:plannerop/widgets/reports/exports/reportDataProcessor.dart';

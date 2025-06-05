@@ -88,6 +88,7 @@ class _LoginPageState extends State<LoginPage> {
                               BorderRadius.circular(12)),
                         ),
                         child: TextFormField(
+                          key: Key('signin_username_field'),
                           controller: _usernameController,
                           focusNode: _usernameFocusNode,
                           decoration: const InputDecoration(
@@ -117,6 +118,7 @@ class _LoginPageState extends State<LoginPage> {
                               BorderRadius.circular(12)),
                         ),
                         child: TextFormField(
+                          key: Key('signin_password_field'),
                           controller: _passwordController,
                           focusNode: _passwordFocusNode,
                           obscureText: _passVisibility,
@@ -172,6 +174,7 @@ class _LoginPageState extends State<LoginPage> {
                         child: const Center(
                           child: Text(
                             'Ingresar',
+                            key: Key('signin_button'),
                             style: TextStyle(
                               fontSize: 20, // Aumenta el tamaño del texto
                               fontWeight: FontWeight.bold,
