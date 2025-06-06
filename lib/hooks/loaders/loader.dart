@@ -249,7 +249,7 @@ Future<void> loadAssignments({
   // No mostrar indicador de carga si ya hay datos disponibles
   final assignmentsProvider =
       Provider.of<OperationsProvider>(context, listen: false);
-  final hasExistingData = assignmentsProvider.assignments.isNotEmpty;
+  final hasExistingData = assignmentsProvider.operations.isNotEmpty;
 
   if (!hasExistingData) {
     setStateCallback(() {
@@ -261,7 +261,7 @@ Future<void> loadAssignments({
     // Cargar asignaciones con prioridad
     await assignmentsProvider.loadAssignmentsWithPriority(context);
 
-    if (assignmentsProvider.assignments.isNotEmpty) {
+    if (assignmentsProvider.operations.isNotEmpty) {
     } else {
       debugPrint('No se cargaron asignaciones o la lista está vacía');
     }

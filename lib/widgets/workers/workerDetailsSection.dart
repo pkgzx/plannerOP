@@ -3,8 +3,8 @@ import 'package:intl/intl.dart';
 import 'package:plannerop/core/model/incapacity.dart';
 import 'package:plannerop/core/model/worker.dart';
 import 'package:flutter_neumorphic_plus/flutter_neumorphic.dart';
+import 'package:plannerop/store/faults.dart';
 import 'package:plannerop/store/incapacities.dart';
-import 'package:plannerop/store/workers.dart';
 import 'package:provider/provider.dart';
 import 'package:plannerop/utils/toast.dart';
 
@@ -526,15 +526,16 @@ class _WorkerDetailsSectionState extends State<WorkerDetailsSection> {
                                   });
 
                                   try {
-                                    final workersProvider =
-                                        Provider.of<WorkersProvider>(context,
+                                    final FaultsProvider faultsProvider =
+                                        Provider.of<FaultsProvider>(
+                                            dialogContext,
                                             listen: false);
                                     bool success = false;
 
                                     // Llamar al método adecuado según el tipo de incidente
                                     switch (incidentType) {
                                       case 'abandono':
-                                        success = await workersProvider
+                                        success = await faultsProvider
                                             .registerAbandonment(
                                           worker,
                                           dialogContext, // Usa dialogContext en lugar de context
@@ -542,7 +543,7 @@ class _WorkerDetailsSectionState extends State<WorkerDetailsSection> {
                                         );
                                         break;
                                       case 'falta_respeto':
-                                        success = await workersProvider
+                                        success = await faultsProvider
                                             .registerDisrespect(
                                           worker,
                                           dialogContext, // Usa dialogContext en lugar de context
@@ -551,14 +552,14 @@ class _WorkerDetailsSectionState extends State<WorkerDetailsSection> {
                                         break;
                                       case 'falta':
                                         success =
-                                            await workersProvider.registerFault(
+                                            await faultsProvider.registerFault(
                                           worker,
                                           dialogContext, // Usa dialogContext en lugar de context
                                           description: localDescription,
                                         );
                                       default:
                                         success =
-                                            await workersProvider.registerFault(
+                                            await faultsProvider.registerFault(
                                           worker,
                                           dialogContext, // Usa dialogContext en lugar de context
                                           description: localDescription,

@@ -188,14 +188,14 @@ class _HomeState extends State<Home> {
     final assignmentsProvider =
         Provider.of<OperationsProvider>(context, listen: false);
     // Actualizar silenciosamente sin mostrar indicadores de carga
-    assignmentsProvider.refreshActiveAssignments(context);
+    assignmentsProvider.refreshActiveOperations(context);
   }
 
   void _refreshOperations() {
     final assignmentsProvider =
         Provider.of<OperationsProvider>(context, listen: false);
     // Refrescar solo asignaciones activas y pendientes
-    assignmentsProvider.refreshActiveAssignments(context);
+    assignmentsProvider.refreshActiveOperations(context);
   }
 
   @override

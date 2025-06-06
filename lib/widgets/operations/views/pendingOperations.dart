@@ -60,7 +60,7 @@ class _PendingOperationsViewState extends State<PendingOperationsView> {
           );
         }
 
-        final pendingAssignments = assignmentsProvider.pendingAssignments;
+        final pendingAssignments = assignmentsProvider.pendingOperations;
 
         // Aplicar filtros
         var filteredAssignments = pendingAssignments.where((assignment) {
@@ -330,11 +330,11 @@ class _PendingOperationsViewState extends State<PendingOperationsView> {
                         });
 
                         try {
-                          debugPrint('Iniciando operación ${assignment.id}');
-
                           // Actualizar el estado de la operación a "INPROGRESS"
-                          await provider.updateAssignmentStatus(
-                              assignment.id ?? 0, 'INPROGRESS', context);
+                          await provider.updateOperation(
+                              id: assignment.id ?? 0,
+                              status: "INPROGRESS",
+                              context: context);
 
                           // Cerrar el diálogo
                           Navigator.pop(dialogContext);

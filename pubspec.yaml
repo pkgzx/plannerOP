@@ -39,6 +39,7 @@ dependencies:
   syncfusion_flutter_xlsio: 27.2.5
   flutter_secure_storage: ^9.1.0
   encrypt: ^5.0.1 
+  permission_handler: ^11.0.1
 
   
 

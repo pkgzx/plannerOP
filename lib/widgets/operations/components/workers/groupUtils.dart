@@ -4,7 +4,6 @@ import 'package:plannerop/core/model/workerGroup.dart';
 import 'package:plannerop/store/operations.dart';
 
 import 'package:plannerop/utils/toast.dart';
-import 'package:plannerop/widgets/operations/add/addOperationDialog.dart';
 import 'package:plannerop/widgets/operations/edit/editOperationForm.dart';
 import 'package:provider/provider.dart';
 
@@ -68,7 +67,7 @@ void removeWorker({
       workerGroup!.id.toString(): [worker.id],
     };
 
-    assignmentsProvider.removeGroupFromAssignment(
+    assignmentsProvider.removeGroupFromOperation(
       data,
       context,
       assignmentId,
@@ -140,7 +139,7 @@ void _syncGroupDeletionWithBackend(
     // Llamar al servicio de backend para eliminar el grupo
     try {
       assignmentsProvider
-          .removeGroupFromAssignment(data, context, assignmentId)
+          .removeGroupFromOperation(data, context, assignmentId)
           .then((_) {
         // Cerrar el indicador de carga
         Navigator.of(context, rootNavigator: true).pop();

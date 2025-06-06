@@ -61,7 +61,7 @@ class _ActiveOperationsViewState extends State<ActiveOperationsView> {
           );
         }
 
-        var activeAssignments = assignmentsProvider.inProgressAssignments;
+        var activeAssignments = assignmentsProvider.inProgressOperations;
 
         // Ordenar y traer las más recientes
         activeAssignments.sort((a, b) => b.date.compareTo(a.date));
@@ -90,7 +90,7 @@ class _ActiveOperationsViewState extends State<ActiveOperationsView> {
         return RefreshIndicator(
           onRefresh: () async {
             // Si tuviéramos una recarga desde API la llamaríamos aquí
-            await assignmentsProvider.refreshActiveAssignments(context);
+            await assignmentsProvider.refreshActiveOperations(context);
           },
           child: Column(
             children: [
@@ -313,7 +313,13 @@ class _ActiveOperationsViewState extends State<ActiveOperationsView> {
             child: EditOperationForm(
               assignment: assignment,
               onSave: (updatedAssignment) {
-                provider.updateAssignment(updatedAssignment, context);
+                provider.updateOperation(
+                  id: updatedAssignment.id!,
+                  status: updatedAssignment.status,
+                  endDate: updatedAssignment.endDate,
+                  endTime: updatedAssignment.endTime,
+                  context: context,
+                );
                 showSuccessToast(context, 'Operación actualizada');
                 Navigator.pop(context);
               },
@@ -322,25 +328,6 @@ class _ActiveOperationsViewState extends State<ActiveOperationsView> {
           ),
         );
       },
-    );
-  }
-
-  Widget _buildDetailsSection(
-      {required String title, required List<Widget> children}) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          title,
-          style: const TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.bold,
-            color: Color(0xFF2D3748),
-          ),
-        ),
-        const SizedBox(height: 12),
-        ...children,
-      ],
     );
   }
 }

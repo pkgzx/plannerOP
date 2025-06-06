@@ -20,7 +20,7 @@ Future<WorkerHoursResult> calculateWorkerHours(
       Provider.of<OperationsProvider>(context, listen: false);
   final workersProvider = Provider.of<WorkersProvider>(context, listen: false);
 
-  final completedAssignments = assignmentsProvider.completedAssignments
+  final completedAssignments = assignmentsProvider.completedOperations
       .where((assignment) =>
           assignment.date.isAfter(DateTime.now().subtract(Duration(days: 2))))
       .toList();

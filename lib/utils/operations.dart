@@ -311,17 +311,19 @@ void showOperationDetails({
                           const SizedBox(height: 20),
                         ],
 
-                        // // Groups section with enhanced support
-                        // buildGroupsSection(
-                        //   context,
-                        //   assignment.groups,
-                        //   'Grupos de trabajo',
-                        //   assignment: assignment,
-                        //   alimentacionStatus: alimentacionStatus,
-                        //   foods: foods,
-                        //   onAlimentacionChanged: onAlimentacionChanged,
-                        //   setState: setState,
-                        // ),
+                        if (assignment.status == 'PENDING') ...[
+                          // Groups section with enhanced support
+                          buildGroupsSection(
+                            context,
+                            assignment.groups,
+                            'Grupos de trabajo',
+                            assignment: assignment,
+                            alimentacionStatus: alimentacionStatus,
+                            foods: foods,
+                            onAlimentacionChanged: onAlimentacionChanged,
+                            setState: setState,
+                          ),
+                        ],
 
                         // In-charges section
                         if (inChargersFormat.isNotEmpty) ...[
@@ -476,8 +478,10 @@ void showCancelDialog(
                           debugPrint('Cancelando operación ${assignment.id}');
 
                           // Aquí iría la llamada a la API para cancelar
-                          await provider.updateAssignmentStatus(
-                              assignment.id ?? 0, 'CANCELED', context);
+                          await provider.updateOperation(
+                              id: assignment.id ?? 0,
+                              status: 'CANCELED',
+                              context: context);
 
                           Navigator.pop(dialogContext);
                           showSuccessToast(

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:plannerop/core/model/programming.dart';
 import 'package:plannerop/services/programmings/programmings.dart';
+import 'package:provider/provider.dart';
 
 class ProgrammingsProvider extends ChangeNotifier {
   final ProgrammingsService _programmingsService = ProgrammingsService();
@@ -96,11 +97,19 @@ class ProgrammingsProvider extends ChangeNotifier {
     });
 
     try {
-      final programmings =
+      final programmingsToday =
           await _programmingsService.getProgrammingsByDate(date, context);
 
+      final programmingsTomorrow =
+          await _programmingsService.getProgrammingsByDate(
+              DateTime.now()
+                  .add(const Duration(days: 1))
+                  .toIso8601String()
+                  .split('T')[0],
+              context);
+
       // Asegurarse de que estemos fuera del ciclo de construcción
-      _programmings = programmings;
+      _programmings = [...programmingsToday, ...programmingsTomorrow];
 
       // Usar Future.microtask también para la actualización final
       Future.microtask(() {
@@ -119,7 +128,7 @@ class ProgrammingsProvider extends ChangeNotifier {
     }
   }
 
-  // NUEVO MÉTODO: Buscar programación por ID
+  //  Buscar programación por ID
   Future<Programming?> fetchProgrammingById(
       int programmingId, BuildContext context) async {
     try {
@@ -141,7 +150,7 @@ class ProgrammingsProvider extends ChangeNotifier {
     }
   }
 
-  // NUEVO MÉTODO: Refrescar programaciones forzadamente
+  //  Refrescar programaciones forzadamente
   Future<void> refreshProgrammings(BuildContext context,
       {String? specificDate}) async {
     // debugPrint('Refrescando programaciones del cliente...');
@@ -155,12 +164,20 @@ class ProgrammingsProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      final programmings = await _programmingsService.getProgrammingsByDate(
-          dateToFetch, context);
+      final programmingsToday = await _programmingsService
+          .getProgrammingsByDate(dateToFetch, context);
+      final programmingsTomorrow =
+          await _programmingsService.getProgrammingsByDate(
+              DateTime.now()
+                  .add(const Duration(days: 1))
+                  .toIso8601String()
+                  .split('T')[0],
+              context);
 
       // Limpiar la lista actual y cargar nuevas programaciones
       _programmings.clear();
-      _programmings.addAll(programmings);
+      _programmings.addAll(programmingsToday);
+      _programmings.addAll(programmingsTomorrow);
     } catch (e) {
       _error = 'Error al refrescar programaciones: $e';
       debugPrint('Error al refrescar programaciones: $e');
@@ -181,7 +198,7 @@ class ProgrammingsProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  // NUEVO MÉTODO: Limpiar caché
+  //  Limpiar caché
   void clearCache() {
     _programmings.clear();
     notifyListeners();

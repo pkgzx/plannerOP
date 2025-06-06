@@ -122,7 +122,7 @@ class FeedingProvider extends ChangeNotifier {
 
   Future<void> loadFeedingStatusForOperation(
       int operationId, BuildContext context) async {
-    // ✅ VERIFICAR CACHE MÁS ESTRICTO
+    //  VERIFICAR CACHE MÁS ESTRICTO
     if (_loadedOperations.contains(operationId)) {
       final lastLoaded = _lastLoadedTime[operationId];
       if (lastLoaded != null &&
@@ -131,14 +131,14 @@ class FeedingProvider extends ChangeNotifier {
       }
     }
 
-    // ✅ EVITAR NOTIFICACIONES DURANTE LA CONSTRUCCIÓN
+    //  EVITAR NOTIFICACIONES DURANTE LA CONSTRUCCIÓN
     bool wasLoading = _isLoading;
     bool hadData = _feedingStatus.containsKey(operationId);
 
     // Solo marcar como loading si no estaba cargando y no hay datos
     if (!wasLoading && !hadData) {
       _isLoading = true;
-      // ✅ USAR SCHEDULEMICROTASK PARA EVITAR NOTIFICAR DURANTE BUILD
+      //  USAR SCHEDULEMICROTASK PARA EVITAR NOTIFICAR DURANTE BUILD
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) {
           notifyListeners();
@@ -168,7 +168,7 @@ class FeedingProvider extends ChangeNotifier {
       _loadedOperations.add(operationId);
       _lastLoadedTime[operationId] = DateTime.now();
 
-      // ✅ FINALIZAR LOADING Y NOTIFICAR SOLO UNA VEZ
+      //  FINALIZAR LOADING Y NOTIFICAR SOLO UNA VEZ
       if (!wasLoading && !hadData) {
         _isLoading = false;
         WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -190,10 +190,10 @@ class FeedingProvider extends ChangeNotifier {
     }
   }
 
-  // ✅ AGREGAR GETTER PARA VERIFICAR SI EL PROVIDER ESTÁ MONTADO
+  //  AGREGAR GETTER PARA VERIFICAR SI EL PROVIDER ESTÁ MONTADO
   bool get mounted => hasListeners;
 
-  // ✅ MÉTODO PARA VERIFICAR SI HAY DATOS CARGADOS
+  //  MÉTODO PARA VERIFICAR SI HAY DATOS CARGADOS
   bool hasFeedingDataForOperation(int operationId) {
     return _feedingStatus.containsKey(operationId) &&
         _loadedOperations.contains(operationId);

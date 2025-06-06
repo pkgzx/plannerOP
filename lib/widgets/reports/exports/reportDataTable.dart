@@ -203,7 +203,7 @@ class _ReportDataTableState extends State<ReportDataTable> {
     final usersProvider = Provider.of<WorkersProvider>(context, listen: false);
 
     // Obtenemos las asignaciones del provider
-    final allAssignments = assignmentsProvider.assignments;
+    final allAssignments = assignmentsProvider.operations;
 
     // Aplicamos los filtros a las asignaciones
     final filteredData = _getFilteredData(allAssignments);

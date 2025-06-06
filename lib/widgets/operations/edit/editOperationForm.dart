@@ -764,10 +764,10 @@ class EditOperationFormState extends State<EditOperationForm> {
 
       // Actualizar estados de los trabajadores
       for (var worker in addedWorkers) {
-        workersProvider.assignWorkerObject(worker, context);
+        workersProvider.assignWorkerToOperation(worker, context);
       }
 
-      assignmentsProvider.removeGroupFromAssignment(
+      assignmentsProvider.removeGroupFromOperation(
         _workersRemovedFromGroups,
         context,
         widget.assignment.id!,
@@ -846,9 +846,12 @@ Future<void> showEditAssignmentForm(
 
           try {
             // Actualizar la operación
-            final success = await assignmentsProvider.updateAssignment(
-              updatedAssignment,
-              context,
+            final success = await assignmentsProvider.updateOperation(
+              id: updatedAssignment.id!,
+              status: updatedAssignment.status,
+              endDate: updatedAssignment.endDate,
+              endTime: updatedAssignment.endTime,
+              context: context,
             );
 
             if (success) {

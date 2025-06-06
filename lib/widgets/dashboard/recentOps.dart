@@ -15,7 +15,7 @@ class RecentOps extends StatelessWidget {
     return Consumer<OperationsProvider>(
       builder: (context, provider, child) {
         // Obtener las asignaciones ordenadas por fecha reciente
-        final allAssignments = [...provider.assignments];
+        final allAssignments = [...provider.operations];
         allAssignments.sort((a, b) {
           final dateA = a.endDate ?? a.date;
           final dateB = b.endDate ?? b.date;

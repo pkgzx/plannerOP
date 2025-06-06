@@ -267,7 +267,7 @@ class _DashboardTabState extends State<DashboardTab> {
                           Icons.pending_actions_outlined,
                           'Pendientes',
                           Provider.of<OperationsProvider>(context)
-                              .pendingAssignments
+                              .pendingOperations
                               .length
                               .toString()),
                       // Contador de operaciones en curso
@@ -276,7 +276,7 @@ class _DashboardTabState extends State<DashboardTab> {
                           Icons.directions_run,
                           'En Curso',
                           Provider.of<OperationsProvider>(context)
-                              .inProgressAssignments
+                              .inProgressOperations
                               .length
                               .toString()),
                       // Contador de asignaciones finalizadas
@@ -285,7 +285,7 @@ class _DashboardTabState extends State<DashboardTab> {
                           Icons.check_circle_outline,
                           'Finalizadas',
                           Provider.of<OperationsProvider>(context)
-                              .completedAssignments
+                              .completedOperations
                               .where((a) =>
                                   a.endDate?.month == DateTime.now().month &&
                                   a.endDate?.day == DateTime.now().day &&
