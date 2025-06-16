@@ -4,6 +4,7 @@ class User {
   String dni;
   String phone;
   String cargo;
+  String? role;
 
   User({
     required this.id,
@@ -11,6 +12,7 @@ class User {
     required this.dni,
     required this.phone,
     required this.cargo,
+    this.role,
   });
 
   static User fromJson(Map<String, dynamic> json) {
@@ -20,6 +22,7 @@ class User {
       name: json['name'],
       dni: json['dni'],
       phone: json['phone'],
+      role: json['role'],
     );
   }
 

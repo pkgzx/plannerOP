@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:plannerop/store/areas.dart';
-import 'package:plannerop/store/assignments.dart';
+import 'package:plannerop/store/operations.dart';
 import 'package:plannerop/store/chargersOp.dart';
 import 'package:plannerop/store/clients.dart';
 import 'package:plannerop/store/faults.dart';
+import 'package:plannerop/store/programmings.dart';
 import 'package:plannerop/store/task.dart';
 import 'package:plannerop/store/workers.dart';
 import 'package:plannerop/utils/toast.dart';
@@ -11,7 +13,7 @@ import 'package:provider/provider.dart';
 
 Future<void> loadChargersOp({
   required BuildContext context,
-  required bool Function() isMounted, // Función que verifica el valor actual
+  required bool Function() isMounted,
   required void Function(void Function())
       setStateCallback, // Función para llamar setState
   required void Function(bool)
@@ -41,7 +43,7 @@ Future<void> loadChargersOp({
 // Método para cargar faltas (similar a los otros métodos de carga)
 Future<void> loadFaults({
   required BuildContext context,
-  required bool Function() isMounted, // Función que verifica el valor actual
+  required bool Function() isMounted,
   required void Function(void Function())
       setStateCallback, // Función para llamar setState
   required void Function(bool)
@@ -70,19 +72,19 @@ Future<void> loadFaults({
 
 // Método para verificar si necesitamos cargar trabajadores
 Future<void> checkAndLoadWorkersIfNeeded(
-  bool mounted,
+  bool Function() isMounted,
   Function setState,
   bool isLoadingWorkers,
   BuildContext context,
 ) async {
-  if (!mounted) return;
+  if (!isMounted()) return;
 
   final workersProvider = Provider.of<WorkersProvider>(context, listen: false);
 
   // Solo cargaremos si no se han cargado antes
   if (!workersProvider.hasLoadedInitialData) {
     await _loadWorkers(
-      mounted,
+      isMounted,
       setState,
       isLoadingWorkers,
       context,
@@ -91,12 +93,12 @@ Future<void> checkAndLoadWorkersIfNeeded(
 }
 
 Future<void> _loadWorkers(
-  bool mounted,
+  bool Function() isMounted,
   Function setState,
   bool isLoadingWorkers,
   BuildContext context,
 ) async {
-  if (!mounted) return;
+  if (!isMounted()) return;
 
   setState(() {
     isLoadingWorkers = true;
@@ -106,7 +108,6 @@ Future<void> _loadWorkers(
 
   try {
     // Intentar cargar desde la API usando el método que respeta el flag
-    // debugPrint('Cargando trabajadores desde API..++++.');
     await workersProvider.fetchWorkersIfNeeded(context);
 
     // Si después de intentar cargar no hay datos, añadir datos de muestra
@@ -115,11 +116,11 @@ Future<void> _loadWorkers(
     // Si algo falla, cargar datos de muestra
 
     // Mostrar un mensaje de error
-    if (mounted) {
+    if (isMounted()) {
       showErrorToast(context, 'Error al cargar trabajadores.');
     }
   } finally {
-    if (mounted) {
+    if (isMounted()) {
       setState(() {
         isLoadingWorkers = false;
       });
@@ -128,12 +129,12 @@ Future<void> _loadWorkers(
 }
 
 Future<void> loadAreas(
-  bool mounted,
+  bool Function() isMounted,
   Function setState,
   bool isLoadingAreas,
   BuildContext context,
 ) async {
-  if (!mounted) return;
+  if (!isMounted()) return;
 
   final areasProvider = Provider.of<AreasProvider>(context, listen: false);
 
@@ -163,15 +164,14 @@ Future<void> loadAreas(
       // Si no hay áreas, cargar algunas predeterminadas
     }
   } catch (e, stackTrace) {
-    debugPrint('Error al cargar áreas: $e');
     debugPrint('Stack trace: $stackTrace');
 
     // Mostrar un mensaje de error más informativo
-    if (mounted) {
+    if (isMounted()) {
       showErrorToast(context, "Error al cargar áreas.");
     }
   } finally {
-    if (mounted) {
+    if (isMounted()) {
       setState(() {
         isLoadingAreas = false;
       });
@@ -180,12 +180,12 @@ Future<void> loadAreas(
 }
 
 Future<void> loadTask(
-  bool mounted,
+  bool Function() isMounted,
   Function setState,
   bool isLoadingTasks,
   BuildContext context,
 ) async {
-  if (!mounted) return;
+  if (!isMounted()) return;
 
   setState(() {
     isLoadingTasks = true;
@@ -194,31 +194,19 @@ Future<void> loadTask(
   try {
     final tasksProvider = Provider.of<TasksProvider>(context, listen: false);
 
-    // Si ya se ha intentado cargar o ya hay tareas, no hacemos nada
-    if (tasksProvider.hasAttemptedLoading || tasksProvider.tasks.isNotEmpty) {
-      // debugPrint('Tareas ya cargadas o intento previo realizado.');
-      return;
-    }
-
     await tasksProvider.loadTasks(context);
 
     // Verificar resultado después de la carga
     if (tasksProvider.tasks.isEmpty) {
       debugPrint('La API devolvió una lista vacía de tareas.');
-      // Esto ahora lo hace automáticamente el provider
-      // _loadDefaultTasks(tasksProvider);
-    } else {
-      debugPrint('Tareas cargadas con éxito: ${tasksProvider.tasks.length}');
-    }
+    } else {}
   } catch (e) {
-    debugPrint('Error al cargar tareas: $e');
-
     // En caso de error, mostramos una notificación
-    if (mounted) {
+    if (isMounted()) {
       showErrorToast(context, 'Error al cargar tareas.');
     }
   } finally {
-    if (mounted) {
+    if (isMounted()) {
       setState(() {
         isLoadingTasks = false;
       });
@@ -228,7 +216,7 @@ Future<void> loadTask(
 
 Future<void> loadAssignments({
   required BuildContext context,
-  required bool Function() isMounted, // Función que verifica el valor actual
+  required bool Function() isMounted,
   required void Function(void Function())
       setStateCallback, // Función para llamar setState
   required void Function(bool)
@@ -242,27 +230,26 @@ Future<void> loadAssignments({
   // Configurar un timeout para evitar carga infinita
   final loadingTimeout = Future.delayed(const Duration(seconds: 10), () {
     if (isMounted()) {
-      debugPrint('⚠️ Timeout en carga de asignaciones');
       setStateCallback(() {
         updateLoadingState(false);
       });
       // Desactivar loading en el provider también
-      Provider.of<AssignmentsProvider>(context, listen: false)
+      Provider.of<OperationsProvider>(context, listen: false)
           .changeIsLoadingOff();
-      showAlertToast(
-          context, 'La carga de datos está tomando demasiado tiempo');
+      // showAlertToast(
+      //     context, 'La carga de datos está tomando demasiado tiempo');
     }
   });
 
   loadingTimeout.then((_) {
     if (isMounted()) {
-      debugPrint('Carga de asignaciones completada');
+      // debugPrint('Carga de asignaciones completada');
     }
   });
   // No mostrar indicador de carga si ya hay datos disponibles
   final assignmentsProvider =
-      Provider.of<AssignmentsProvider>(context, listen: false);
-  final hasExistingData = assignmentsProvider.assignments.isNotEmpty;
+      Provider.of<OperationsProvider>(context, listen: false);
+  final hasExistingData = assignmentsProvider.operations.isNotEmpty;
 
   if (!hasExistingData) {
     setStateCallback(() {
@@ -274,9 +261,7 @@ Future<void> loadAssignments({
     // Cargar asignaciones con prioridad
     await assignmentsProvider.loadAssignmentsWithPriority(context);
 
-    if (assignmentsProvider.assignments.isNotEmpty) {
-      debugPrint(
-          'Operaciones cargadas exitosamente: ${assignmentsProvider.assignments.length}');
+    if (assignmentsProvider.operations.isNotEmpty) {
     } else {
       debugPrint('No se cargaron asignaciones o la lista está vacía');
     }
@@ -299,22 +284,19 @@ Future<void> loadAssignments({
 }
 
 Future<bool> loadClients(
-  bool mounted,
+  bool Function() isMounted,
   Function setState,
   bool isLoadingClients,
   BuildContext context,
 ) async {
-  if (!mounted) return false;
+  if (!isMounted()) return false;
 
   final clientsProvider = Provider.of<ClientsProvider>(context, listen: false);
 
   // Si ya se han cargado clientes, no hacer nada
   if (clientsProvider.clients.isNotEmpty) {
-    debugPrint('Clientes ya cargados: ${clientsProvider.clients.length}');
     return true;
   }
-
-  debugPrint('Iniciando carga de clientes desde API...');
 
   setState(() {
     isLoadingClients = true;
@@ -324,11 +306,8 @@ Future<bool> loadClients(
     await clientsProvider.fetchClients(context);
 
     if (clientsProvider.clients.isNotEmpty) {
-      debugPrint(
-          'Clientes cargados con éxito: ${clientsProvider.clients.length}');
       return true;
     } else {
-      debugPrint('No se cargaron clientes o la lista está vacía');
       return false;
     }
   } catch (e, stackTrace) {
@@ -336,15 +315,70 @@ Future<bool> loadClients(
     debugPrint('Stack trace: $stackTrace');
 
     // Mostrar un mensaje de error más informativo
-    if (mounted) {
+    if (isMounted()) {
       showErrorToast(context, 'Error al cargar clientes.');
     }
 
     return false;
   } finally {
-    if (mounted) {
+    if (isMounted()) {
       setState(() {
         isLoadingClients = false;
+      });
+    }
+  }
+}
+
+Future<void> loadClientProgramming(
+  bool Function() isMounted,
+  Function setState,
+  bool isLoadingClientProgramming,
+  BuildContext context, {
+  bool forceRefresh = false,
+}) async {
+  if (!isMounted()) return;
+
+  final programmingsProvider =
+      Provider.of<ProgrammingsProvider>(context, listen: false);
+
+  // Si no es refresh forzado y ya se han cargado programaciones, no hacer nada
+  if (!forceRefresh && programmingsProvider.programmings.isNotEmpty) {
+    return;
+  }
+
+  setState(() {
+    isLoadingClientProgramming = true;
+  });
+
+  final DateTime now = DateTime.now();
+  final String formattedDate = DateFormat('yyyy-MM-dd').format(now);
+
+  try {
+    if (forceRefresh) {
+      // Si es refresh forzado, usar el nuevo método de refresh
+      await programmingsProvider.refreshProgrammings(context,
+          specificDate: formattedDate);
+    } else {
+      // Si no es refresh forzado, usar el método normal
+      await programmingsProvider.fetchProgrammingsByDate(
+          formattedDate, context);
+    }
+
+    if (!programmingsProvider.programmings.isNotEmpty) {
+      debugPrint('No se cargaron programaciones o la lista está vacía');
+    }
+  } catch (e, stackTrace) {
+    debugPrint('Error al cargar programaciones del cliente: $e');
+    debugPrint('Stack trace: $stackTrace');
+
+    // Mostrar un mensaje de error más informativo
+    if (isMounted()) {
+      showErrorToast(context, 'Error al cargar programaciones del cliente.');
+    }
+  } finally {
+    if (isMounted()) {
+      setState(() {
+        isLoadingClientProgramming = false;
       });
     }
   }

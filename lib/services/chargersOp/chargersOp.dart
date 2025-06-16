@@ -27,11 +27,11 @@ class ChargersopService {
 
       if (response.statusCode == 200) {
         final List<dynamic> chargers = jsonDecode(response.body);
-        debugPrint(chargers.toString());
         return chargers
             .where((charger) =>
                 charger['occupation'] == 'SUPERVISOR' ||
                 charger['occupation'] == 'COORDINADOR')
+            .where((charger) => charger['status'] == 'ACTIVE')
             .map((charger) => User.fromJson(charger))
             .toList();
       } else {

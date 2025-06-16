@@ -4,7 +4,7 @@
 
 list(APPEND FLUTTER_PLUGIN_LIST
   flutter_secure_storage_windows
-  printing
+  permission_handler_windows
   share_plus
   url_launcher_windows
 )

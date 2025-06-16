@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_neumorphic_plus/flutter_neumorphic.dart';
+import 'package:plannerop/store/operations.dart';
 import 'package:provider/provider.dart';
-import 'package:plannerop/store/assignments.dart';
 import 'package:plannerop/store/workers.dart';
 
 class Cifras extends StatelessWidget {
@@ -9,15 +9,15 @@ class Cifras extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Consumer2<AssignmentsProvider, WorkersProvider>(
-      builder: (context, assignmentsProvider, workersProvider, child) {
+    return Consumer2<OperationsProvider, WorkersProvider>(
+      builder: (context, operationsProvider, workersProvider, child) {
         // Calculamos las cifras necesarias
         final int pendingAssignments =
-            assignmentsProvider.pendingAssignments.length;
+            operationsProvider.pendingOperations.length;
         final int activeAssignments =
-            assignmentsProvider.inProgressAssignments.length;
+            operationsProvider.inProgressOperations.length;
         final int completedAssignments =
-            assignmentsProvider.completedAssignments.length;
+            operationsProvider.completedOperations.length;
 
         // Obtenemos el número de trabajadores disponibles directamente del provider
         final int availableWorkers = workersProvider.availableWorkers;
