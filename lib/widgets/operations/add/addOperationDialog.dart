@@ -4,19 +4,15 @@ import 'package:intl/intl.dart';
 import 'package:plannerop/core/model/area.dart';
 import 'package:plannerop/core/model/client.dart';
 import 'package:plannerop/core/model/programming.dart';
-import 'package:plannerop/core/model/task.dart';
 import 'package:plannerop/core/model/worker.dart';
 import 'package:plannerop/core/model/workerGroup.dart';
 import 'package:plannerop/store/areas.dart';
 import 'package:plannerop/store/clients.dart';
-import 'package:plannerop/store/operations.dart';
-import 'package:plannerop/store/task.dart';
-import 'package:plannerop/store/user.dart';
-import 'package:plannerop/store/workers.dart';
 import 'package:plannerop/utils/neumophomic.dart';
 import 'package:plannerop/utils/toast.dart';
 import 'package:plannerop/widgets/operations/add/addOperationContent.dart';
 import 'package:plannerop/widgets/operations/add/addOperationHeader.dart';
+import 'package:plannerop/widgets/operations/add/validate.dart';
 import 'package:provider/provider.dart';
 import '../components/successDialog.dart';
 
@@ -219,7 +215,21 @@ class AddOperationDialogState extends State<AddOperationDialog> {
                               _isSaving = true;
                             });
 
-                            final isValid = await _validateFields(context);
+                            final isValid = await validateFields(
+                              context: context,
+                              selectedWorkers: _selectedWorkers,
+                              selectedGroups: _selectedGroups,
+                              areaControl: _areaController.text,
+                              startDateControl: _startDateController.text,
+                              startTimeControl: _startTimeController.text,
+                              clientControl: _clientController.text,
+                              motorshipControl: _motorshipController.text,
+                              chargerControl: _chargerController.text,
+                              endDateControl: _endDateController.text,
+                              endTimeControl: _endTimeController.text,
+                              zoneControl: _zoneController.text,
+                              selectedProgramming: _selectedProgramming,
+                            );
 
                             if (!isValid) {
                               setState(() {
@@ -469,140 +479,6 @@ class AddOperationDialogState extends State<AddOperationDialog> {
       _selectedGroups = groups;
     });
     _processGroupSchedules();
-  }
-
-  Future<bool> _validateFields(BuildContext context) async {
-    if (_selectedGroups.isEmpty) {
-      showAlertToast(context, 'Por favor, selecciona al menos un grupo');
-      return false;
-    }
-
-    if (_areaController.text.isEmpty) {
-      showAlertToast(context, 'Por favor, selecciona un área');
-      return false;
-    }
-
-    if (_startDateController.text.isEmpty) {
-      showAlertToast(context, 'Por favor, selecciona una fecha de inicio');
-      return false;
-    }
-
-    if (_startTimeController.text.isEmpty) {
-      showAlertToast(context, 'Por favor, selecciona una hora de inicio');
-      return false;
-    }
-
-    if (_clientController.text.isEmpty) {
-      showAlertToast(context, 'Por favor, selecciona un cliente');
-      return false;
-    }
-
-    if (_areaController.text.toUpperCase() == 'BUQUE' &&
-        _motorshipController.text.isEmpty) {
-      showAlertToast(context, 'Por favor, ingresa el nombre de la motonave');
-      return false;
-    }
-
-    if (_chargerController.text.isEmpty) {
-      showAlertToast(context, 'Por favor, selecciona al menos un encargado');
-      return false;
-    }
-
-    try {
-      final workersProvider =
-          Provider.of<WorkersProvider>(context, listen: false);
-      final areasProvider = Provider.of<AreasProvider>(context, listen: false);
-      final operationsProvider =
-          Provider.of<OperationsProvider>(context, listen: false);
-
-      final startDate =
-          DateFormat('dd/MM/yyyy').parse(_startDateController.text);
-
-      DateTime? endDate;
-      if (_endDateController.text.isNotEmpty) {
-        endDate = DateFormat('dd/MM/yyyy').parse(_endDateController.text);
-      }
-
-      final selectedArea = areasProvider.areas.firstWhere(
-          (area) => area.name == _areaController.text,
-          orElse: () => Area(id: 0, name: _areaController.text));
-
-      var clientsProvider =
-          Provider.of<ClientsProvider>(context, listen: false);
-
-      int clientId = clientsProvider.clients
-          .firstWhere((client) => client.name == _clientController.text,
-              orElse: () => Client(id: 1, name: _clientController.text))
-          .id;
-
-      int zoneNum = 1;
-      final zoneText = _zoneController.text;
-      if (zoneText.startsWith('Zona ')) {
-        zoneNum = int.tryParse(zoneText.substring(5)) ?? 1;
-      }
-
-      zoneNum = _zoneController.text.isEmpty == true ? 0 : zoneNum;
-
-      final userProvider = Provider.of<UserProvider>(context, listen: false);
-      final userId = userProvider.user.id;
-
-      List<int> chargerIds = [];
-      if (_chargerController.text.isNotEmpty) {
-        try {
-          final chargerIdStrings = _chargerController.text.split(',');
-          for (String idStr in chargerIdStrings) {
-            if (idStr.trim().isNotEmpty) {
-              final parsedId = int.parse(idStr.trim());
-              if (parsedId > 0) {
-                chargerIds.add(parsedId);
-              }
-            }
-          }
-        } catch (e) {
-          debugPrint('Error al procesar IDs de encargados: $e');
-          debugPrint('Texto en controller: ${_chargerController.text}');
-        }
-      }
-
-      final success = await operationsProvider.addAssignment(
-        area: _areaController.text,
-        areaId: selectedArea.id,
-        date: startDate,
-        time: _startTimeController.text,
-        zoneId: zoneNum,
-        userId: userId,
-        clientId: clientId,
-        clientName: _clientController.text,
-        endDate: endDate,
-        endTime:
-            _endTimeController.text.isNotEmpty ? _endTimeController.text : null,
-        motorship: _areaController.text.toUpperCase() == 'BUQUE'
-            ? _motorshipController.text
-            : null,
-        chargerIds: chargerIds,
-        context: context,
-        groups: _selectedGroups,
-        id_clientProgramming: _selectedProgramming?.id,
-      );
-
-      if (!success) {
-        showErrorToast(context,
-            'Error al guardar la operación: ${operationsProvider.error}');
-        return false;
-      }
-
-      for (var worker in _selectedWorkers) {
-        DateTime workerEndDate =
-            endDate ?? startDate.add(const Duration(days: 7));
-        workersProvider.assignWorker(worker, workerEndDate);
-      }
-
-      return true;
-    } catch (e) {
-      debugPrint('Error en _validateFields: $e');
-      showErrorToast(context, 'Error al procesar los datos: $e');
-      return false;
-    }
   }
 
   void _showSuccessDialog(BuildContext context) {

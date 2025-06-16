@@ -89,22 +89,21 @@ class _WorkersTabState extends State<WorkersTab> {
           ],
         ),
       ),
-      floatingActionButton:
-          user.cargo == "GESTION HUMANA" || user.cargo == "ADMON PLATAFORMA"
-              ? NeumorphicFloatingActionButton(
-                  style: NeumorphicStyle(
-                    color: const Color(0xFF4299E1),
-                    shape: NeumorphicShape.flat,
-                    boxShape:
-                        NeumorphicBoxShape.roundRect(BorderRadius.circular(28)),
-                    depth: 8,
-                    intensity: 0.65,
-                    lightSource: LightSource.topLeft,
-                  ),
-                  child: const Icon(Icons.person_add, color: Colors.white),
-                  onPressed: () => WorkerAddDialog.show(context, _addWorker),
-                )
-              : null,
+      floatingActionButton: user.role == "GH" || user.role == "SUPERADMIN"
+          ? NeumorphicFloatingActionButton(
+              style: NeumorphicStyle(
+                color: const Color(0xFF4299E1),
+                shape: NeumorphicShape.flat,
+                boxShape:
+                    NeumorphicBoxShape.roundRect(BorderRadius.circular(28)),
+                depth: 8,
+                intensity: 0.65,
+                lightSource: LightSource.topLeft,
+              ),
+              child: const Icon(Icons.person_add, color: Colors.white),
+              onPressed: () => WorkerAddDialog.show(context, _addWorker),
+            )
+          : null,
     );
   }
 

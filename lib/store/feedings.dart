@@ -4,14 +4,29 @@ import 'package:plannerop/utils/toast.dart';
 
 class FeedingProvider extends ChangeNotifier {
   // Mapa de alimentación {operationId: {workerId: {type: bool}}}
-  Map<int, Map<int, Map<String, bool>>> _feedingStatus = {};
+  Map<int, Map<int, Map<String, FeedingRecord>>> _feedingStatus = {};
+
   bool _isLoading = false;
   final Set<int> _loadedOperations = {};
   final Map<int, DateTime> _lastLoadedTime = {};
   final Duration _cacheValidDuration = const Duration(minutes: 5);
 
   // Getters
-  Map<int, Map<int, Map<String, bool>>> get feedingStatus => _feedingStatus;
+  Map<int, Map<int, Map<String, bool>>> get feedingStatus {
+    // Convertir a formato booleano para compatibilidad
+    Map<int, Map<int, Map<String, bool>>> result = {};
+    _feedingStatus.forEach((operationId, workers) {
+      result[operationId] = {};
+      workers.forEach((workerId, foods) {
+        result[operationId]![workerId] = {};
+        foods.forEach((foodType, record) {
+          result[operationId]![workerId]![foodType] = record.isDelivered;
+        });
+      });
+    });
+    return result;
+  }
+
   bool get isLoading => _isLoading;
 
   final FeedingService _feedingService = FeedingService();
@@ -50,7 +65,12 @@ class FeedingProvider extends ChangeNotifier {
 
   // Verificar si la alimentación está marcada
   bool isMarked(int operationId, int workerId, String foodType) {
-    return _feedingStatus[operationId]?[workerId]?[foodType] ?? false;
+    return _feedingStatus[operationId]?[workerId]?[foodType]?.isDelivered ??
+        false;
+  }
+
+  int? getFeedingRecordId(int operationId, int workerId, String foodType) {
+    return _feedingStatus[operationId]?[workerId]?[foodType]?.id;
   }
 
   // En el método markFeeding en FeedingProvider, añadir una notificación específica
@@ -69,28 +89,35 @@ class FeedingProvider extends ChangeNotifier {
     notifyListeners();
 
     bool success = false;
+    int? newFeedingId;
 
     try {
       String apiType = _getFeedingTypeForApi(foodType);
 
-      // Marcar como entregada
-      success = await _feedingService.markFeeding(
+      // Marcar como entregada y obtener el ID
+      final result = await _feedingService.markFeeding(
         workerId: workerId,
         operationId: operationId,
         type: apiType,
         context: context,
       );
 
-      if (success) {
+      success = result['success'] ?? false;
+      newFeedingId = result['id'];
+
+      if (success && newFeedingId != null) {
         // Inicializar estructura de datos si es necesario
         _feedingStatus[operationId] ??= {};
         _feedingStatus[operationId]![workerId] ??= {};
-        // Actualizar el estado local
-        _feedingStatus[operationId]![workerId]![foodType] = true;
+
+        // ✅ ALMACENAR REGISTRO COMPLETO CON ID
+        _feedingStatus[operationId]![workerId]![foodType] = FeedingRecord(
+          id: newFeedingId,
+          isDelivered: true,
+          deliveryDate: DateTime.now(),
+        );
 
         showSuccessToast(context, "$foodType entregado");
-
-        // Notificar después de actualizar los datos
         notifyListeners();
       }
 
@@ -101,6 +128,64 @@ class FeedingProvider extends ChangeNotifier {
       _isLoading = false;
       notifyListeners();
       showErrorToast(context, "Error al registrar alimentación: $e");
+      return false;
+    }
+  }
+
+  //  MODIFICAR unmarkFeeding para usar el ID
+  Future<bool> unmarkFeeding({
+    required int operationId,
+    required int workerId,
+    required String foodType,
+    required BuildContext context,
+  }) async {
+    // Si no está marcada, no hacer nada
+    if (!isMarked(operationId, workerId, foodType)) {
+      return true;
+    }
+
+    //  OBTENER EL ID DEL REGISTRO
+    final feedingId = getFeedingRecordId(operationId, workerId, foodType);
+    if (feedingId == null) {
+      showErrorToast(context, "No se encontró el registro de alimentación");
+      return false;
+    }
+
+    _isLoading = true;
+    notifyListeners();
+
+    bool success = false;
+
+    try {
+      //  USAR EL ID ESPECÍFICO PARA ELIMINAR
+      success = await _feedingService.unmarkFeedingById(
+        feedingId: feedingId,
+        context: context,
+      );
+
+      if (success) {
+        // Actualizar el estado local
+        if (_feedingStatus[operationId] != null &&
+            _feedingStatus[operationId]![workerId] != null) {
+          _feedingStatus[operationId]![workerId]![foodType] = FeedingRecord(
+            id: feedingId,
+            isDelivered: false,
+            deliveryDate: null,
+          );
+        }
+
+        showSuccessToast(context, "$foodType desmarcado");
+        notifyListeners();
+      }
+
+      _isLoading = false;
+      notifyListeners();
+
+      return success;
+    } catch (e) {
+      _isLoading = false;
+      notifyListeners();
+      showErrorToast(context, "Error al desmarcar alimentación: $e");
       return false;
     }
   }
@@ -154,21 +239,28 @@ class FeedingProvider extends ChangeNotifier {
       // Inicializar la estructura de datos para esta operación
       _feedingStatus[operationId] = {};
 
-      // Procesar los datos recibidos
+      // ✅ PROCESAR DATOS INCLUYENDO LOS IDs
       for (var feeding in feedingData) {
         int workerId = feeding['id_worker'];
         String type = feeding['type'];
         String foodType = _getFeedingTypeFromApi(type);
+        int feedingId = feeding['id']; // ✅ OBTENER EL ID
+        String? dateFeeding = feeding['dateFeeding'];
 
         _feedingStatus[operationId]![workerId] ??= {};
-        _feedingStatus[operationId]![workerId]![foodType] = true;
+        _feedingStatus[operationId]![workerId]![foodType] = FeedingRecord(
+          id: feedingId,
+          isDelivered: true,
+          deliveryDate:
+              dateFeeding != null ? DateTime.tryParse(dateFeeding) : null,
+        );
       }
 
       // Marcar como cargado con timestamp
       _loadedOperations.add(operationId);
       _lastLoadedTime[operationId] = DateTime.now();
 
-      //  FINALIZAR LOADING Y NOTIFICAR SOLO UNA VEZ
+      // Notificar cambios
       if (!wasLoading && !hadData) {
         _isLoading = false;
         WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -213,14 +305,21 @@ class FeedingProvider extends ChangeNotifier {
     _lastLoadedTime.clear();
   }
 
-  // Verificar si una comida específica está marcada para un trabajador
-  bool isFoodTypeMarked(int operationId, int workerId, String foodType) {
-    return _feedingStatus[operationId]?[workerId]?[foodType] ?? false;
-  }
-
   // Limpiar datos
   void clear() {
     _feedingStatus = {};
     notifyListeners();
   }
+}
+
+class FeedingRecord {
+  final int id;
+  final bool isDelivered;
+  final DateTime? deliveryDate;
+
+  FeedingRecord({
+    required this.id,
+    required this.isDelivered,
+    this.deliveryDate,
+  });
 }

@@ -303,8 +303,6 @@ class _AssignmentFormState extends State<OperationForm> {
               controller: widget.endTimeController!,
               dateController: widget.endDateController,
               isEndTime: true,
-              key: ValueKey(
-                  'end_time_field_${_endDateUpdateCounter}_${_endTimeUpdateCounter}'),
               locked: widget.endTimeLocked,
               lockedMessage: widget.endTimeLocked
                   ? 'Hora definida por grupo de trabajo'
@@ -312,17 +310,6 @@ class _AssignmentFormState extends State<OperationForm> {
             ),
         ],
 
-        // // Campo para seleccionar tarea
-        // DropdownField(
-        //   label: 'Servicio',
-        //   hint: 'Seleccionar servicio',
-        //   icon: Icons.assignment_outlined,
-        //   controller: widget.taskController,
-        //   options: taskNames,
-        //   onSelected: (String task) =>
-        //       debugPrint('Servicio seleccionado $task'),
-        // ),
-        // Campo de selección de zona (1-10)
         DropdownField(
           label: 'Zona',
           hint: 'Seleccionar zona',

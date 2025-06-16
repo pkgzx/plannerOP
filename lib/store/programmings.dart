@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:plannerop/core/model/programming.dart';
 import 'package:plannerop/services/programmings/programmings.dart';
-import 'package:provider/provider.dart';
 
 class ProgrammingsProvider extends ChangeNotifier {
   final ProgrammingsService _programmingsService = ProgrammingsService();

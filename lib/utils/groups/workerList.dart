@@ -4,6 +4,7 @@ import 'package:plannerop/core/model/worker.dart';
 import 'package:plannerop/core/model/workerGroup.dart';
 import 'package:plannerop/store/feedings.dart';
 import 'package:plannerop/utils/feedingUtils.dart';
+import 'package:plannerop/utils/toast.dart';
 import 'package:plannerop/utils/worker_utils.dart';
 import 'package:plannerop/widgets/operations/components/utils.dart';
 
@@ -245,14 +246,8 @@ class WorkersList extends StatelessWidget {
       child: GestureDetector(
         onTap: alimentacionEntregada
             ? () {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(
-                        'La alimentación ya fue entregada a ${worker.name}'),
-                    backgroundColor: Colors.blue,
-                    duration: const Duration(seconds: 2),
-                  ),
-                );
+                // MOSTRAR DIÁLOGO PARA CONFIRMAR DESMARCADO
+                _showUnmarkConfirmationDialog(context, worker);
               }
             : (puedeMarcarAlimentacion
                 ? () {
@@ -270,7 +265,7 @@ class WorkersList extends StatelessWidget {
                   }),
         child: Container(
           width: double.infinity,
-          padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
+          padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 8),
           decoration: BoxDecoration(
             color: alimentacionEntregada
                 ? Colors.green.withOpacity(0.1)
@@ -290,7 +285,11 @@ class WorkersList extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Icon(
-                getIconForFoodType(currentFoodType, alimentacionEntregada),
+                alimentacionEntregada
+                    ? Icons.check_circle
+                    : (puedeMarcarAlimentacion
+                        ? getIconForFoodType(currentFoodType, false)
+                        : Icons.block),
                 size: 14,
                 color: alimentacionEntregada
                     ? Colors.green[700]
@@ -299,26 +298,154 @@ class WorkersList extends StatelessWidget {
                         : Colors.grey[700]),
               ),
               const SizedBox(width: 4),
-              Text(
-                alimentacionEntregada
-                    ? '$currentFoodType entregado'
-                    : (puedeMarcarAlimentacion
-                        ? 'Marcar $currentFoodType'
-                        : 'No disponible'),
-                style: TextStyle(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w500,
-                  color: alimentacionEntregada
-                      ? Colors.green[700]
+              Expanded(
+                child: Text(
+                  alimentacionEntregada
+                      ? '$currentFoodType entregado ✓'
                       : (puedeMarcarAlimentacion
-                          ? Colors.orange[700]
-                          : Colors.grey[700]),
+                          ? 'Marcar $currentFoodType'
+                          : 'No disponible'),
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w500,
+                    color: alimentacionEntregada
+                        ? Colors.green[700]
+                        : (puedeMarcarAlimentacion
+                            ? Colors.orange[700]
+                            : Colors.grey[700]),
+                  ),
+                  textAlign: TextAlign.center,
                 ),
               ),
+              // AGREGAR ICONO PARA INDICAR QUE SE PUEDE DESMARCAR
+              if (alimentacionEntregada)
+                Icon(
+                  Icons.touch_app,
+                  size: 12,
+                  color: Colors.green[600],
+                ),
             ],
           ),
         ),
       ),
+    );
+  }
+
+  void _showUnmarkConfirmationDialog(BuildContext context, dynamic worker) {
+    showDialog(
+      context: context,
+      builder: (BuildContext dialogContext) {
+        return AlertDialog(
+          title: Row(
+            children: [
+              Icon(Icons.restaurant_outlined, color: Colors.orange[700]),
+              const SizedBox(width: 8),
+              const Text(
+                'Desmarcar Alimentación',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+              ),
+            ],
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                '¿Deseas desmarcar la alimentación de $currentFoodType para:',
+                style: const TextStyle(fontSize: 14),
+              ),
+              const SizedBox(height: 12),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.blue.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.blue.withOpacity(0.3)),
+                ),
+                child: Row(
+                  children: [
+                    CircleAvatar(
+                      radius: 16,
+                      backgroundColor: getColorForWorker(worker),
+                      child: Text(
+                        worker.name.isNotEmpty
+                            ? worker.name[0].toUpperCase()
+                            : '?',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            worker.name,
+                            style: const TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 14,
+                            ),
+                          ),
+                          Text(
+                            'DNI: ${worker.document}',
+                            style: TextStyle(
+                              color: Colors.grey[600],
+                              fontSize: 12,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 12),
+              Text(
+                'Esta acción marcará la alimentación como NO entregada.',
+                style: TextStyle(
+                  fontSize: 13,
+                  color: Colors.grey[600],
+                  fontStyle: FontStyle.italic,
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(),
+              child: const Text('Cancelar'),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                Navigator.of(dialogContext).pop();
+
+                // ✅ SOLO LLAMAR AL PROVIDER, NO AL CALLBACK
+                final success = await feedingProvider.unmarkFeeding(
+                  operationId: assignment.id ?? 0,
+                  workerId: worker.id,
+                  foodType: currentFoodType,
+                  context: context,
+                );
+
+                // ✅ NO LLAMAR AL CALLBACK onAlimentacionChanged
+                // El provider ya actualiza su estado interno y notifica cambios
+                if (!success) {
+                  showErrorToast(context, 'Error al desmarcar alimentación');
+                }
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.orange[600],
+                foregroundColor: Colors.white,
+              ),
+              child: const Text('Desmarcar'),
+            ),
+          ],
+        );
+      },
     );
   }
 

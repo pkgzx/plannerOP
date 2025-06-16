@@ -311,7 +311,8 @@ void showOperationDetails({
                           const SizedBox(height: 20),
                         ],
 
-                        if (assignment.status == 'PENDING') ...[
+                        if (assignment.status == 'PENDING' ||
+                            assignment.status == "COMPLETED") ...[
                           // Groups section with enhanced support
                           buildGroupsSection(
                             context,

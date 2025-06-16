@@ -3,10 +3,12 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:jwt_decoder/jwt_decoder.dart';
 import 'package:plannerop/core/model/user.dart';
+import 'package:plannerop/pages/siteSlector.dart';
 import 'package:plannerop/pages/tabs/home.dart';
 import 'package:plannerop/store/auth.dart';
 import 'package:plannerop/store/user.dart';
 import 'package:plannerop/utils/dataManager.dart';
+
 import 'package:plannerop/utils/toast.dart';
 import 'package:provider/provider.dart';
 
@@ -14,17 +16,15 @@ Future<void> tryAutoLogin(bool mounted, Function setState, bool _isLoading,
     BuildContext context) async {
   if (!mounted) return;
 
-  // Usar un timer para evitar que el loader se quede colgado indefinidamente
   Timer? timeoutTimer;
 
   setState(() {
     _isLoading = true;
   });
 
-  // Configurar un timeout para evitar que el loader se quede infinitamente
   timeoutTimer = Timer(const Duration(seconds: 8), () {
     if (mounted && _isLoading) {
-      debugPrint('⚠️ AutoLogin timeout: cancelando operación');
+      debugPrint('AutoLogin timeout: cancelando operación');
       setState(() {
         _isLoading = false;
       });
@@ -35,13 +35,11 @@ Future<void> tryAutoLogin(bool mounted, Function setState, bool _isLoading,
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
     final bool success = await authProvider.tryAutoLogin(context);
 
-    // Cancelar el timer ya que hemos terminado correctamente
     timeoutTimer.cancel();
 
     if (!mounted) return;
 
     if (success) {
-      // Inicializar datos del usuario a partir del token
       final decodedToken = JwtDecoder.decode(authProvider.accessToken);
       final userProvider = Provider.of<UserProvider>(context, listen: false);
 
@@ -51,16 +49,23 @@ Future<void> tryAutoLogin(bool mounted, Function setState, bool _isLoading,
         dni: decodedToken['dni'],
         phone: decodedToken['phone'],
         cargo: decodedToken['occupation'],
+        role: decodedToken['role'],
       ));
 
-      // Mostrar un loader más visible durante la carga de datos
+      debugPrint(
+          "Usuario autenticado: ${userProvider.user.name} (${userProvider.user.role})");
+
+      //  MANEJAR SELECCIÓN DE SEDE (REUTILIZABLE)
+      await SiteSelector.handleSiteSelection(context);
+
+      //  MOSTRAR LOADER DESPUÉS DE SELECCIONAR SEDE
       if (mounted) {
-        // Un overlay más sofisticado para la carga de datos
         showDialog(
           context: context,
           barrierDismissible: false,
           builder: (BuildContext context) {
-            return PopScope(
+            return WillPopScope(
+              onWillPop: () async => false,
               child: Center(
                 child: Card(
                   elevation: 8,
@@ -69,15 +74,25 @@ Future<void> tryAutoLogin(bool mounted, Function setState, bool _isLoading,
                   ),
                   child: Container(
                     padding: const EdgeInsets.all(24),
-                    child: const Column(
+                    child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        CircularProgressIndicator(),
-                        SizedBox(height: 16),
-                        Text(
-                          'Cargando sesión...',
+                        const CircularProgressIndicator(),
+                        const SizedBox(height: 16),
+                        const Text(
+                          'Cargando datos...',
                           style: TextStyle(fontWeight: FontWeight.bold),
                         ),
+                        if (userProvider.selectedSite != null) ...[
+                          const SizedBox(height: 8),
+                          Text(
+                            'Sede: ${userProvider.selectedSite!.name}',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Colors.grey[600],
+                            ),
+                          ),
+                        ],
                       ],
                     ),
                   ),
@@ -88,17 +103,15 @@ Future<void> tryAutoLogin(bool mounted, Function setState, bool _isLoading,
         );
       }
 
-      // Cargar datos con manejo de errores mejorado
+      // Cargar datos
       try {
         await DataManager().loadDataAfterAuthentication(context);
       } catch (dataError) {
         debugPrint('Error cargando datos: $dataError');
-        // Continuar incluso si hay error en la carga de datos
       }
 
       // Navegar al dashboard
       if (mounted) {
-        // Cerrar el diálogo de carga si está abierto
         if (ModalRoute.of(context)?.isCurrent != true) {
           Navigator.of(context).pop();
         }
@@ -110,10 +123,8 @@ Future<void> tryAutoLogin(bool mounted, Function setState, bool _isLoading,
     }
   } catch (e) {
     debugPrint('Error en auto-login: $e');
-    // Cancelar el timer en caso de error
     timeoutTimer.cancel();
   } finally {
-    // Asegurarnos de que _isLoading se establezca en false incluso si hay error
     if (mounted && _isLoading) {
       setState(() {
         _isLoading = false;
@@ -125,21 +136,17 @@ Future<void> tryAutoLogin(bool mounted, Function setState, bool _isLoading,
 Future<void> login(GlobalKey<FormState> _formKey, BuildContext context,
     bool mounted, String username, String password) async {
   if (_formKey.currentState!.validate()) {
-    // Variable para controlar si el diálogo está mostrado
     bool dialogIsOpen = true;
-
-    // Mantener una referencia al contexto del diálogo
     BuildContext? dialogContextRef;
 
-    // Mostrar indicador de carga
+    //  MOSTRAR LOADER DE LOGIN
     showDialog(
       context: context,
       barrierDismissible: false,
       builder: (BuildContext dialogContext) {
-        // Guardar la referencia al contexto del diálogo
         dialogContextRef = dialogContext;
-
-        return PopScope(
+        return WillPopScope(
+          onWillPop: () async => false,
           child: const Center(
             child: CircularProgressIndicator(
               valueColor: AlwaysStoppedAnimation<Color>(Colors.blue),
@@ -149,7 +156,6 @@ Future<void> login(GlobalKey<FormState> _formKey, BuildContext context,
       },
     );
 
-    // Función para cerrar el diálogo de manera segura
     void closeDialog() {
       if (dialogIsOpen && mounted && dialogContextRef != null) {
         Navigator.of(dialogContextRef!).pop();
@@ -157,8 +163,6 @@ Future<void> login(GlobalKey<FormState> _formKey, BuildContext context,
       }
     }
 
-    // Configurar un timeout para cerrar el diálogo después de 15 segundos
-    // Aumentado a 15 segundos para dar más tiempo a la carga de datos
     Future.delayed(const Duration(seconds: 15), () {
       if (dialogIsOpen) {
         closeDialog();
@@ -171,16 +175,9 @@ Future<void> login(GlobalKey<FormState> _formKey, BuildContext context,
 
     try {
       final authProvider = Provider.of<AuthProvider>(context, listen: false);
-
-      // Usar el nuevo método de login que guardará las credenciales
-      final success = await authProvider.login(
-        username,
-        password,
-        context,
-      );
+      final success = await authProvider.login(username, password, context);
 
       if (success) {
-        // Inicializar datos del usuario
         final decodedToken = JwtDecoder.decode(authProvider.accessToken);
         final userProvider = Provider.of<UserProvider>(context, listen: false);
 
@@ -190,14 +187,66 @@ Future<void> login(GlobalKey<FormState> _formKey, BuildContext context,
           dni: decodedToken['dni'],
           phone: decodedToken['phone'],
           cargo: decodedToken['occupation'],
+          role: decodedToken['role'], //  ASEGURAR QUE ROLE ESTÉ INCLUIDO
         ));
 
-        // Cargar datos mientras se muestra el loader
+        //  CERRAR LOADER DE LOGIN ANTES DE MOSTRAR SELECTOR
+        closeDialog();
+
+        //  MANEJAR SELECCIÓN DE SEDE (REUTILIZABLE)
+        await SiteSelector.handleSiteSelection(context);
+
+        //  MOSTRAR LOADER DE CARGA DE DATOS
+        if (mounted) {
+          showDialog(
+            context: context,
+            barrierDismissible: false,
+            builder: (BuildContext context) {
+              return WillPopScope(
+                onWillPop: () async => false,
+                child: Center(
+                  child: Card(
+                    elevation: 8,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: Container(
+                      padding: const EdgeInsets.all(24),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const CircularProgressIndicator(),
+                          const SizedBox(height: 16),
+                          const Text(
+                            'Cargando datos...',
+                            style: TextStyle(fontWeight: FontWeight.bold),
+                          ),
+                          if (userProvider.selectedSite != null) ...[
+                            const SizedBox(height: 8),
+                            Text(
+                              'Sede: ${userProvider.selectedSite!.name}',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Colors.grey[600],
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              );
+            },
+          );
+        }
+
+        // Cargar datos
         await DataManager().loadDataAfterAuthentication(context);
 
         // Navegar al dashboard
         if (mounted) {
-          closeDialog();
+          Navigator.of(context).pop(); // Cerrar loader de datos
           Navigator.pushReplacement(
             context,
             MaterialPageRoute(builder: (context) => const Home()),

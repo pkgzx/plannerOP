@@ -55,8 +55,8 @@ class FeedingUtils {
 
     // 1. Obtener la hora actual
     DateTime now = DateTime.now();
-    TimeOfDay currentTime = TimeOfDay(
-        hour: now.hour, minute: now.minute); // Cambiar a 8:00 AM para testing
+    TimeOfDay currentTime =
+        TimeOfDay(hour: 7, minute: 20); // Cambiar a 8:00 AM para testing
     int currentMinutes = currentTime.hour * 60 + currentTime.minute;
 
     // 2. Convertir strings de hora a objetos TimeOfDay para la operación
