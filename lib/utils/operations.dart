@@ -14,6 +14,7 @@ import 'package:plannerop/store/task.dart';
 import 'package:plannerop/utils/groups/groups.dart';
 import 'package:plannerop/utils/toast.dart';
 import 'package:plannerop/widgets/operations/components/utils.dart';
+import 'package:plannerop/widgets/operations/components/utils/Loader.dart';
 import 'package:provider/provider.dart';
 
 Future<Widget> _buildClientProgrammingRow(
@@ -195,10 +196,9 @@ void showOperationDetails({
       if (assignment.endDate != null)
         buildDetailRow('Fecha de finalización',
             DateFormat('dd/MM/yyyy').format(assignment.endDate!)),
-      if (assignment.zone != 0 && assignment.zone != null)
-        buildDetailRow('Zona', 'Zona ${assignment.zone}'),
-      if (assignment.zone == 0 || assignment.zone == null)
-        buildDetailRow('Zona', 'N/A'),
+      assignment.zone != 0
+          ? buildDetailRow('Zona', 'Zona ${assignment.zone}')
+          : buildDetailRow('Zona', 'N/A'),
       if (assignment.motorship != null && assignment.motorship!.isNotEmpty)
         buildDetailRow('Motonave', assignment.motorship!),
 
@@ -504,28 +504,9 @@ void showCancelDialog(
                   height: 36,
                   child: Center(
                     child: isProcessing
-                        ? Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: const [
-                              SizedBox(
-                                width: 16,
-                                height: 16,
-                                child: CircularProgressIndicator(
-                                  valueColor: AlwaysStoppedAnimation<Color>(
-                                      Colors.white),
-                                  strokeWidth: 2,
-                                ),
-                              ),
-                              SizedBox(width: 8),
-                              Text(
-                                'Procesando',
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.w600,
-                                  fontSize: 13,
-                                ),
-                              ),
-                            ],
+                        ? AppLoader(
+                            color: Colors.white,
+                            size: LoaderSize.small,
                           )
                         : const Text(
                             'Sí, cancelar',
@@ -605,11 +586,12 @@ Future<List<Widget>> getServicesGroups(
       serviceWidgets.add(serviceWidget);
     }
   }
+
   return serviceWidgets;
 }
 
 Future<Widget?> getServiceGroup(BuildContext context, WorkerGroup group) async {
-  // ✅ VERIFICAR SI EL CONTEXT AÚN ES VÁLIDO
+  //  VERIFICAR SI EL CONTEXT AÚN ES VÁLIDO
   if (!context.mounted) {
     debugPrint('Context no está montado, retornando widget por defecto');
     return _buildDefaultServiceWidget(group);
@@ -618,11 +600,11 @@ Future<Widget?> getServiceGroup(BuildContext context, WorkerGroup group) async {
   try {
     String serviceName;
 
-    // ✅ USAR CACHE PARA EVITAR LLAMADAS REPETIDAS
+    //  USAR CACHE PARA EVITAR LLAMADAS REPETIDAS
     if (_servicesCache.containsKey(group.serviceId)) {
       serviceName = _servicesCache[group.serviceId]!;
     } else {
-      // ✅ VERIFICAR NUEVAMENTE ANTES DE ACCEDER AL PROVIDER
+      //  VERIFICAR NUEVAMENTE ANTES DE ACCEDER AL PROVIDER
       if (!context.mounted) {
         return _buildDefaultServiceWidget(group);
       }
@@ -636,7 +618,7 @@ Future<Widget?> getServiceGroup(BuildContext context, WorkerGroup group) async {
       _servicesCache[group.serviceId] = serviceName;
     }
 
-    // ✅ VERIFICAR UNA VEZ MÁS ANTES DE RETORNAR EL WIDGET
+    //  VERIFICAR UNA VEZ MÁS ANTES DE RETORNAR EL WIDGET
     if (!context.mounted) {
       return _buildDefaultServiceWidget(group);
     }
@@ -667,7 +649,7 @@ Future<Widget?> getServiceGroup(BuildContext context, WorkerGroup group) async {
   }
 }
 
-// ✅ WIDGET POR DEFECTO CUANDO NO SE PUEDE OBTENER EL SERVICIO
+//  WIDGET POR DEFECTO CUANDO NO SE PUEDE OBTENER EL SERVICIO
 Widget _buildDefaultServiceWidget(WorkerGroup group) {
   return Row(
     children: [

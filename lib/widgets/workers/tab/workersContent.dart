@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:plannerop/widgets/operations/components/utils/Loader.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import 'package:plannerop/core/model/worker.dart';
@@ -266,8 +267,10 @@ class WorkersContent extends StatelessWidget {
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (BuildContext context) =>
-          const Center(child: CircularProgressIndicator()),
+      builder: (BuildContext context) => AppLoader(
+        color: Colors.white,
+        size: LoaderSize.small,
+      ),
     );
 
     List<Fault> faults = faultsProvider.fetchFaultsByWorker(context, worker.id);

@@ -35,4 +35,11 @@ class UserProvider with ChangeNotifier {
     _availableSites = sites;
     notifyListeners();
   }
+
+  void clear() {
+    _hasUser = false;
+    _selectedSite = null;
+    _availableSites = [];
+    notifyListeners();
+  }
 }

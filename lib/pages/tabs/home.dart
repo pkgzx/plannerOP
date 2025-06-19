@@ -8,6 +8,7 @@ import 'package:plannerop/pages/tabs/reports.dart';
 import 'package:plannerop/pages/tabs/workers.dart';
 import 'package:plannerop/store/auth.dart';
 import 'package:plannerop/store/user.dart';
+import 'package:plannerop/widgets/operations/components/utils/Loader.dart';
 import 'package:provider/provider.dart';
 import 'package:plannerop/store/operations.dart';
 import 'package:plannerop/utils/toast.dart';
@@ -29,7 +30,7 @@ class _HomeState extends State<Home> {
   // Crear tabs dinámicamente con claves para controlar su estado
   late final List<Widget> _widgetOptions;
 
-  // ✅ GETTER PARA VERIFICAR SI ES SUPERADMIN
+  //  GETTER PARA VERIFICAR SI ES SUPERADMIN
   bool get _isSuperAdmin {
     final user = Provider.of<UserProvider>(context, listen: false).user;
     return user.cargo == "SUPERADMIN";
@@ -92,15 +93,13 @@ class _HomeState extends State<Home> {
       // Mostrar un indicador de carga
       if (mounted) {
         showDialog(
-          context: context,
-          barrierDismissible: false,
-          builder: (dialogContext) => PopScope(
-            canPop: false,
-            child: const Center(
-              child: CircularProgressIndicator(),
-            ),
-          ),
-        );
+            context: context,
+            barrierDismissible: false,
+            builder: (dialogContext) => AppLoader(
+                  message: 'Cerrando sesión...',
+                  color: Colors.blue,
+                  size: LoaderSize.medium,
+                ));
       }
 
       try {
@@ -203,7 +202,7 @@ class _HomeState extends State<Home> {
     assignmentsProvider.refreshActiveOperations(context);
   }
 
-  // ✅ MÉTODO PARA REFRESCAR TODOS LOS DATOS DESPUÉS DE CAMBIAR SEDE
+  //  MÉTODO PARA REFRESCAR TODOS LOS DATOS DESPUÉS DE CAMBIAR SEDE
   void _refreshAllData() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final operationsProvider =
@@ -217,7 +216,7 @@ class _HomeState extends State<Home> {
     });
   }
 
-  // ✅ MÉTODO PARA MOSTRAR DIÁLOGO DE CAMBIO DE SEDE
+  //  MÉTODO PARA MOSTRAR DIÁLOGO DE CAMBIO DE SEDE
   void _showSiteChangeDialog(BuildContext context) {
     final userProvider = Provider.of<UserProvider>(context, listen: false);
 
@@ -324,7 +323,7 @@ class _HomeState extends State<Home> {
     return WillPopScope(
       onWillPop: _onWillPop,
       child: Scaffold(
-        // ✅ AGREGAR APPBAR SOLO PARA SUPERADMIN
+        //  AGREGAR APPBAR SOLO PARA SUPERADMIN
         appBar: _isSuperAdmin
             ? AppBar(
                 automaticallyImplyLeading: false,

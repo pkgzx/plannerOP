@@ -10,6 +10,7 @@ import 'package:plannerop/services/operations/operationReports.dart';
 import 'package:plannerop/utils/charts/mapper.dart';
 
 import 'package:plannerop/utils/toast.dart';
+import 'package:plannerop/widgets/operations/components/utils/Loader.dart';
 import 'package:plannerop/widgets/reports/exports/excelGenerator.dart';
 import 'package:plannerop/widgets/reports/exports/reportDataProcessor.dart';
 import 'package:share_plus/share_plus.dart';
@@ -154,19 +155,12 @@ class _ExportOptionsState extends State<ExportOptions> {
           shape:
               RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           content: Padding(
-            padding: const EdgeInsets.symmetric(vertical: 20.0),
-            child: Row(
-              children: [
-                const CircularProgressIndicator(color: Color(0xFF3182CE)),
-                const SizedBox(width: 24),
-                Text(
-                  "Preparando $type...",
-                  style:
-                      const TextStyle(fontSize: 16, color: Color(0xFF2D3748)),
-                ),
-              ],
-            ),
-          ),
+              padding: const EdgeInsets.symmetric(vertical: 20.0),
+              child: AppLoader(
+                message: 'Exportando $type...',
+                color: Colors.blue,
+                size: LoaderSize.medium,
+              )),
         );
       },
     );
@@ -290,16 +284,10 @@ class _ExportOptionsState extends State<ExportOptions> {
                 color: const Color(0xFF3182CE).withOpacity(0.1),
                 borderRadius: BorderRadius.circular(8),
               ),
-              child: const Row(
-                children: [
-                  SizedBox(
-                    width: 20,
-                    height: 20,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  ),
-                  SizedBox(width: 12),
-                  Text('Cargando datos...'),
-                ],
+              child: AppLoader(
+                size: LoaderSize.medium,
+                color: const Color(0xFF3182CE),
+                message: 'Cargando datos...',
               ),
             )
           else if (_errorMessage != null)

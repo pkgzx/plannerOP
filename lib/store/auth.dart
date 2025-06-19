@@ -1,6 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:plannerop/services/auth/authStorageService.dart';
 import 'package:plannerop/services/auth/signin.dart';
+import 'package:plannerop/store/areas.dart';
+import 'package:plannerop/store/chargersOp.dart';
+import 'package:plannerop/store/clients.dart';
+import 'package:plannerop/store/faults.dart';
+import 'package:plannerop/store/feedings.dart';
+import 'package:plannerop/store/operations.dart';
+import 'package:plannerop/store/programmings.dart';
+import 'package:plannerop/store/task.dart';
+import 'package:plannerop/store/user.dart';
+import 'package:plannerop/store/workers.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class AuthProvider extends ChangeNotifier {
   String _accessToken = '';
@@ -15,6 +26,43 @@ class AuthProvider extends ChangeNotifier {
 
   final AuthStorageService _authStorage = AuthStorageService();
   final SigninService _signinService = SigninService();
+
+  // ✅ REFERENCIAS A LOS PROVIDERS REALES, NO NUEVAS INSTANCIAS
+  late final OperationsProvider _operationsProvider;
+  late final WorkersProvider _workersProvider;
+  late final AreasProvider _areasProvider;
+  late final ClientsProvider _clientsProvider;
+  late final FeedingProvider _feedingProvider;
+  late final FaultsProvider _faultsProvider;
+  late final ProgrammingsProvider _programmingsProvider;
+  late final TasksProvider _tasksProvider;
+  late final UserProvider _userProvider;
+  late final ChargersOpProvider _chargersOpProvider;
+
+  // ✅ CONSTRUCTOR QUE RECIBE LAS INSTANCIAS REALES
+  AuthProvider({
+    required OperationsProvider operationsProvider,
+    required WorkersProvider workersProvider,
+    required AreasProvider areasProvider,
+    required ClientsProvider clientsProvider,
+    required FeedingProvider feedingProvider,
+    required FaultsProvider faultsProvider,
+    required ProgrammingsProvider programmingsProvider,
+    required TasksProvider tasksProvider,
+    required UserProvider userProvider,
+    required ChargersOpProvider chargersOpProvider,
+  }) {
+    _operationsProvider = operationsProvider;
+    _workersProvider = workersProvider;
+    _areasProvider = areasProvider;
+    _clientsProvider = clientsProvider;
+    _feedingProvider = feedingProvider;
+    _faultsProvider = faultsProvider;
+    _programmingsProvider = programmingsProvider;
+    _tasksProvider = tasksProvider;
+    _userProvider = userProvider;
+    _chargersOpProvider = chargersOpProvider;
+  }
 
   void setAccessToken(String token) {
     _accessToken = token;
@@ -67,10 +115,43 @@ class AuthProvider extends ChangeNotifier {
 
   // Cerrar sesión y limpiar datos almacenados
   Future<void> logout() async {
-    await _authStorage.clearCredentials();
-    _accessToken = '';
-    _isAuthenticated = false;
-    notifyListeners();
+    debugPrint("🧹 [AuthProvider] Iniciando logout...");
+    try {
+      // Limpieza de credenciales
+      await _authStorage.clearCredentials();
+      _accessToken = '';
+      _isAuthenticated = false;
+
+      // ✅ VERIFICAR ANTES DE LIMPIAR
+      debugPrint("🔍 [AuthProvider] Estado antes de limpiar providers:");
+      debugPrint("Operations count: ${_operationsProvider.operations.length}");
+
+      // ✅ LIMPIAR OPERATIONS PROVIDER CON VERIFICACIÓN
+      _operationsProvider.clear();
+
+      // ✅ VERIFICAR DESPUÉS DE LIMPIAR
+      debugPrint(
+          "🔍 [AuthProvider] Estado después de limpiar OperationsProvider:");
+      debugPrint("Operations count: ${_operationsProvider.operations.length}");
+      debugPrint(
+          "InProgress count: ${_operationsProvider.inProgressOperations.length}");
+
+      // Limpiar otros providers
+      _areasProvider.clear();
+      _chargersOpProvider.clear();
+      _clientsProvider.clear();
+      _feedingProvider.clear();
+      _workersProvider.clear();
+      _faultsProvider.clear();
+      _programmingsProvider.clear();
+      _tasksProvider.clear();
+      _userProvider.clear();
+
+      debugPrint("✅ [AuthProvider] Logout completado");
+      notifyListeners();
+    } catch (e) {
+      debugPrint('❌ [AuthProvider] Error en logout: $e');
+    }
   }
 
   // Intentar iniciar sesión automáticamente al iniciar la app

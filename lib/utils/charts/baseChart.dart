@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:plannerop/core/model/operation.dart';
 import 'package:plannerop/services/operations/operationReports.dart';
 import 'package:plannerop/utils/charts/mapper.dart';
+import 'package:plannerop/widgets/operations/components/utils/Loader.dart';
 
 abstract class BaseChart<T> extends StatefulWidget {
   final DateTime startDate;
@@ -136,8 +137,9 @@ abstract class BaseChartState<T, W extends BaseChart<T>> extends State<W> {
           ),
         ),
         if (_isLoading)
-          const Expanded(
-            child: Center(child: CircularProgressIndicator()),
+          AppLoader(
+            size: LoaderSize.medium,
+            color: Colors.blue,
           )
         else if (_errorMessage != null)
           Expanded(

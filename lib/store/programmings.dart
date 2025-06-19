@@ -198,8 +198,8 @@ class ProgrammingsProvider extends ChangeNotifier {
   }
 
   //  Limpiar caché
-  void clearCache() {
-    _programmings.clear();
+  void clear() {
+    _programmings = [];
     notifyListeners();
   }
 }

@@ -10,6 +10,7 @@ import 'package:plannerop/store/user.dart';
 import 'package:plannerop/utils/dataManager.dart';
 
 import 'package:plannerop/utils/toast.dart';
+import 'package:plannerop/widgets/operations/components/utils/Loader.dart';
 import 'package:provider/provider.dart';
 
 Future<void> tryAutoLogin(bool mounted, Function setState, bool _isLoading,
@@ -55,8 +56,10 @@ Future<void> tryAutoLogin(bool mounted, Function setState, bool _isLoading,
       debugPrint(
           "Usuario autenticado: ${userProvider.user.name} (${userProvider.user.role})");
 
-      //  MANEJAR SELECCIÓN DE SEDE (REUTILIZABLE)
-      await SiteSelector.handleSiteSelection(context);
+      final SiteSelector siteSelector = SiteSelector();
+
+      //  MANEJAR SELECCIÓN DE SEDE
+      await siteSelector.handleSiteSelection(context);
 
       //  MOSTRAR LOADER DESPUÉS DE SELECCIONAR SEDE
       if (mounted) {
@@ -64,40 +67,10 @@ Future<void> tryAutoLogin(bool mounted, Function setState, bool _isLoading,
           context: context,
           barrierDismissible: false,
           builder: (BuildContext context) {
-            return WillPopScope(
-              onWillPop: () async => false,
-              child: Center(
-                child: Card(
-                  elevation: 8,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  child: Container(
-                    padding: const EdgeInsets.all(24),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const CircularProgressIndicator(),
-                        const SizedBox(height: 16),
-                        const Text(
-                          'Cargando datos...',
-                          style: TextStyle(fontWeight: FontWeight.bold),
-                        ),
-                        if (userProvider.selectedSite != null) ...[
-                          const SizedBox(height: 8),
-                          Text(
-                            'Sede: ${userProvider.selectedSite!.name}',
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: Colors.grey[600],
-                            ),
-                          ),
-                        ],
-                      ],
-                    ),
-                  ),
-                ),
-              ),
+            return AppLoader(
+              message: 'Cargando datos, por favor espere...',
+              color: Colors.blue,
+              size: LoaderSize.medium,
             );
           },
         );
@@ -145,13 +118,10 @@ Future<void> login(GlobalKey<FormState> _formKey, BuildContext context,
       barrierDismissible: false,
       builder: (BuildContext dialogContext) {
         dialogContextRef = dialogContext;
-        return WillPopScope(
-          onWillPop: () async => false,
-          child: const Center(
-            child: CircularProgressIndicator(
-              valueColor: AlwaysStoppedAnimation<Color>(Colors.blue),
-            ),
-          ),
+        return AppLoader(
+          message: 'Iniciando sesión, por favor espere...',
+          color: Colors.blue,
+          size: LoaderSize.medium,
         );
       },
     );
@@ -187,14 +157,16 @@ Future<void> login(GlobalKey<FormState> _formKey, BuildContext context,
           dni: decodedToken['dni'],
           phone: decodedToken['phone'],
           cargo: decodedToken['occupation'],
-          role: decodedToken['role'], //  ASEGURAR QUE ROLE ESTÉ INCLUIDO
+          role: decodedToken['role'],
         ));
 
         //  CERRAR LOADER DE LOGIN ANTES DE MOSTRAR SELECTOR
         closeDialog();
 
-        //  MANEJAR SELECCIÓN DE SEDE (REUTILIZABLE)
-        await SiteSelector.handleSiteSelection(context);
+        final SiteSelector siteSelector = SiteSelector();
+
+        //  MANEJAR SELECCIÓN DE SEDE
+        await siteSelector.handleSiteSelection(context);
 
         //  MOSTRAR LOADER DE CARGA DE DATOS
         if (mounted) {
@@ -202,40 +174,10 @@ Future<void> login(GlobalKey<FormState> _formKey, BuildContext context,
             context: context,
             barrierDismissible: false,
             builder: (BuildContext context) {
-              return WillPopScope(
-                onWillPop: () async => false,
-                child: Center(
-                  child: Card(
-                    elevation: 8,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    child: Container(
-                      padding: const EdgeInsets.all(24),
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          const CircularProgressIndicator(),
-                          const SizedBox(height: 16),
-                          const Text(
-                            'Cargando datos...',
-                            style: TextStyle(fontWeight: FontWeight.bold),
-                          ),
-                          if (userProvider.selectedSite != null) ...[
-                            const SizedBox(height: 8),
-                            Text(
-                              'Sede: ${userProvider.selectedSite!.name}',
-                              style: TextStyle(
-                                fontSize: 12,
-                                color: Colors.grey[600],
-                              ),
-                            ),
-                          ],
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
+              return AppLoader(
+                message: 'Cargando datos, por favor espere...',
+                color: Colors.blue,
+                size: LoaderSize.medium,
               );
             },
           );
@@ -260,7 +202,6 @@ Future<void> login(GlobalKey<FormState> _formKey, BuildContext context,
         }
       }
     } catch (e) {
-      debugPrint('❌ Error en login: $e');
       closeDialog();
       if (mounted) {
         showErrorToast(context, 'Error de conexión: $e');

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:plannerop/store/reports.dart';
+import 'package:plannerop/widgets/operations/components/utils/Loader.dart';
 import 'package:plannerop/widgets/reports/components/charFactory.dart';
 import 'package:plannerop/widgets/reports/components/charSelector.dart';
 import 'package:plannerop/widgets/reports/constants.dart';
@@ -96,22 +97,12 @@ class _ReportsViewState extends State<_ReportsView> {
           onPressed: provider.toggleFilterPanel,
           tooltip: 'Filtros',
         ),
-        if (provider.isLoadingFilterData) _buildLoadingIndicator(),
+        if (provider.isLoadingFilterData)
+          AppLoader(
+            size: LoaderSize.small,
+            color: Colors.white,
+          )
       ],
-    );
-  }
-
-  Widget _buildLoadingIndicator() {
-    return const Padding(
-      padding: EdgeInsets.all(16.0),
-      child: SizedBox(
-        width: 20,
-        height: 20,
-        child: CircularProgressIndicator(
-          strokeWidth: 2,
-          valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-        ),
-      ),
     );
   }
 

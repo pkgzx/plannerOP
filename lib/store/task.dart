@@ -135,8 +135,13 @@ class TasksProvider extends ChangeNotifier {
     }
   }
 
-  // NUEVO: Método para verificar si existe una tarea
+  // Método para verificar si existe una tarea
   bool hasTaskWithId(int id) {
     return _tasks.any((task) => task.id == id);
+  }
+
+  void clear() {
+    _tasks = [];
+    notifyListeners();
   }
 }

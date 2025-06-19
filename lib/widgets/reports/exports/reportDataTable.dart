@@ -8,6 +8,7 @@ import 'package:plannerop/store/workers.dart';
 import 'package:plannerop/store/task.dart';
 import 'package:plannerop/store/clients.dart';
 import 'package:plannerop/store/chargersOp.dart';
+import 'package:plannerop/widgets/operations/components/utils/Loader.dart';
 
 import 'package:provider/provider.dart';
 
@@ -226,7 +227,7 @@ class _ReportDataTableState extends State<ReportDataTable> {
                   future: _buildDataTable(filteredData, usersProvider),
                   builder: (context, snapshot) {
                     if (snapshot.connectionState == ConnectionState.waiting) {
-                      return const Center(child: CircularProgressIndicator());
+                      return AppLoader();
                     }
                     if (snapshot.hasError) {
                       return Center(child: Text('Error: ${snapshot.error}'));

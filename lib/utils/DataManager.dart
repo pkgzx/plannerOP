@@ -39,7 +39,7 @@ class DataManager {
     _appContext = context;
   }
 
-  // Nuevo método para cargar datos después del login
+  //  método para cargar datos después del login
   Future<void> loadDataAfterAuthentication(BuildContext context) async {
     // Verificar que el token esté disponible
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
@@ -83,7 +83,7 @@ class DataManager {
       await Future.wait([
         _loadTasks(context),
         _loadClients(context),
-        _loadChargers(context),
+        // _loadChargers(context),
         _loadFaults(context),
       ]);
     } catch (error) {
@@ -133,12 +133,12 @@ class DataManager {
     });
   }
 
-  Future<void> _loadChargers(BuildContext context) async {
-    return _loadResource('chargers', context, () async {
-      final provider = Provider.of<ChargersOpProvider>(context, listen: false);
-      await provider.fetchChargers(context);
-    });
-  }
+  // Future<void> _loadChargers(BuildContext context) async {
+  //   return _loadResource('chargers', context, () async {
+  //     final provider = Provider.of<ChargersOpProvider>(context, listen: false);
+  //     await provider.fetchChargers(context);
+  //   });
+  // }
 
   Future<void> _loadFaults(BuildContext context) async {
     return _loadResource('faults', context, () async {
@@ -212,9 +212,9 @@ class DataManager {
       case 'clients':
         await _loadClients(context);
         break;
-      case 'chargers':
-        await _loadChargers(context);
-        break;
+      // case 'chargers':
+      //   await _loadChargers(context);
+      //   break;
       case 'faults':
         await _loadFaults(context);
         break;

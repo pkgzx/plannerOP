@@ -239,12 +239,12 @@ class FeedingProvider extends ChangeNotifier {
       // Inicializar la estructura de datos para esta operación
       _feedingStatus[operationId] = {};
 
-      // ✅ PROCESAR DATOS INCLUYENDO LOS IDs
+      //  PROCESAR DATOS INCLUYENDO LOS IDs
       for (var feeding in feedingData) {
         int workerId = feeding['id_worker'];
         String type = feeding['type'];
         String foodType = _getFeedingTypeFromApi(type);
-        int feedingId = feeding['id']; // ✅ OBTENER EL ID
+        int feedingId = feeding['id']; //  OBTENER EL ID
         String? dateFeeding = feeding['dateFeeding'];
 
         _feedingStatus[operationId]![workerId] ??= {};

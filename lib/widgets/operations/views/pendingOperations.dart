@@ -6,6 +6,7 @@ import 'package:plannerop/utils/operations.dart';
 import 'package:plannerop/utils/toast.dart';
 import 'package:plannerop/widgets/operations/components/OperationCard.dart';
 import 'package:plannerop/widgets/operations/components/utils.dart';
+import 'package:plannerop/widgets/operations/components/utils/Loader.dart';
 import 'package:plannerop/widgets/operations/edit/editOperationForm.dart';
 import 'package:provider/provider.dart';
 import 'package:plannerop/store/operations.dart';
@@ -55,8 +56,10 @@ class _PendingOperationsViewState extends State<PendingOperationsView> {
     return Consumer<OperationsProvider>(
       builder: (context, assignmentsProvider, child) {
         if (assignmentsProvider.isLoading) {
-          return const Center(
-            child: CircularProgressIndicator(),
+          return AppLoader(
+            showAsScaffold: false,
+            message: 'Cargando asignaciones pendientes...',
+            size: LoaderSize.medium,
           );
         }
 
@@ -357,29 +360,10 @@ class _PendingOperationsViewState extends State<PendingOperationsView> {
                   height: 36,
                   child: Center(
                     child: isProcessing
-                        ? Row(
-                            // Mostrar indicador de carga
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: const [
-                              SizedBox(
-                                width: 16,
-                                height: 16,
-                                child: CircularProgressIndicator(
-                                  valueColor: AlwaysStoppedAnimation<Color>(
-                                      Colors.white),
-                                  strokeWidth: 2,
-                                ),
-                              ),
-                              SizedBox(width: 8),
-                              Text(
-                                'Iniciando',
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.w600,
-                                  fontSize: 14,
-                                ),
-                              ),
-                            ],
+                        ? AppLoader(
+                            color: Colors.white,
+                            size: LoaderSize.medium,
+                            message: 'Iniciando...',
                           )
                         : const Text(
                             'Confirmar',

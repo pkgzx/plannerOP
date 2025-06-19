@@ -6,7 +6,6 @@ import 'package:plannerop/store/auth.dart';
 import 'package:plannerop/utils/toast.dart';
 import 'package:provider/provider.dart';
 
-// En lib/services/feedings/feedings.dart - modificar métodos
 class FeedingService {
   final String API_URL = dotenv.get('API_URL');
 

@@ -3,6 +3,7 @@ import 'package:plannerop/mapper/operation.dart';
 import 'package:plannerop/store/operations.dart';
 import 'package:plannerop/utils/operations.dart';
 import 'package:plannerop/widgets/operations/components/utils/emptyState.dart';
+import 'package:plannerop/widgets/operations/components/utils/Loader.dart';
 import 'package:provider/provider.dart';
 import 'package:plannerop/core/model/operation.dart';
 import 'package:intl/intl.dart';
@@ -114,8 +115,10 @@ class RecentOps extends StatelessWidget {
                                       builder: (context, snapshot) {
                                         if (snapshot.connectionState ==
                                             ConnectionState.waiting) {
-                                          return const CircularProgressIndicator(
-                                              strokeWidth: 2);
+                                          return AppLoader(
+                                            size: LoaderSize.small,
+                                            strokeWidth: 2,
+                                          );
                                         } else if (snapshot.hasError) {
                                           return Text(
                                               'Error: ${snapshot.error}');

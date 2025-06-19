@@ -1,4 +1,3 @@
-// Función para obtener el color según el estado de la programación
 import 'package:flutter/material.dart';
 
 // Función para obtener el texto del estado en español

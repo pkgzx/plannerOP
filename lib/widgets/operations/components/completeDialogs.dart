@@ -7,6 +7,7 @@ import 'package:plannerop/core/model/workerGroup.dart';
 import 'package:plannerop/store/operations.dart';
 import 'package:plannerop/store/workers.dart';
 import 'package:plannerop/utils/toast.dart';
+import 'package:plannerop/widgets/operations/components/utils/Loader.dart';
 import 'package:provider/provider.dart';
 
 // Dialogo para confirmar la finalización de una operación
@@ -111,29 +112,10 @@ void showCompletionDialog({
                   height: 36,
                   child: Center(
                     child: isProcessing
-                        ? Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: const [
-                              SizedBox(
-                                width: 16,
-                                height: 16,
-                                child: CircularProgressIndicator(
-                                  valueColor: AlwaysStoppedAnimation<Color>(
-                                      Colors.white),
-                                  strokeWidth: 2,
-                                ),
-                              ),
-                              SizedBox(width: 8),
-                              Text(
-                                'Procesando',
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.w600,
-                                  fontSize: 13,
-                                ),
-                              ),
-                            ],
-                          )
+                        ? AppLoader(
+                            color: Colors.white,
+                            size: LoaderSize.medium,
+                            message: 'Procesando...')
                         : const Text(
                             'Confirmar',
                             style: TextStyle(
@@ -405,29 +387,10 @@ void showIndividualCompletionDialog(BuildContext context, Operation assignment,
                   height: 36,
                   child: Center(
                     child: isProcessing
-                        ? Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              SizedBox(
-                                width: 16,
-                                height: 16,
-                                child: CircularProgressIndicator(
-                                  valueColor: AlwaysStoppedAnimation<Color>(
-                                      Colors.white),
-                                  strokeWidth: 2,
-                                ),
-                              ),
-                              SizedBox(width: 8),
-                              Text(
-                                'Procesando',
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.w600,
-                                  fontSize: 13,
-                                ),
-                              ),
-                            ],
-                          )
+                        ? AppLoader(
+                            color: Colors.white,
+                            size: LoaderSize.medium,
+                            message: 'Procesando...')
                         : Text(
                             'Completar',
                             style: TextStyle(
@@ -692,29 +655,10 @@ void showGroupCompletionDialog(
                   height: 36,
                   child: Center(
                     child: isProcessing
-                        ? Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              SizedBox(
-                                width: 16,
-                                height: 16,
-                                child: CircularProgressIndicator(
-                                  valueColor: AlwaysStoppedAnimation<Color>(
-                                      Colors.white),
-                                  strokeWidth: 2,
-                                ),
-                              ),
-                              SizedBox(width: 8),
-                              Text(
-                                'Procesando',
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.w600,
-                                  fontSize: 13,
-                                ),
-                              ),
-                            ],
-                          )
+                        ? AppLoader(
+                            color: Colors.white,
+                            size: LoaderSize.medium,
+                            message: 'Procesando...')
                         : Text(
                             'Completar',
                             style: TextStyle(

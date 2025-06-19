@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:plannerop/widgets/operations/components/utils/Loader.dart';
 import 'package:provider/provider.dart';
 import 'package:plannerop/store/workers.dart';
 import 'package:plannerop/core/model/worker.dart';
@@ -137,8 +138,9 @@ class _WorkerStatusChartState extends State<WorkerStatusChart> {
               ),
             ),
             if (_isLoading || workersProvider.isLoading)
-              const Expanded(
-                child: Center(child: CircularProgressIndicator()),
+              AppLoader(
+                size: LoaderSize.medium,
+                color: Colors.blue,
               )
             else if (_errorMessage != null)
               Expanded(

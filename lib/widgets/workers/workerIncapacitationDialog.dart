@@ -3,6 +3,7 @@ import 'package:intl/intl.dart';
 import 'package:plannerop/core/model/worker.dart';
 import 'package:plannerop/store/workers.dart';
 import 'package:plannerop/utils/toast.dart';
+import 'package:plannerop/widgets/operations/components/utils/Loader.dart';
 import 'package:provider/provider.dart';
 import 'package:plannerop/widgets/operations/components/utils/dropdownField.dart';
 
@@ -291,14 +292,9 @@ class _WorkerIncapacitationDialogState
                         ),
                       ),
                       child: _isLoading
-                          ? const SizedBox(
-                              width: 20,
-                              height: 20,
-                              child: CircularProgressIndicator(
-                                valueColor:
-                                    AlwaysStoppedAnimation<Color>(Colors.white),
-                                strokeWidth: 2,
-                              ),
+                          ? AppLoader(
+                              size: LoaderSize.medium,
+                              color: Colors.white,
                             )
                           : const Text(
                               'Registrar Incapacidad',

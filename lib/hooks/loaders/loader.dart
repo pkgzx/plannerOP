@@ -14,16 +14,17 @@ import 'package:provider/provider.dart';
 Future<void> loadChargersOp({
   required BuildContext context,
   required bool Function() isMounted,
-  required void Function(void Function())
+  required void Function(void Function())?
       setStateCallback, // Función para llamar setState
-  required void Function(bool)
+  required void Function(bool)?
       updateLoadingState, // Función para actualizar el estado de carga
 }) async {
   if (!isMounted()) return;
 
-  // Actualizar estado de carga a true
-  setStateCallback(() => updateLoadingState(true));
-
+  if (setStateCallback != null && updateLoadingState != null) {
+    // Actualizar estado de carga a true
+    setStateCallback(() => updateLoadingState(true));
+  }
   try {
     final chargersOpProvider =
         Provider.of<ChargersOpProvider>(context, listen: false);
@@ -35,7 +36,10 @@ Future<void> loadChargersOp({
     }
   } finally {
     if (isMounted()) {
-      setStateCallback(() => updateLoadingState(false));
+      if (setStateCallback != null && updateLoadingState != null) {
+        // Actualizar estado de carga a false
+        setStateCallback(() => updateLoadingState(false));
+      }
     }
   }
 }
@@ -44,15 +48,17 @@ Future<void> loadChargersOp({
 Future<void> loadFaults({
   required BuildContext context,
   required bool Function() isMounted,
-  required void Function(void Function())
+  required void Function(void Function())?
       setStateCallback, // Función para llamar setState
-  required void Function(bool)
+  required void Function(bool)?
       updateLoadingState, // Función para actualizar el estado de carga
 }) async {
   if (!isMounted()) return;
 
   // Actualizar estado de carga a true
-  setStateCallback(() => updateLoadingState(true));
+  if (setStateCallback != null && updateLoadingState != null) {
+    setStateCallback(() => updateLoadingState(true));
+  }
 
   try {
     final faultsProvider = Provider.of<FaultsProvider>(context, listen: false);
@@ -65,7 +71,9 @@ Future<void> loadFaults({
     }
   } finally {
     if (isMounted()) {
-      setStateCallback(() => updateLoadingState(false));
+      if (setStateCallback != null && updateLoadingState != null) {
+        setStateCallback(() => updateLoadingState(false));
+      }
     }
   }
 }
@@ -74,7 +82,7 @@ Future<void> loadFaults({
 Future<void> checkAndLoadWorkersIfNeeded(
   bool Function() isMounted,
   Function setState,
-  bool isLoadingWorkers,
+  bool? isLoadingWorkers,
   BuildContext context,
 ) async {
   if (!isMounted()) return;
@@ -95,14 +103,15 @@ Future<void> checkAndLoadWorkersIfNeeded(
 Future<void> _loadWorkers(
   bool Function() isMounted,
   Function setState,
-  bool isLoadingWorkers,
+  bool? isLoadingWorkers,
   BuildContext context,
 ) async {
   if (!isMounted()) return;
 
-  setState(() {
-    isLoadingWorkers = true;
-  });
+  if (isLoadingWorkers != null)
+    setState(() {
+      isLoadingWorkers = true;
+    });
 
   final workersProvider = Provider.of<WorkersProvider>(context, listen: false);
 
@@ -113,8 +122,6 @@ Future<void> _loadWorkers(
     // Si después de intentar cargar no hay datos, añadir datos de muestra
     if (workersProvider.workers.isEmpty) {}
   } catch (e) {
-    // Si algo falla, cargar datos de muestra
-
     // Mostrar un mensaje de error
     if (isMounted()) {
       showErrorToast(context, 'Error al cargar trabajadores.');
@@ -122,7 +129,9 @@ Future<void> _loadWorkers(
   } finally {
     if (isMounted()) {
       setState(() {
-        isLoadingWorkers = false;
+        if (isLoadingWorkers != null) {
+          isLoadingWorkers = false;
+        }
       });
     }
   }
@@ -131,7 +140,7 @@ Future<void> _loadWorkers(
 Future<void> loadAreas(
   bool Function() isMounted,
   Function setState,
-  bool isLoadingAreas,
+  bool? isLoadingAreas,
   BuildContext context,
 ) async {
   if (!isMounted()) return;
@@ -139,30 +148,18 @@ Future<void> loadAreas(
   final areasProvider = Provider.of<AreasProvider>(context, listen: false);
 
   // Verificar si ya hay áreas cargadas
-  if (areasProvider.areas.isNotEmpty) {
-    // debugPrint(
-    //     'Áreas ya cargadas anteriormente: ${areasProvider.areas.length}');
-    return;
-  }
+  if (areasProvider.areas.isNotEmpty) return;
 
-  // Mostrar indicador de carga para áreas
-  setState(() {
-    isLoadingAreas = true;
-  });
+  if (isLoadingAreas != null) {
+    // Si ya hay áreas cargadas, no mostrar el indicador de carga
+    setState(() {
+      isLoadingAreas = true;
+    });
+  }
 
   try {
     // Llamar al método fetchAreas con await para asegurar que se complete
     await areasProvider.fetchAreas(context);
-
-    // Verificar si se cargaron áreas
-    if (areasProvider.areas.isNotEmpty) {
-      // debugPrint(
-      //     'Áreas cargadas con éxito: ${areasProvider.areas.length} áreas');
-    } else {
-      // debugPrint('No se cargaron áreas o la lista está vacía');
-
-      // Si no hay áreas, cargar algunas predeterminadas
-    }
   } catch (e, stackTrace) {
     debugPrint('Stack trace: $stackTrace');
 
@@ -172,24 +169,30 @@ Future<void> loadAreas(
     }
   } finally {
     if (isMounted()) {
-      setState(() {
-        isLoadingAreas = false;
-      });
+      if (isLoadingAreas != null) {
+        // Asegurar que el estado de carga se desactive siempre al finalizar
+        setState(() {
+          isLoadingAreas = false;
+        });
+      }
     }
   }
 }
 
-Future<void> loadTask(
-  bool Function() isMounted,
-  Function setState,
-  bool isLoadingTasks,
-  BuildContext context,
-) async {
+Future<void> loadTask({
+  required bool Function() isMounted,
+  required setState,
+  bool? isLoadingTasks,
+  required BuildContext context,
+}) async {
   if (!isMounted()) return;
 
-  setState(() {
-    isLoadingTasks = true;
-  });
+  if (isLoadingTasks != null) {
+    // Si ya hay tareas cargadas, no mostrar el indicador de carga
+    setState(() {
+      isLoadingTasks = true;
+    });
+  }
 
   try {
     final tasksProvider = Provider.of<TasksProvider>(context, listen: false);
@@ -207,9 +210,12 @@ Future<void> loadTask(
     }
   } finally {
     if (isMounted()) {
-      setState(() {
-        isLoadingTasks = false;
-      });
+      if (isLoadingTasks != null) {
+        // Asegurar que el estado de carga se desactive siempre al finalizar
+        setState(() {
+          isLoadingTasks = false;
+        });
+      }
     }
   }
 }
@@ -217,27 +223,32 @@ Future<void> loadTask(
 Future<void> loadAssignments({
   required BuildContext context,
   required bool Function() isMounted,
-  required void Function(void Function())
+  required void Function(void Function())?
       setStateCallback, // Función para llamar setState
-  required void Function(bool)
+  required void Function(bool)?
       updateLoadingState, // Función para actualizar el estado de carga
 }) async {
   if (!isMounted()) return;
 
-  // Actualizar estado de carga a true
-  setStateCallback(() => updateLoadingState(true));
+  if (setStateCallback != null && updateLoadingState != null) {
+    // Actualizar estado de carga a true
+    setStateCallback(() => updateLoadingState(true));
+  }
 
   // Configurar un timeout para evitar carga infinita
   final loadingTimeout = Future.delayed(const Duration(seconds: 10), () {
     if (isMounted()) {
-      setStateCallback(() {
-        updateLoadingState(false);
-      });
+      if (setStateCallback != null && updateLoadingState != null) {
+        setStateCallback(() {
+          updateLoadingState(false);
+        });
+      }
+
       // Desactivar loading en el provider también
       Provider.of<OperationsProvider>(context, listen: false)
           .changeIsLoadingOff();
-      // showAlertToast(
-      //     context, 'La carga de datos está tomando demasiado tiempo');
+      showAlertToast(
+          context, 'La carga de datos está tomando demasiado tiempo');
     }
   });
 
@@ -252,9 +263,11 @@ Future<void> loadAssignments({
   final hasExistingData = assignmentsProvider.operations.isNotEmpty;
 
   if (!hasExistingData) {
-    setStateCallback(() {
-      updateLoadingState(true);
-    });
+    if (setStateCallback != null && updateLoadingState != null) {
+      setStateCallback(() {
+        updateLoadingState(true);
+      });
+    }
   }
 
   try {
@@ -274,21 +287,23 @@ Future<void> loadAssignments({
   } finally {
     // Asegurar que el estado de carga se desactive siempre al finalizar
     if (isMounted()) {
-      setStateCallback(() {
-        updateLoadingState(false);
-      });
-      // Asegurar que el provider también deshabilite su indicador de carga
-      assignmentsProvider.changeIsLoadingOff();
+      if (setStateCallback != null && updateLoadingState != null) {
+        setStateCallback(() {
+          updateLoadingState(false);
+        });
+        // Asegurar que el provider también deshabilite su indicador de carga
+        assignmentsProvider.changeIsLoadingOff();
+      }
     }
   }
 }
 
-Future<bool> loadClients(
-  bool Function() isMounted,
-  Function setState,
-  bool isLoadingClients,
-  BuildContext context,
-) async {
+Future<bool> loadClients({
+  required bool Function() isMounted,
+  required Function setState,
+  bool? isLoadingClients,
+  required BuildContext context,
+}) async {
   if (!isMounted()) return false;
 
   final clientsProvider = Provider.of<ClientsProvider>(context, listen: false);
@@ -298,9 +313,12 @@ Future<bool> loadClients(
     return true;
   }
 
-  setState(() {
-    isLoadingClients = true;
-  });
+  if (isLoadingClients != null) {
+    // Si ya hay clientes cargados, no mostrar el indicador de carga
+    setState(() {
+      isLoadingClients = true;
+    });
+  }
 
   try {
     await clientsProvider.fetchClients(context);
@@ -322,9 +340,12 @@ Future<bool> loadClients(
     return false;
   } finally {
     if (isMounted()) {
-      setState(() {
-        isLoadingClients = false;
-      });
+      if (isLoadingClients != null) {
+        // Asegurar que el estado de carga se desactive siempre al finalizar
+        setState(() {
+          isLoadingClients = false;
+        });
+      }
     }
   }
 }
@@ -332,7 +353,7 @@ Future<bool> loadClients(
 Future<void> loadClientProgramming(
   bool Function() isMounted,
   Function setState,
-  bool isLoadingClientProgramming,
+  bool? isLoadingClientProgramming,
   BuildContext context, {
   bool forceRefresh = false,
 }) async {
@@ -342,9 +363,7 @@ Future<void> loadClientProgramming(
       Provider.of<ProgrammingsProvider>(context, listen: false);
 
   // Si no es refresh forzado y ya se han cargado programaciones, no hacer nada
-  if (!forceRefresh && programmingsProvider.programmings.isNotEmpty) {
-    return;
-  }
+  if (!forceRefresh && programmingsProvider.programmings.isNotEmpty) return;
 
   setState(() {
     isLoadingClientProgramming = true;

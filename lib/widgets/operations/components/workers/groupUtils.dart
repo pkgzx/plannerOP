@@ -4,6 +4,7 @@ import 'package:plannerop/core/model/workerGroup.dart';
 import 'package:plannerop/store/operations.dart';
 
 import 'package:plannerop/utils/toast.dart';
+import 'package:plannerop/widgets/operations/components/utils/Loader.dart';
 import 'package:plannerop/widgets/operations/edit/editOperationForm.dart';
 import 'package:provider/provider.dart';
 
@@ -13,11 +14,8 @@ void deleteWorkerGroup({
   required WorkerGroup group,
   required int assignmentId,
   required List<WorkerGroup> selectedGroups,
-  required List<Worker> selectedWorkers,
   required bool inEditMode,
   required List<Worker> deletedWorkers,
-  required Function(List<Worker>)? onDeletedWorkersChanged,
-  required Function(List<Worker>) onWorkersChanged,
   required Function(List<WorkerGroup>)? onGroupsChanged,
   required VoidCallback onRemoveFromLocal,
   bool preserveIndividualWorkers = false,
@@ -128,7 +126,10 @@ void _syncGroupDeletionWithBackend(
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (context) => const Center(child: CircularProgressIndicator()),
+      builder: (context) => AppLoader(
+        color: Colors.white,
+        size: LoaderSize.small,
+      ),
     );
 
     // Crear los datos del grupo a eliminar

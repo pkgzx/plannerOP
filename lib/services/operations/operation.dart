@@ -242,7 +242,7 @@ class OperationService {
             // break; // Descomentar si quieres parar en el primer error
           }
 
-          // Opcional: Añadir un pequeño delay entre peticiones para evitar sobrecargar el servidor
+          // Añadir un pequeño delay entre peticiones para evitar sobrecargar el servidor
           await Future.delayed(Duration(milliseconds: 100));
         }
       }

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_neumorphic_plus/flutter_neumorphic.dart';
 import 'package:plannerop/core/model/user.dart';
 import 'package:plannerop/store/chargersOp.dart';
+import 'package:plannerop/widgets/operations/components/utils/Button.dart';
 import 'package:provider/provider.dart';
 
 class MultiChargerSelectionField extends StatefulWidget {
@@ -97,36 +98,43 @@ class _MultiChargerSelectionFieldState
                 color: Color(0xFF4A5568),
               ),
             ),
-            NeumorphicButton(
-              style: NeumorphicStyle(
-                depth: 2,
-                intensity: 0.6,
-                boxShape:
-                    NeumorphicBoxShape.roundRect(BorderRadius.circular(8)),
-                color: const Color(0xFF3182CE),
-              ),
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            // NeumorphicButton(
+            //   style: NeumorphicStyle(
+            //     depth: 2,
+            //     intensity: 0.6,
+            //     boxShape:
+            //         NeumorphicBoxShape.roundRect(BorderRadius.circular(8)),
+            //     color: const Color(0xFF3182CE),
+            //   ),
+            //   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            //   onPressed: () =>
+            //       _showChargerSelectionDialog(context, availableChargers),
+            //   child: Row(
+            //     mainAxisSize: MainAxisSize.min,
+            //     children: const [
+            //       Icon(
+            //         Icons.person_add,
+            //         size: 16,
+            //         color: Colors.white,
+            //       ),
+            //       SizedBox(width: 6),
+            //       Text(
+            //         "Añadir",
+            //         style: TextStyle(
+            //           color: Colors.white,
+            //           fontWeight: FontWeight.w500,
+            //           fontSize: 12,
+            //         ),
+            //       ),
+            //     ],
+            //   ),
+            // ),
+            AppButton(
+              text: "Añadir",
+              icon: Icons.person_add,
               onPressed: () =>
                   _showChargerSelectionDialog(context, availableChargers),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: const [
-                  Icon(
-                    Icons.person_add,
-                    size: 16,
-                    color: Colors.white,
-                  ),
-                  SizedBox(width: 6),
-                  Text(
-                    "Añadir",
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.w500,
-                      fontSize: 12,
-                    ),
-                  ),
-                ],
-              ),
+              size: AppButtonSize.small,
             ),
           ],
         ),

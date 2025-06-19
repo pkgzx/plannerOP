@@ -40,4 +40,9 @@ class AreasProvider extends ChangeNotifier {
     return _areas.firstWhere((area) => area.name == name,
         orElse: () => Area(id: 0, name: ""));
   }
+
+  void clear() {
+    _areas = [];
+    notifyListeners();
+  }
 }

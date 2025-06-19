@@ -1,6 +1,7 @@
 import 'package:flutter/services.dart';
 import 'package:flutter_neumorphic_plus/flutter_neumorphic.dart';
 import 'package:plannerop/core/model/user.dart';
+import 'package:plannerop/widgets/operations/components/utils/Loader.dart';
 import 'package:plannerop/widgets/workers/tab/workersContent.dart';
 import 'package:plannerop/widgets/workers/tab/workersHeader.dart';
 import 'package:plannerop/widgets/workers/workerFilter.dart';
@@ -54,57 +55,53 @@ class _WorkersTabState extends State<WorkersTab> {
     final user = Provider.of<UserProvider>(context).user;
 
     return Scaffold(
-      backgroundColor: Colors.white,
-      body: SafeArea(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Header y búsqueda
-            WorkersHeader(
-              searchController: _searchController,
-              searchQuery: _searchQuery,
-            ),
-
-            // Stats y lista todo en uno
-            Expanded(
-              child: WorkersContent(
+        backgroundColor: Colors.white,
+        body: SafeArea(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Header y búsqueda
+              WorkersHeader(
+                searchController: _searchController,
                 searchQuery: _searchQuery,
-                currentFilter: _currentFilter,
-                selectedFaultType: _selectedFaultType,
-                onFilterChanged: (filter) {
-                  setState(() {
-                    _currentFilter = filter;
-                    if (filter != WorkerFilter.faults) {
-                      _selectedFaultType = null;
-                    }
-                  });
-                },
-                onFaultTypeChanged: (type) {
-                  setState(() => _selectedFaultType = type);
-                },
-                onAddWorker: _addWorker,
-                onUpdateWorker: _updateWorker,
               ),
-            ),
-          ],
+
+              // Stats y lista todo en uno
+              Expanded(
+                child: WorkersContent(
+                  searchQuery: _searchQuery,
+                  currentFilter: _currentFilter,
+                  selectedFaultType: _selectedFaultType,
+                  onFilterChanged: (filter) {
+                    setState(() {
+                      _currentFilter = filter;
+                      if (filter != WorkerFilter.faults) {
+                        _selectedFaultType = null;
+                      }
+                    });
+                  },
+                  onFaultTypeChanged: (type) {
+                    setState(() => _selectedFaultType = type);
+                  },
+                  onAddWorker: _addWorker,
+                  onUpdateWorker: _updateWorker,
+                ),
+              ),
+            ],
+          ),
         ),
-      ),
-      floatingActionButton: user.role == "GH" || user.role == "SUPERADMIN"
-          ? NeumorphicFloatingActionButton(
-              style: NeumorphicStyle(
-                color: const Color(0xFF4299E1),
-                shape: NeumorphicShape.flat,
-                boxShape:
-                    NeumorphicBoxShape.roundRect(BorderRadius.circular(28)),
-                depth: 8,
-                intensity: 0.65,
-                lightSource: LightSource.topLeft,
-              ),
-              child: const Icon(Icons.person_add, color: Colors.white),
-              onPressed: () => WorkerAddDialog.show(context, _addWorker),
-            )
-          : null,
-    );
+        floatingActionButton: NeumorphicFloatingActionButton(
+          style: NeumorphicStyle(
+            color: const Color(0xFF4299E1),
+            shape: NeumorphicShape.flat,
+            boxShape: NeumorphicBoxShape.roundRect(BorderRadius.circular(28)),
+            depth: 8,
+            intensity: 0.65,
+            lightSource: LightSource.topLeft,
+          ),
+          child: const Icon(Icons.person_add, color: Colors.white),
+          onPressed: () => WorkerAddDialog.show(context, _addWorker),
+        ));
   }
 
   void _addWorker(Worker workerData) {
@@ -114,7 +111,10 @@ class _WorkersTabState extends State<WorkersTab> {
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (context) => const Center(child: CircularProgressIndicator()),
+      builder: (context) => AppLoader(
+        color: Colors.white,
+        size: LoaderSize.small,
+      ),
     );
 
     workersProvider.addWorker(workerData, context).then((result) {

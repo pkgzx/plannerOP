@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:plannerop/core/model/operation.dart';
 import 'package:plannerop/core/model/worker.dart';
@@ -9,7 +8,6 @@ import 'package:plannerop/services/operations/operation.dart';
 import 'package:plannerop/store/programmings.dart';
 import 'package:plannerop/store/workerGroup.dart';
 import 'package:provider/provider.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 class OperationsProvider extends ChangeNotifier {
   final OperationService _operationService = OperationService();
@@ -318,17 +316,6 @@ class OperationsProvider extends ChangeNotifier {
     }
   }
 
-  Future<void> _saveAssignments() async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      final assignmentsJson = json.encode(
-          _operations.map((assignment) => assignment.toJson()).toList());
-      await prefs.setString('assignments', assignmentsJson);
-    } catch (e) {
-      debugPrint('Error saving assignments: $e');
-    }
-  }
-
 // Añadir este método al provider de asignaciones
   Future<bool> connectWorkersToAssignment(
       List<int> individualWorkerIds,
@@ -422,7 +409,7 @@ class OperationsProvider extends ChangeNotifier {
               id_clientProgramming, 'ASSIGNED', context);
         }
 
-        await _saveAssignments();
+        // await _saveAssignments();
       } else {
         _error = "Error al crear la operación en el servidor";
       }
@@ -447,8 +434,6 @@ class OperationsProvider extends ChangeNotifier {
   Future<void> _refreshCreatedOperation(
       int operationId, BuildContext context) async {
     try {
-      debugPrint('Refrescando operación creada con ID: $operationId');
-
       // Obtener la operación específica del backend
       final refreshedOperations = await _operationService
           .fetchOperationsByStatus(context, ['PENDING', 'INPROGRESS']);
@@ -459,18 +444,8 @@ class OperationsProvider extends ChangeNotifier {
 
       if (matchingOperations.isNotEmpty) {
         final refreshedOperation = matchingOperations.first;
-
-        debugPrint(
-            'Operación refrescada exitosamente con ${refreshedOperation.groups.length} grupos');
-
         // Agregar la operación refrescada con los IDs reales
         _operations.add(refreshedOperation);
-
-        // Imprimir los IDs reales de los grupos para debug
-        for (var group in refreshedOperation.groups) {
-          debugPrint(
-              'Grupo refrescado - ID real: ${group.id}, Nombre: ${group.name}');
-        }
       } else {
         debugPrint(
             'No se pudo encontrar la operación $operationId en la respuesta del backend');
@@ -526,7 +501,7 @@ class OperationsProvider extends ChangeNotifier {
         id_clientProgramming: currentAssignment.id_clientProgramming,
       );
 
-      await _saveAssignments();
+      // await _saveAssignments();
       _isLoading = false;
       notifyListeners();
       return true;
@@ -609,5 +584,23 @@ class OperationsProvider extends ChangeNotifier {
         _operations.add(newAssignment);
       }
     }
+  }
+
+  void clear() {
+    //  LIMPIAR LA LISTA PRINCIPAL
+    _operations.clear();
+    _error = null;
+    _isLoading = false;
+
+    //  CANCELAR TIMER Y LIMPIAR CONTEXTO
+    if (_refreshTimer != null) {
+      _refreshTimer!.cancel();
+      _refreshTimer = null;
+      debugPrint("🔥 Timer de refresh cancelado");
+    }
+
+    _lastContext = null;
+
+    notifyListeners();
   }
 }

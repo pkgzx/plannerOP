@@ -70,4 +70,9 @@ class WorkerGroupsProvider with ChangeNotifier {
     }
     return false;
   }
+
+  void clear() {
+    _groups.clear();
+    notifyListeners();
+  }
 }

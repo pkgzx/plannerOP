@@ -1,11 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:plannerop/core/model/fault.dart';
 import 'package:plannerop/core/model/incapacity.dart';
 import 'package:plannerop/core/model/worker.dart';
 import 'package:plannerop/services/faults/fault.dart';
 import 'package:plannerop/services/workers/workers.dart';
 import 'package:plannerop/dto/workers/fetchWorkers.dart';
-import 'package:plannerop/store/faults.dart';
 import 'package:plannerop/store/incapacities.dart';
 import 'package:provider/provider.dart';
 
@@ -297,5 +295,11 @@ class WorkersProvider with ChangeNotifier {
       debugPrint('Error al asignar trabajador: $e');
       return false;
     }
+  }
+
+  void clear() {
+    _workers.clear();
+    _hasLoadedInitialData = false;
+    notifyListeners();
   }
 }

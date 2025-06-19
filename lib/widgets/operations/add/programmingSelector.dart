@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_neumorphic_plus/flutter_neumorphic.dart';
 import 'package:plannerop/core/model/programming.dart';
 import 'package:plannerop/store/programmings.dart';
+import 'package:plannerop/widgets/operations/components/utils/Loader.dart';
 import 'package:plannerop/widgets/operations/components/workers/selectorModal.dart';
 import 'package:provider/provider.dart';
 
@@ -185,15 +186,10 @@ class _ProgrammingSelectorState extends State<ProgrammingSelector> {
               ],
               const Spacer(),
               if (_isLoading)
-                SizedBox(
-                  width: 14,
-                  height: 14,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2,
-                    valueColor:
-                        AlwaysStoppedAnimation<Color>(Colors.blue.shade600),
-                  ),
-                ),
+                AppLoader(
+                  size: LoaderSize.medium,
+                  color: Colors.blue,
+                )
             ],
           ),
         ),
@@ -241,20 +237,19 @@ class _ProgrammingSelectorState extends State<ProgrammingSelector> {
   Widget _buildLeadingIcon() {
     if (_isLoading) {
       return Container(
-        width: 36,
-        height: 36,
-        decoration: BoxDecoration(
-          color: Colors.blue.shade50,
-          borderRadius: BorderRadius.circular(8),
-        ),
-        child: const Padding(
-          padding: EdgeInsets.all(6),
-          child: CircularProgressIndicator(
-            strokeWidth: 2,
-            valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF3182CE)),
+          width: 36,
+          height: 36,
+          decoration: BoxDecoration(
+            color: Colors.blue.shade50,
+            borderRadius: BorderRadius.circular(8),
           ),
-        ),
-      );
+          child: const Padding(
+            padding: EdgeInsets.all(6),
+            child: AppLoader(
+              size: LoaderSize.small,
+              color: Colors.blue,
+            ),
+          ));
     }
 
     return Container(

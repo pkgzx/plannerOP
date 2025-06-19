@@ -28,7 +28,6 @@ Future<void> main() async {
       providers: [
         ChangeNotifierProvider(create: (_) => OperationsProvider()),
         ChangeNotifierProvider(create: (_) => WorkersProvider()),
-        ChangeNotifierProvider(create: (_) => AuthProvider()),
         ChangeNotifierProvider(create: (_) => UserProvider()),
         ChangeNotifierProvider(create: (_) => AreasProvider()),
         ChangeNotifierProvider(create: (_) => TasksProvider()),
@@ -39,6 +38,44 @@ Future<void> main() async {
         ChangeNotifierProvider(create: (_) => FeedingProvider()),
         ChangeNotifierProvider(create: (_) => ProgrammingsProvider()),
         ChangeNotifierProvider(create: (_) => IncapacityProvider()),
+
+        /// NO BORRAR ESTE CODIGO!!!!
+        /// Impide que se quede informacion basura entre sesiones
+        ChangeNotifierProxyProvider6<
+            OperationsProvider,
+            WorkersProvider,
+            AreasProvider,
+            UserProvider,
+            ClientsProvider,
+            FeedingProvider,
+            AuthProvider>(
+          create: (context) => AuthProvider(
+            operationsProvider: context.read<OperationsProvider>(),
+            workersProvider: context.read<WorkersProvider>(),
+            areasProvider: context.read<AreasProvider>(),
+            clientsProvider: context.read<ClientsProvider>(),
+            feedingProvider: context.read<FeedingProvider>(),
+            faultsProvider: context.read<FaultsProvider>(),
+            tasksProvider: context.read<TasksProvider>(),
+            userProvider: context.read<UserProvider>(),
+            chargersOpProvider: context.read<ChargersOpProvider>(),
+            programmingsProvider: context.read<ProgrammingsProvider>(),
+          ),
+          update: (context, op, w, a, u, c, f, auth) =>
+              auth ??
+              AuthProvider(
+                operationsProvider: op,
+                workersProvider: w,
+                areasProvider: a,
+                userProvider: u,
+                clientsProvider: c,
+                feedingProvider: f,
+                faultsProvider: context.read<FaultsProvider>(),
+                tasksProvider: context.read<TasksProvider>(),
+                chargersOpProvider: context.read<ChargersOpProvider>(),
+                programmingsProvider: context.read<ProgrammingsProvider>(),
+              ),
+        ),
       ],
       child: const App(),
     ),

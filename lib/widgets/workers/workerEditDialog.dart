@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 import 'package:plannerop/mapper/operation.dart';
 import 'package:plannerop/store/areas.dart';
 import 'package:plannerop/utils/operations.dart';
+import 'package:plannerop/widgets/operations/components/utils/Loader.dart';
 import 'package:plannerop/widgets/workers/workerIncapacitationDialog.dart';
 
 // Import necesario para el método min
@@ -303,14 +304,9 @@ class _WorkerEditDialogState extends State<WorkerEditDialog> {
                         ),
                       ),
                       child: _isLoading
-                          ? const SizedBox(
-                              width: 20,
-                              height: 20,
-                              child: CircularProgressIndicator(
-                                valueColor:
-                                    AlwaysStoppedAnimation<Color>(Colors.white),
-                                strokeWidth: 2,
-                              ),
+                          ? AppLoader(
+                              size: LoaderSize.medium,
+                              color: Colors.white,
                             )
                           : const Text(
                               'Guardar Cambios',

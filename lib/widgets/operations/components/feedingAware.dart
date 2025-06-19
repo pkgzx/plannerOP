@@ -3,10 +3,11 @@ import 'package:plannerop/core/model/operation.dart';
 import 'package:plannerop/store/feedings.dart';
 import 'package:plannerop/utils/feedingUtils.dart';
 import 'package:plannerop/utils/groups/groups.dart';
+import 'package:plannerop/widgets/operations/components/utils/Loader.dart';
 import 'package:plannerop/widgets/operations/components/workers/buildWorkerItem.dart';
 import 'package:provider/provider.dart';
 
-// ✅ NUEVO WIDGET PARA MANEJAR LA CARGA DE ALIMENTACIÓN
+//  NUEVO WIDGET PARA MANEJAR LA CARGA DE ALIMENTACIÓN
 class FeedingAwareWidget extends StatefulWidget {
   final int operationId;
   final Operation assignment;
@@ -73,25 +74,12 @@ class _FeedingAwareWidgetState extends State<FeedingAwareWidget> {
   Widget build(BuildContext context) {
     if (_isLoading) {
       return Container(
-        padding: const EdgeInsets.all(16),
-        child: Row(
-          children: [
-            const SizedBox(
-              width: 16,
-              height: 16,
-              child: CircularProgressIndicator(strokeWidth: 2),
-            ),
-            const SizedBox(width: 12),
-            Text(
-              'Cargando información de alimentación...',
-              style: TextStyle(
-                fontSize: 14,
-                color: Colors.grey[600],
-              ),
-            ),
-          ],
-        ),
-      );
+          padding: const EdgeInsets.all(16),
+          child: AppLoader(
+            color: Colors.white,
+            size: LoaderSize.medium,
+            message: 'Cargando información de alimentación...',
+          ));
     }
 
     if (_hasError) {
@@ -129,7 +117,7 @@ class _FeedingAwareWidgetState extends State<FeedingAwareWidget> {
       );
     }
 
-    // ✅ DATOS CARGADOS, MOSTRAR CONTENIDO COMPLETO
+    //  DATOS CARGADOS, MOSTRAR CONTENIDO COMPLETO
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -161,7 +149,7 @@ class _FeedingAwareWidgetState extends State<FeedingAwareWidget> {
             ),
           ),
 
-        // ✅ MOSTRAR GRUPOS DE TRABAJO CON ALIMENTACIÓN
+        //  MOSTRAR GRUPOS DE TRABAJO CON ALIMENTACIÓN
         if (widget.assignment.groups.isNotEmpty)
           buildGroupsSection(
             context,

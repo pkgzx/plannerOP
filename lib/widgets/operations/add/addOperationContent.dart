@@ -9,7 +9,6 @@ import 'package:plannerop/widgets/operations/components/workers/workerList.dart'
 import 'operationForm.dart';
 
 class AddOperationContent extends StatelessWidget {
-  final List<Worker> selectedWorkers;
   final List<WorkerGroup> selectedGroups;
   final List<Worker> allWorkers;
   final TextEditingController areaController;
@@ -37,7 +36,6 @@ class AddOperationContent extends StatelessWidget {
 
   const AddOperationContent({
     Key? key,
-    required this.selectedWorkers,
     required this.selectedGroups,
     required this.allWorkers,
     required this.areaController,
@@ -71,14 +69,11 @@ class AddOperationContent extends StatelessWidget {
       children: [
         // Lista de trabajadores seleccionados
         SelectedWorkersList(
-          selectedWorkers: selectedWorkers,
-          onWorkersChanged: onWorkersChanged,
           availableWorkers: allWorkers,
           selectedGroups: selectedGroups,
           onGroupsChanged: onGroupsChanged,
           inEditMode: false,
           deletedWorkers: const [],
-          onDeletedWorkersChanged: null,
           assignmentId: null,
           onWorkersAddedToGroup: null,
           onWorkersRemovedFromGroup: onWorkersRemovedFromGroup,

@@ -8,11 +8,14 @@ import 'package:plannerop/core/model/worker.dart';
 import 'package:plannerop/core/model/workerGroup.dart';
 import 'package:plannerop/store/areas.dart';
 import 'package:plannerop/store/clients.dart';
+import 'package:plannerop/store/workers.dart';
 import 'package:plannerop/utils/neumophomic.dart';
 import 'package:plannerop/utils/toast.dart';
 import 'package:plannerop/widgets/operations/add/addOperationContent.dart';
 import 'package:plannerop/widgets/operations/add/addOperationHeader.dart';
 import 'package:plannerop/widgets/operations/add/validate.dart';
+import 'package:plannerop/widgets/operations/components/utils/Button.dart';
+import 'package:plannerop/widgets/operations/components/utils/Loader.dart';
 import 'package:provider/provider.dart';
 import '../components/successDialog.dart';
 
@@ -46,8 +49,7 @@ class AddOperationDialogState extends State<AddOperationDialog> {
   List<Worker> _selectedWorkers = [];
   List<WorkerGroup> _selectedGroups = [];
 
-  // Lista completa de trabajadores (datos de ejemplo)
-  final List<Worker> _allWorkers = [];
+  List<Worker> _allWorkers = [];
   List<Area> _areas = [];
   List<String> _currentTasks = [];
   List<Client> _clients = [];
@@ -76,6 +78,7 @@ class AddOperationDialogState extends State<AddOperationDialog> {
   Widget build(BuildContext context) {
     _areas = Provider.of<AreasProvider>(context).areas;
     _clients = Provider.of<ClientsProvider>(context).clients;
+    _allWorkers = Provider.of<WorkersProvider>(context).workers;
     final screenWidth = MediaQuery.of(context).size.width;
 
     return Dialog(
@@ -101,7 +104,6 @@ class AddOperationDialogState extends State<AddOperationDialog> {
 
               // Contenido principal del formulario
               AddOperationContent(
-                selectedWorkers: _selectedWorkers,
                 selectedGroups: _selectedGroups,
                 allWorkers: _allWorkers,
                 areaController: _areaController,
@@ -181,26 +183,13 @@ class AddOperationDialogState extends State<AddOperationDialog> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.end,
                 children: [
-                  NeumorphicButton(
-                    style: NeumorphicStyle(
-                      depth: _isSaving ? 0 : 2,
-                      intensity: 0.6,
-                      color: _isSaving
-                          ? const Color(0xFF90CDF4)
-                          : const Color.fromARGB(255, 248, 248, 248),
-                      boxShape: NeumorphicBoxShape.roundRect(
-                          BorderRadius.circular(8)),
-                    ),
+                  AppButton(
+                    text: 'Cancelar',
                     onPressed: () {
                       Navigator.of(context).pop();
                     },
-                    child: const Text(
-                      'Cancelar',
-                      style: TextStyle(
-                        color: Color(0xFF718096),
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
+                    size: AppButtonSize.longer,
+                    type: AppButtonType.danger,
                   ),
                   const SizedBox(width: 12),
                   NeumorphicButton(
@@ -245,27 +234,11 @@ class AddOperationDialogState extends State<AddOperationDialog> {
                       width: 100,
                       child: Center(
                         child: _isSaving
-                            ? Row(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: const [
-                                  SizedBox(
-                                    width: 16,
-                                    height: 16,
-                                    child: CircularProgressIndicator(
-                                      valueColor: AlwaysStoppedAnimation<Color>(
-                                          Colors.white),
-                                      strokeWidth: 2,
-                                    ),
-                                  ),
-                                  SizedBox(width: 8),
-                                  Text(
-                                    'Guardando',
-                                    style: TextStyle(
-                                      color: Colors.white,
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                  ),
-                                ],
+                            ? AppLoader(
+                                size: LoaderSize.medium,
+                                strokeWidth: 2,
+                                message: 'Guardando...',
+                                color: Colors.white,
                               )
                             : const Text(
                                 'Guardar',
@@ -277,6 +250,43 @@ class AddOperationDialogState extends State<AddOperationDialog> {
                       ),
                     ),
                   ),
+                  // AppButton(
+                  //   text: _isSaving ? 'Guardando...' : 'Guardar',
+                  //   onPressed: _isSaving
+                  //       ? null
+                  //       : () async {
+                  //           setState(() {
+                  //             _isSaving = true;
+                  //           });
+
+                  //           final isValid = await validateFields(
+                  //             context: context,
+                  //             selectedWorkers: _selectedWorkers,
+                  //             selectedGroups: _selectedGroups,
+                  //             areaControl: _areaController.text,
+                  //             startDateControl: _startDateController.text,
+                  //             startTimeControl: _startTimeController.text,
+                  //             clientControl: _clientController.text,
+                  //             motorshipControl: _motorshipController.text,
+                  //             chargerControl: _chargerController.text,
+                  //             endDateControl: _endDateController.text,
+                  //             endTimeControl: _endTimeController.text,
+                  //             zoneControl: _zoneController.text,
+                  //             selectedProgramming: _selectedProgramming,
+                  //           );
+
+                  //           if (!isValid) {
+                  //             setState(() {
+                  //               _isSaving = false;
+                  //             });
+                  //             return;
+                  //           }
+
+                  //           Navigator.of(context).pop();
+                  //           _showSuccessDialog(context);
+                  //         },
+                  //   size: AppButtonSize.longer,
+                  // )
                 ],
               ),
             ],
@@ -392,7 +402,7 @@ class AddOperationDialogState extends State<AddOperationDialog> {
         }
       }
 
-      if (group.endTime != null &&
+      if (group.endTime?.isEmpty == false &&
           group.endDate == null &&
           latestEndDateTime == null) {
         try {

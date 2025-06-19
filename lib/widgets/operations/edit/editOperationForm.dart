@@ -10,6 +10,7 @@ import 'package:plannerop/store/workers.dart';
 import 'package:plannerop/utils/operations.dart';
 import 'package:plannerop/utils/toast.dart';
 import 'package:plannerop/widgets/operations/components/utils/dateField.dart';
+import 'package:plannerop/widgets/operations/components/utils/Loader.dart';
 import 'package:plannerop/widgets/operations/components/utils/timeField.dart';
 import 'package:plannerop/widgets/operations/components/workers/workerList.dart';
 import 'package:provider/provider.dart';
@@ -345,8 +346,6 @@ class EditOperationFormState extends State<EditOperationForm> {
                 children: [
                   // Selector de trabajadores con soporte para grupos
                   SelectedWorkersList(
-                    selectedWorkers: _selectedWorkers,
-                    onWorkersChanged: _updateSelectedWorkers,
                     availableWorkers: _allWorkers,
                     selectedGroups: _selectedGroups,
                     onGroupsChanged: updateSelectedGroups,
@@ -509,28 +508,10 @@ class EditOperationFormState extends State<EditOperationForm> {
                     height: 40,
                     child: Center(
                       child: _isSaving
-                          ? Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: const [
-                                SizedBox(
-                                  width: 16,
-                                  height: 16,
-                                  child: CircularProgressIndicator(
-                                    valueColor: AlwaysStoppedAnimation<Color>(
-                                        Colors.white),
-                                    strokeWidth: 2,
-                                  ),
-                                ),
-                                SizedBox(width: 8),
-                                Text(
-                                  'Guardando...',
-                                  style: TextStyle(
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.w600,
-                                    fontSize: 13,
-                                  ),
-                                ),
-                              ],
+                          ? AppLoader(
+                              size: LoaderSize.medium,
+                              color: Colors.white,
+                              message: 'Guardando...',
                             )
                           : const Text(
                               'Guardar Cambios',

@@ -5,14 +5,13 @@ import 'package:plannerop/core/model/worker.dart';
 import 'package:plannerop/core/model/workerGroup.dart';
 import 'package:plannerop/store/task.dart';
 import 'package:plannerop/utils/worker_utils.dart';
-import 'package:plannerop/widgets/operations/components/workers/groupUtils.dart';
+import 'package:plannerop/widgets/operations/components/utils/Button.dart';
+import 'package:plannerop/widgets/operations/components/utils/Loader.dart';
 import 'package:provider/provider.dart';
-import 'hoursCalculator.dart';
 
 // Construir el encabezado de la lista
 Widget buildWorkersListHeader({
   required BuildContext context,
-  required bool isCalculatingHours,
   required VoidCallback onAddPressed,
 }) {
   return Row(
@@ -26,44 +25,11 @@ Widget buildWorkersListHeader({
           color: Color(0xFF4A5568),
         ),
       ),
-      NeumorphicButton(
-        style: NeumorphicStyle(
-          depth: 2,
-          intensity: 0.6,
-          boxShape: NeumorphicBoxShape.roundRect(BorderRadius.circular(8)),
-          color: const Color(0xFF3182CE),
-        ),
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-        onPressed: isCalculatingHours ? null : onAddPressed,
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            isCalculatingHours
-                ? const SizedBox(
-                    width: 12,
-                    height: 12,
-                    child: CircularProgressIndicator(
-                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                      strokeWidth: 2,
-                    ),
-                  )
-                : const Icon(
-                    Icons.add,
-                    size: 16,
-                    color: Colors.white,
-                  ),
-            const SizedBox(width: 6),
-            Text(
-              isCalculatingHours ? "Calculando..." : "Añadir",
-              style: const TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.w500,
-                fontSize: 12,
-              ),
-            ),
-          ],
-        ),
-      ),
+      AppButton(
+          text: 'Añadir',
+          icon: Icons.add,
+          onPressed: onAddPressed,
+          size: AppButtonSize.small),
     ],
   );
 }
@@ -71,20 +37,17 @@ Widget buildWorkersListHeader({
 // Construir la lista de trabajadores con HashMaps y Sets
 Widget buildWorkerList({
   required BuildContext context,
-  required List<Worker> selectedWorkers,
   required List<WorkerGroup> selectedGroups,
   required Map<int, double> workerHours,
   required int? assignmentId,
   required bool inEditMode,
   required List<Worker> deletedWorkers,
   required Function(WorkerGroup, int) onDeleteGroup,
-  required Function(List<Worker>)? onDeletedWorkersChanged,
-  required Function(List<Worker>) onWorkersChanged,
   required Function(List<WorkerGroup>)? onGroupsChanged,
   Function(WorkerGroup, List<Worker>)? onWorkersAddedToGroup,
   Function(WorkerGroup, List<Worker>)? onWorkersRemovedFromGroup,
 }) {
-  if (selectedWorkers.isEmpty && selectedGroups.isEmpty) {
+  if (selectedGroups.isEmpty) {
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
       decoration: BoxDecoration(
@@ -104,10 +67,7 @@ Widget buildWorkerList({
     );
   }
 
-
   return Container(
-    key: ValueKey(
-        "worker_list_${selectedWorkers.hashCode}_${selectedGroups.hashCode}"),
     padding: const EdgeInsets.all(12),
     decoration: BoxDecoration(
       border: Border.all(color: const Color(0xFFE2E8F0)),
@@ -129,16 +89,13 @@ Widget buildWorkerList({
             inEditMode: inEditMode,
             deletedWorkers: deletedWorkers,
             onDeleteGroup: onDeleteGroup,
-            onDeletedWorkersChanged: onDeletedWorkersChanged,
-            onWorkersChanged: onWorkersChanged,
             onGroupsChanged: onGroupsChanged,
             onWorkersAddedToGroup: onWorkersAddedToGroup,
             onWorkersRemovedFromGroup: onWorkersRemovedFromGroup,
           ),
 
         // Información adicional sobre horas
-        if (selectedWorkers.isNotEmpty && workerHours.isNotEmpty)
-          buildHoursInfoText(),
+        if (workerHours.isNotEmpty) buildHoursInfoText(),
       ],
     ),
   );
@@ -154,8 +111,6 @@ Widget _buildGroupsSection({
   required bool inEditMode,
   required List<Worker> deletedWorkers,
   required Function(WorkerGroup, int) onDeleteGroup,
-  required Function(List<Worker>)? onDeletedWorkersChanged,
-  required Function(List<Worker>) onWorkersChanged,
   required Function(List<WorkerGroup>)? onGroupsChanged,
   Function(WorkerGroup, List<Worker>)? onWorkersAddedToGroup,
   Function(WorkerGroup, List<Worker>)? onWorkersRemovedFromGroup,
@@ -229,8 +184,6 @@ Widget _buildGroupsSection({
               inEditMode: inEditMode,
               deletedWorkers: deletedWorkers,
               onDeleteGroup: onDeleteGroup,
-              onDeletedWorkersChanged: onDeletedWorkersChanged,
-              onWorkersChanged: onWorkersChanged,
               onGroupsChanged: onGroupsChanged,
               workers: group.workersData ?? [],
               onWorkersAddedToGroup: onWorkersAddedToGroup,
@@ -254,8 +207,6 @@ Widget _buildGroupSection({
   required bool inEditMode,
   required List<Worker> deletedWorkers,
   required Function(WorkerGroup, int) onDeleteGroup,
-  required Function(List<Worker>)? onDeletedWorkersChanged,
-  required Function(List<Worker>) onWorkersChanged,
   required Function(List<WorkerGroup>)? onGroupsChanged,
   Function(WorkerGroup, List<Worker>)? onWorkersAddedToGroup,
   Function(WorkerGroup, List<Worker>)? onWorkersRemovedFromGroup,
@@ -383,20 +334,18 @@ Widget _buildGroupSection({
             itemCount: workers.length,
             itemBuilder: (context, index) {
               final worker = workers[index];
-              final isAvailable = isWorkerAvailable(worker.id, workerHours);
 
               return ListTile(
                 contentPadding:
                     const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
                 dense: true,
-                leading: buildWorkerAvatar(worker, isAvailable),
+                leading: buildWorkerAvatar(worker),
                 title: Text(
                   worker.name,
                   style: TextStyle(
                     fontWeight: FontWeight.w500,
                     fontSize: 14,
-                    color:
-                        isAvailable ? const Color(0xFF2D3748) : Colors.red[700],
+                    color: const Color(0xFF2D3748), // Color por defecto
                   ),
                 ),
                 subtitle: Column(
@@ -407,15 +356,6 @@ Widget _buildGroupSection({
                       style: const TextStyle(
                         fontSize: 12,
                         color: Color(0xFF718096),
-                      ),
-                    ),
-                    Text(
-                      getHoursText(worker.id, workerHours),
-                      style: TextStyle(
-                        fontSize: 10,
-                        color:
-                            isAvailable ? Colors.green[700] : Colors.red[700],
-                        fontWeight: FontWeight.w500,
                       ),
                     ),
                   ],
@@ -605,7 +545,7 @@ Widget buildWorkerDetails({
   return ListTile(
     contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
     dense: true,
-    leading: buildWorkerAvatar(worker, isAvailable),
+    leading: buildWorkerAvatar(worker),
     title: Text(
       worker.name,
       style: TextStyle(
@@ -624,14 +564,6 @@ Widget buildWorkerDetails({
             color: Color(0xFF718096),
           ),
         ),
-        Text(
-          getHoursText(worker.id, workerHours),
-          style: TextStyle(
-            fontSize: 10,
-            color: isAvailable ? Colors.green[700] : Colors.red[700],
-            fontWeight: FontWeight.w500,
-          ),
-        ),
       ],
     ),
     trailing: IconButton(
@@ -643,7 +575,7 @@ Widget buildWorkerDetails({
 }
 
 // Construir el avatar del trabajador
-Widget buildWorkerAvatar(Worker worker, bool isAvailable) {
+Widget buildWorkerAvatar(Worker worker) {
   return Stack(
     children: [
       CircleAvatar(
@@ -658,25 +590,6 @@ Widget buildWorkerAvatar(Worker worker, bool isAvailable) {
           ),
         ),
       ),
-      if (!isAvailable)
-        Positioned(
-          right: 0,
-          bottom: 0,
-          child: Container(
-            width: 12,
-            height: 12,
-            decoration: BoxDecoration(
-              color: Colors.red,
-              shape: BoxShape.circle,
-              border: Border.all(color: Colors.white, width: 1),
-            ),
-            child: const Icon(
-              Icons.warning,
-              color: Colors.white,
-              size: 8,
-            ),
-          ),
-        ),
     ],
   );
 }

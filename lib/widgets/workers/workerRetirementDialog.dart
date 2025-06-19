@@ -3,6 +3,7 @@ import 'package:intl/intl.dart';
 import 'package:plannerop/core/model/worker.dart';
 import 'package:plannerop/store/workers.dart';
 import 'package:plannerop/utils/toast.dart';
+import 'package:plannerop/widgets/operations/components/utils/Loader.dart';
 import 'package:provider/provider.dart';
 
 class WorkerRetirementDialog extends StatefulWidget {
@@ -380,14 +381,9 @@ class _WorkerRetirementDialogState extends State<WorkerRetirementDialog> {
                         ),
                       ),
                       child: _isLoading
-                          ? const SizedBox(
-                              width: 20,
-                              height: 20,
-                              child: CircularProgressIndicator(
-                                valueColor:
-                                    AlwaysStoppedAnimation<Color>(Colors.white),
-                                strokeWidth: 2,
-                              ),
+                          ? AppLoader(
+                              color: Colors.white,
+                              size: LoaderSize.medium,
                             )
                           : const Text(
                               'Confirmar Retiro',

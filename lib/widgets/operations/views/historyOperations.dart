@@ -3,6 +3,7 @@ import 'package:flutter_neumorphic_plus/flutter_neumorphic.dart';
 import 'package:plannerop/core/model/operation.dart';
 import 'package:plannerop/utils/operations.dart';
 import 'package:plannerop/widgets/operations/components/OperationCard.dart';
+import 'package:plannerop/widgets/operations/components/utils/Loader.dart';
 import 'package:plannerop/widgets/operations/components/workers/buildWorkerItem.dart';
 import 'package:plannerop/widgets/operations/components/utils/emptyState.dart';
 import 'package:plannerop/store/operations.dart';
@@ -124,7 +125,11 @@ class _HistoryOperationsViewState extends State<HistoryOperationsView> {
     return Consumer<OperationsProvider>(
       builder: (context, provider, child) {
         if (provider.isLoading) {
-          return const Center(child: CircularProgressIndicator());
+          return AppLoader(
+            color: Colors.white,
+            size: LoaderSize.medium,
+            message: 'Cargando operaciones...',
+          );
         }
 
         // Obtener todas las asignaciones y ordenarlas por fecha más reciente

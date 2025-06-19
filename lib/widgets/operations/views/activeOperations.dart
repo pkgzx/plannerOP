@@ -3,10 +3,12 @@ import 'package:flutter_neumorphic_plus/flutter_neumorphic.dart';
 import 'package:plannerop/store/areas.dart';
 import 'package:plannerop/store/chargersOp.dart';
 import 'package:plannerop/store/feedings.dart';
+import 'package:plannerop/store/user.dart';
 import 'package:plannerop/utils/operations.dart' hide buildDetailRow;
 import 'package:plannerop/utils/toast.dart';
 import 'package:plannerop/widgets/operations/components/OperationCard.dart';
 import 'package:plannerop/widgets/operations/components/feedingAware.dart';
+import 'package:plannerop/widgets/operations/components/utils/Loader.dart';
 import 'package:plannerop/widgets/operations/edit/editOperationForm.dart';
 import 'package:provider/provider.dart';
 import 'package:plannerop/store/operations.dart';
@@ -57,7 +59,11 @@ class _ActiveOperationsViewState extends State<ActiveOperationsView> {
       builder: (context, assignmentsProvider, child) {
         if (assignmentsProvider.isLoading) {
           return const Center(
-            child: CircularProgressIndicator(),
+            child: AppLoader(
+              color: Colors.white,
+              size: LoaderSize.medium,
+              message: 'Cargando operaciones...',
+            ),
           );
         }
 
@@ -193,7 +199,7 @@ class _ActiveOperationsViewState extends State<ActiveOperationsView> {
     final assignmentsProvider =
         Provider.of<OperationsProvider>(context, listen: false);
 
-    // ✅ MOSTRAR DIÁLOGO INMEDIATAMENTE SIN ESPERAR DATOS DE ALIMENTACIÓN
+    //  MOSTRAR DIÁLOGO INMEDIATAMENTE SIN ESPERAR DATOS DE ALIMENTACIÓN
     showOperationDetails(
       context: context,
       assignment: assignment,
@@ -203,7 +209,7 @@ class _ActiveOperationsViewState extends State<ActiveOperationsView> {
       foods: [], // Se calculará en el FutureBuilder
       setState: () => setState(() {}),
 
-      // ✅ USAR FUTUREBUILDER PARA CARGAR ALIMENTACIÓN SIN BLOQUEAR LA UI
+      //  USAR FUTUREBUILDER PARA CARGAR ALIMENTACIÓN SIN BLOQUEAR LA UI
       workersBuilder: (assignment, context) {
         return FeedingAwareWidget(
           operationId: assignment.id ?? 0,

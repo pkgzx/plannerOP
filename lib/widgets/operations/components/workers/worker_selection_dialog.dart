@@ -10,14 +10,12 @@ class WorkerSelectionDialog extends StatefulWidget {
   final List<Worker> allSelectedWorkers; // Lista de trabajadores seleccionados
   final List<Worker>?
       availableWorkers; // Opcional, permite pasar trabajadores filtrados
-  final Map<int, double>? workerHours; // Horas trabajadas por cada trabajador
   final String title; // Título del diálogo
 
   const WorkerSelectionDialog(
       {Key? key,
       required this.selectedWorkers,
       this.availableWorkers,
-      this.workerHours,
       required this.allSelectedWorkers,
       required this.title})
       : super(key: key);
@@ -60,9 +58,7 @@ class _WorkerSelectionDialogState extends State<WorkerSelectionDialog> {
   List<Worker> _getAvailableWorkers(BuildContext context) {
     // Si se proporcionó una lista de trabajadores filtrados, usarla directamente
     if (widget.availableWorkers != null) {
-      debugPrint('Usando lista de trabajadores filtrados proporcionada');
-      return widget
-          .availableWorkers!; // CAMBIO AQUÍ: Usar la lista proporcionada
+      return widget.availableWorkers!;
     }
 
     // De lo contrario, obtener de WorkersProvider
@@ -121,20 +117,6 @@ class _WorkerSelectionDialogState extends State<WorkerSelectionDialog> {
       // El trabajador debe cumplir ambos filtros
       return matchesSearch && matchesArea;
     }).toList();
-  }
-
-  // Obtener horas trabajadas para un trabajador
-  double _getWorkerHours(int workerId) {
-    if (widget.workerHours == null) {
-      return 0.0;
-    }
-    return widget.workerHours![workerId] ?? 0.0;
-  }
-
-  // Verificar si un trabajador está disponible (menos de 8 horas)
-  bool _isWorkerAvailable(int workerId) {
-    final hours = _getWorkerHours(workerId);
-    return hours < 12.0;
   }
 
   @override
@@ -296,8 +278,6 @@ class _WorkerSelectionDialogState extends State<WorkerSelectionDialog> {
                         final isCurrentlySelected = _isSelected(worker);
                         final isAlreadyInOtherGroups =
                             _isAlreadySelectedInAnyGroup(worker);
-                        final isAvailable = _isWorkerAvailable(worker.id);
-                        final workerHours = _getWorkerHours(worker.id);
 
                         // Determinar el color de fondo y borde
                         Color backgroundColor;
@@ -312,16 +292,11 @@ class _WorkerSelectionDialogState extends State<WorkerSelectionDialog> {
                           // Ya está en otros grupos - ámbar
                           backgroundColor = Colors.amber[50]!;
                           borderColor = Colors.amber[300]!;
-                        } else if (!isAvailable) {
-                          // No disponible - rojo claro
-                          backgroundColor = Colors.red[50]!;
-                          borderColor = Colors.red[200]!;
                         } else {
                           // Normal - blanco
                           backgroundColor = Colors.white;
                           borderColor = Colors.grey[300]!;
                         }
-
                         return Card(
                           margin: const EdgeInsets.only(bottom: 8),
                           elevation: 0,
@@ -334,9 +309,7 @@ class _WorkerSelectionDialogState extends State<WorkerSelectionDialog> {
                           ),
                           color: backgroundColor,
                           child: ListTile(
-                            onTap: isAvailable || isAlreadyInOtherGroups
-                                ? () => _toggleSelection(worker)
-                                : null, // Permitir selección si está disponible O ya está en grupos
+                            onTap: () => _toggleSelection(worker),
                             selected: isCurrentlySelected,
                             contentPadding: const EdgeInsets.symmetric(
                                 horizontal: 16, vertical: 6),
@@ -377,35 +350,14 @@ class _WorkerSelectionDialogState extends State<WorkerSelectionDialog> {
                                       ),
                                     ),
                                   ),
-                                // Indicador para trabajadores no disponibles
-                                if (!isAvailable && !isAlreadyInOtherGroups)
-                                  Positioned(
-                                    right: 0,
-                                    bottom: 0,
-                                    child: Container(
-                                      width: 16,
-                                      height: 16,
-                                      decoration: BoxDecoration(
-                                        color: Colors.red,
-                                        shape: BoxShape.circle,
-                                        border: Border.all(
-                                            color: Colors.white, width: 1.5),
-                                      ),
-                                      child: const Icon(
-                                        Icons.warning,
-                                        color: Colors.white,
-                                        size: 10,
-                                      ),
-                                    ),
-                                  ),
                               ],
                             ),
                             title: Text(
                               worker.name,
                               style: TextStyle(
                                 fontWeight: FontWeight.w500,
-                                color: !isAvailable && !isAlreadyInOtherGroups
-                                    ? Colors.grey[500]
+                                color: !isAlreadyInOtherGroups
+                                    ? Colors.grey[800]
                                     : isAlreadyInOtherGroups
                                         ? Colors.amber[800]
                                         : null,
@@ -431,26 +383,9 @@ class _WorkerSelectionDialogState extends State<WorkerSelectionDialog> {
                                       worker.area,
                                       style: TextStyle(
                                         fontSize: 12,
-                                        color: !isAvailable &&
-                                                !isAlreadyInOtherGroups
-                                            ? Colors.grey[400]
-                                            : Colors.grey[600],
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                                // Mostrar estado del trabajador
-                                Row(
-                                  children: [
-                                    // Horas trabajadas
-                                    Text(
-                                      '${workerHours.toStringAsFixed(1)} horas trabajadas',
-                                      style: TextStyle(
-                                        fontSize: 11,
-                                        fontWeight: FontWeight.w500,
-                                        color: isAvailable
-                                            ? Colors.green[700]
-                                            : Colors.red[700],
+                                        color: !isAlreadyInOtherGroups
+                                            ? Colors.grey[700]
+                                            : Colors.grey[900],
                                       ),
                                     ),
                                   ],
@@ -467,14 +402,7 @@ class _WorkerSelectionDialogState extends State<WorkerSelectionDialog> {
                                         child: Icon(Icons.group_outlined,
                                             color: Colors.amber[700]),
                                       )
-                                    : !isAvailable
-                                        ? Tooltip(
-                                            message:
-                                                'Trabajador no disponible (más de 12 horas trabajadas)',
-                                            child: Icon(Icons.error_outline,
-                                                color: Colors.red[700]),
-                                          )
-                                        : const SizedBox(width: 10),
+                                    : const SizedBox(width: 10),
                           ),
                         );
                       },

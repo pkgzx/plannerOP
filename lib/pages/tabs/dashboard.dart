@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_neumorphic_plus/flutter_neumorphic.dart';
+import 'package:plannerop/core/model/user.dart';
 import 'package:plannerop/hooks/loaders/loader.dart';
 import 'package:plannerop/store/operations.dart';
+import 'package:plannerop/store/user.dart';
 import 'package:plannerop/utils/toast.dart';
 import 'package:plannerop/widgets/dashboard/quickActions.dart';
 import 'package:plannerop/widgets/dashboard/recentOps.dart';
+import 'package:plannerop/widgets/operations/components/utils/Loader.dart';
 import 'package:provider/provider.dart';
 
 class DashboardTab extends StatefulWidget {
@@ -40,6 +43,8 @@ class _DashboardTabState extends State<DashboardTab> {
   Future<void> _loadAllData({bool forceRefresh = false}) async {
     if (!mounted) return;
 
+    final User user = Provider.of<UserProvider>(context, listen: false).user;
+
     try {
       // Actualizar estados de carga
       setState(() {
@@ -56,10 +61,10 @@ class _DashboardTabState extends State<DashboardTab> {
       // Cargar todos los datos en paralelo
       await Future.wait([
         loadTask(
-          () => mounted,
-          setState,
-          _isLoadingTasks,
-          context,
+          isMounted: () => mounted,
+          setState: setState,
+          isLoadingTasks: _isLoadingTasks,
+          context: context,
         ),
         checkAndLoadWorkersIfNeeded(
           () => mounted,
@@ -74,10 +79,10 @@ class _DashboardTabState extends State<DashboardTab> {
           context,
         ),
         loadClients(
-          () => mounted,
-          setState,
-          _isLoadingClients,
-          context,
+          isMounted: () => mounted,
+          setState: setState,
+          isLoadingClients: _isLoadingClients,
+          context: context,
         ),
         loadAssignments(
           context: context,
@@ -99,16 +104,17 @@ class _DashboardTabState extends State<DashboardTab> {
             _isLoadingFaults = isLoading;
           },
         ),
-        loadChargersOp(
-          context: context,
-          isMounted: () => mounted,
-          setStateCallback: (fn) {
-            if (mounted) setState(fn);
-          },
-          updateLoadingState: (isLoading) {
-            _isLoadingChargers = isLoading;
-          },
-        ),
+        if (user.role != "GH")
+          loadChargersOp(
+            context: context,
+            isMounted: () => mounted,
+            setStateCallback: (fn) {
+              if (mounted) setState(fn);
+            },
+            updateLoadingState: (isLoading) {
+              _isLoadingChargers = isLoading;
+            },
+          ),
         loadClientProgramming(
             () => mounted, setState, _isLoadingClientProgramming, context,
             forceRefresh: forceRefresh)
@@ -213,15 +219,9 @@ class _DashboardTabState extends State<DashboardTab> {
                       children: [
                         // Indicador de carga si es necesario
                         if (_isAnyLoading)
-                          Container(
-                            margin: const EdgeInsets.only(right: 10),
-                            width: 20,
-                            height: 20,
-                            child: const CircularProgressIndicator(
-                              strokeWidth: 2,
-                              valueColor:
-                                  AlwaysStoppedAnimation<Color>(Colors.white),
-                            ),
+                          AppLoader(
+                            color: Colors.white,
+                            size: LoaderSize.small,
                           ),
                         // Botón de actualización
                         IconButton(
@@ -302,21 +302,9 @@ class _DashboardTabState extends State<DashboardTab> {
           // Contenido del dashboard
           Expanded(
             child: (_isInitialLoad && _isAnyLoading)
-                ? const Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        CircularProgressIndicator(),
-                        SizedBox(height: 16),
-                        Text(
-                          'Cargando datos...',
-                          style: TextStyle(
-                            color: Color(0xFF718096),
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ],
-                    ),
+                ? AppLoader(
+                    color: Colors.white,
+                    size: LoaderSize.small,
                   )
                 : RefreshIndicator(
                     onRefresh: () async {

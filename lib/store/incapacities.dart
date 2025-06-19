@@ -3,7 +3,7 @@ import 'package:plannerop/core/model/incapacity.dart';
 import 'package:plannerop/services/incapacities/Incapacities.dart';
 
 class IncapacityProvider with ChangeNotifier {
-  final List<Incapacity> _incapacities = [];
+  List<Incapacity> _incapacities = [];
   bool _isLoading = false;
   String _error = '';
 
@@ -125,5 +125,10 @@ class IncapacityProvider with ChangeNotifier {
       default:
         return IncapacityCause.DISEASE;
     }
+  }
+
+  void clear() {
+    _incapacities = [];
+    notifyListeners();
   }
 }

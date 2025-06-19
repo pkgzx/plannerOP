@@ -43,4 +43,9 @@ class ClientsProvider with ChangeNotifier {
     return _clients.firstWhere((client) => client.name == name,
         orElse: () => Client(id: 0, name: ''));
   }
+
+  void clear() {
+    _clients = [];
+    notifyListeners();
+  }
 }

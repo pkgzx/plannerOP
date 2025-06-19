@@ -5,6 +5,7 @@ import 'package:plannerop/core/model/worker.dart';
 import 'package:flutter_neumorphic_plus/flutter_neumorphic.dart';
 import 'package:plannerop/store/faults.dart';
 import 'package:plannerop/store/incapacities.dart';
+import 'package:plannerop/widgets/operations/components/utils/Loader.dart';
 import 'package:provider/provider.dart';
 import 'package:plannerop/utils/toast.dart';
 
@@ -601,29 +602,10 @@ class _WorkerDetailsSectionState extends State<WorkerDetailsSection> {
                             height: 36,
                             alignment: Alignment.center,
                             child: isProcessing
-                                ? Row(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    children: [
-                                      SizedBox(
-                                        width: 16,
-                                        height: 16,
-                                        child: CircularProgressIndicator(
-                                          valueColor:
-                                              AlwaysStoppedAnimation<Color>(
-                                                  Colors.white),
-                                          strokeWidth: 2,
-                                        ),
-                                      ),
-                                      const SizedBox(width: 8),
-                                      const Text(
-                                        'Registrando',
-                                        style: TextStyle(
-                                          color: Colors.white,
-                                          fontWeight: FontWeight.w600,
-                                          fontSize: 12,
-                                        ),
-                                      ),
-                                    ],
+                                ? AppLoader(
+                                    size: LoaderSize.medium,
+                                    color: Colors.white,
+                                    message: 'Registrando...',
                                   )
                                 : const Text(
                                     'Registrar',
@@ -865,23 +847,10 @@ class _WorkerDetailsSectionState extends State<WorkerDetailsSection> {
         children: [
           Icon(Icons.info_outline, size: 16, color: Colors.grey[600]),
           const SizedBox(width: 8),
-          Text(
-            'Cargando detalles...',
-            style: TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w500,
-              color: Colors.grey[700],
-              fontStyle: FontStyle.italic,
-            ),
-          ),
-          const SizedBox(width: 8),
-          SizedBox(
-            width: 16,
-            height: 16,
-            child: CircularProgressIndicator(
-              strokeWidth: 2,
-              valueColor: AlwaysStoppedAnimation<Color>(Colors.purple),
-            ),
+          AppLoader(
+            size: LoaderSize.small,
+            color: Colors.purple[600]!,
+            message: 'Cargando detalles de incapacidad...',
           ),
         ],
       ),

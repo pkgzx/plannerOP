@@ -1,18 +1,21 @@
 import 'package:flutter/material.dart';
 import 'package:plannerop/core/model/site.dart';
+import 'package:plannerop/services/sites/sites.dart';
 import 'package:plannerop/store/user.dart';
 import 'package:provider/provider.dart';
 
 class SiteSelector {
+  final SiteService _siteService = SiteService();
+
   /// Función principal para manejar la selección de sede
-  static Future<void> handleSiteSelection(BuildContext context) async {
+  Future<void> handleSiteSelection(BuildContext context) async {
     final userProvider = Provider.of<UserProvider>(context, listen: false);
 
     // Solo mostrar para superadmin
     if (userProvider.user.role != "SUPERADMIN") return;
 
     // Simular carga de sedes (reemplazar con tu API)
-    final sites = await _loadAvailableSites();
+    final sites = await _loadAvailableSites(context);
 
     if (sites.isEmpty) return;
 
@@ -28,20 +31,27 @@ class SiteSelector {
   }
 
   /// Cargar sedes disponibles (reemplazar con tu API)
-  static Future<List<Site>> _loadAvailableSites() async {
-    // Simular delay de API
-    await Future.delayed(const Duration(milliseconds: 500));
-
-    return [
-      Site(id: 1, name: "Sede Central", subSites: []),
-      Site(id: 2, name: "Sede Norte", subSites: []),
-      Site(id: 3, name: "Sede Sur", subSites: []),
-      Site(id: 4, name: "Sede Este", subSites: []),
-    ];
+  Future<List<Site>> _loadAvailableSites(BuildContext context) async {
+    final sites = await _siteService.getAllSites(context);
+    return sites.map((site) {
+      return Site(
+        id: site['id'],
+        name: site['name'],
+        subSites: site['SubSite'] != null
+            ? List<Site>.from(site['SubSite'].map((subSite) {
+                return Site(
+                  id: subSite['id'],
+                  name: subSite['name'],
+                  subSites: [],
+                );
+              }))
+            : [],
+      );
+    }).toList();
   }
 
   /// Mostrar el diálogo de selección de sede
-  static Future<Site?> _showSiteSelector(
+  Future<Site?> _showSiteSelector(
       BuildContext context, List<Site> sites) async {
     return showDialog<Site>(
       context: context,
@@ -176,13 +186,6 @@ class SiteSelector {
                                                   style: const TextStyle(
                                                     fontWeight: FontWeight.w600,
                                                     fontSize: 16,
-                                                  ),
-                                                ),
-                                                Text(
-                                                  'ID: ${site.id}',
-                                                  style: TextStyle(
-                                                    color: Colors.grey.shade600,
-                                                    fontSize: 12,
                                                   ),
                                                 ),
                                               ],

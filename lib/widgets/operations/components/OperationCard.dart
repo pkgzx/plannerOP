@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 import 'package:plannerop/core/model/operation.dart';
 import 'package:plannerop/utils/operations.dart';
 import 'package:plannerop/utils/feedingUtils.dart';
+import 'package:plannerop/widgets/operations/components/utils/Loader.dart';
 
 class OperationCard extends StatelessWidget {
   final Operation assignment;
@@ -50,10 +51,10 @@ class OperationCard extends StatelessWidget {
             ),
           ),
           child: Column(
-            mainAxisSize: MainAxisSize.min, // CRUCIAL: esto evita el error
+            mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // SECCIÓN 1: INFORMACIÓN PRINCIPAL - ARRIBA
+              //  INFORMACIÓN PRINCIPAL
               Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -76,7 +77,7 @@ class OperationCard extends StatelessWidget {
 
               const SizedBox(height: 12),
 
-              // SECCIÓN 2: INFORMACIÓN SECUNDARIA - AL FINAL
+              // INFORMACIÓN SECUNDARIA
               _buildFooterSection(context),
             ],
           ),
@@ -190,16 +191,15 @@ class OperationCard extends StatelessWidget {
   Widget _buildTaskInfo(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
-      mainAxisSize: MainAxisSize.min, // Añadido para evitar problemas de layout
+      mainAxisSize: MainAxisSize.min,
       children: [
         FutureBuilder<List<Widget>>(
           future: getServicesGroups(context, assignment.groups),
           builder: (context, snapshot) {
             if (snapshot.connectionState == ConnectionState.waiting) {
-              return const SizedBox(
-                height: 20,
-                width: 20,
-                child: CircularProgressIndicator(strokeWidth: 2),
+              return const AppLoader(
+                size: LoaderSize.medium,
+                color: Colors.blue,
               );
             }
 

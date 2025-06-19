@@ -367,4 +367,9 @@ class FaultsProvider extends ChangeNotifier {
       return false;
     }
   }
+
+  void clear() {
+    _faults = [];
+    notifyListeners();
+  }
 }

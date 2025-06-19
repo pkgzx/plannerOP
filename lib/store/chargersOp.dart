@@ -27,4 +27,9 @@ class ChargersOpProvider extends ChangeNotifier {
     return _chargers.firstWhere((charger) => charger.id == id,
         orElse: () => User(id: 0, name: '', dni: "", phone: "", cargo: ""));
   }
+
+  void clear() {
+    _chargers = [];
+    notifyListeners();
+  }
 }

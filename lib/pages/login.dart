@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_neumorphic_plus/flutter_neumorphic.dart';
 import 'package:lottie/lottie.dart';
 import 'package:plannerop/hooks/auth/useLogin.dart';
+import 'package:plannerop/widgets/operations/components/utils/Loader.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -50,10 +51,10 @@ class _LoginPageState extends State<LoginPage> {
   Widget build(BuildContext context) {
     // Si está cargando (intentando auto-login), mostrar spinner
     if (_isLoading) {
-      return const Scaffold(
-        body: Center(
-          child: CircularProgressIndicator(),
-        ),
+      return AppLoader(
+        showAsScaffold: false,
+        message: 'Cargando...',
+        size: LoaderSize.large,
       );
     }
     return Scaffold(
